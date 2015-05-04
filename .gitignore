@@ -1,7 +1,9 @@
 .*.*~
 *.*~
+*~
 *.py
 *.swp
 *.pyc
 __pycache__
 *.valid
+autom4te.cache
