@@ -1,0 +1,1011 @@
+#!/usr/bin/python3
+
+"""Provide functionality relating to an application dock
+
+Manage a list of pinned and non-pinned dock apps.
+
+Handle all mouse ui events for docked apps
+Respond to window opening and closing events from libwnck
+Respond to changes to the Gtk icon theme and update all docked apps
+Load and save dock settings (pinned apps and indicator type)
+
+respond to selections made in the applet right click menu, specifically
+    : allow apps to be pinned to the dock
+    : allow apps to unpinned from the dock
+    : allow app icons be to moved to a different position on the dock
+    : disply an About dialog
+    : display a Preferences dialog
+"""
+
+# Copyright (C) 1997-2003 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Author:
+#     Robin Thompson
+
+import gi
+gi.require_version("Gtk", "2.0")
+from gi.repository import Gtk
+from gi.repository import MatePanelApplet
+
+gi.require_version("Wnck", "1.0")
+from gi.repository import Wnck
+
+from gi.repository import GdkPixbuf
+from gi.repository import Gio
+from gi.repository import GLib
+import os
+import os.path
+
+import docked_app
+import dock_prefs
+import dock_about
+
+from log_it import log_it as log_it
+
+class Dock(object):
+    """The main application dock class
+
+        Attributes:
+            applet : the MATE panel applet
+            window : ?
+            app_list : the list of DockedApp objects. Will contain running/non-running
+                       pinned apps and running unpinned apps
+            box    : A Gtk HBox or VBox (depending on the applet orientation) containing
+                     the drawing areas of each of the app in app_list
+            icontheme : used to load application icons and detect changes in the icon theme
+            about_win : the about window
+            prefs_win : the preferences window
+            app_with_mouse : the DockedApp that the mouse is currently over
+            active_app : the DockedApp that is currently the foreground app
+            right_clicked_app: the app that was most recently right clicked
+            app_spacing : the number of pixels between apps in the dock
+            settings_path : the GIO.Settings path for the applet
+            settings : GIO.Settings - the settings for the applet
+            indicator : the indicator type (light or dark)
+            dock_action_group : Gtk Action group containing all of the actions
+                                for the applet right click menu
+
+    """
+
+    def __init__(self, applet):
+        """Init the Dock.
+
+        Load settings
+        Setup the applet right click menu and actions
+        Set default values
+        """
+
+        super().__init__()
+
+        self.applet = applet    # the panel applet, in case we need it later
+
+        self.app_list = []
+        self.box = None
+        self.icontheme = Gtk.IconTheme.get_default()
+        self.icontheme.connect("changed", self.icon_theme_changed)
+
+        self.window = None
+
+        self.app_with_mouse = None      # the dock app that mouse is currently over
+        self.active_app = None          # the currently active app
+        self.right_clicked_app = None     # the app that most recently had a right click
+
+        self.app_spacing = 3     # no of pixels between apps on the dock
+
+        self.settings_path = self.applet.get_preferences_path()
+        self.settings = Gio.Settings.new_with_path("org.mate.panel.applet.dock", \
+                                                    self.settings_path)
+
+        self.prefs_win = None
+        self.about_win = None
+        self.indicator = self.settings.get_int("indicator-type")
+
+        self.dock_action_group = None
+        self.setup_menu()
+
+    def write_settings(self):
+        """Write the current dock settings.
+
+        Write a list of all of the currently pinned apps .desktop files
+        Write the indicator type
+        """
+
+        pinned_apps = []
+        for dock_app in self.app_list:
+
+            if (dock_app.desktop_file is not None) and (dock_app.is_pinned):
+                pinned_apps.append(os.path.basename(dock_app.desktop_file))
+
+        if self.settings:
+            self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
+            self.settings.set_int("indicator-type", self.indicator)
+
+    def set_actions_for_app(self, app):
+        """Show or hide actions in the context menu so that only relevant ones are
+           shown for the specified app
+
+           If the app is pinned, do not show the pin action.
+
+           If the app in not pinned, don't show the unpin action.
+
+           Depending on applet orientation actions to move the app left/right
+           or up/down along the dock need to shown or hidden.
+
+           If the app is the first or last on the dock, then the options to
+           move it up/left or down/right will also need to be hidden
+
+           Include the app name in the menu text e.g. Pin Caja to the dock
+
+           If the app has more than one window on screen, show actions allowing
+           the user to select one
+
+           If the app is running and has one or more windows on screen, show
+           an option allowing them to be closed
+
+        Args:
+            app : The DockedApp
+        """
+
+        pin_action = self.dock_action_group.get_action("pin_action")
+        unpin_action = self.dock_action_group.get_action("unpin_action")
+        move_up_action = self.dock_action_group.get_action("move_up_action")
+        move_down_action = self.dock_action_group.get_action("move_down_action")
+        move_left_action = self.dock_action_group.get_action("move_left_action")
+        move_right_action = self.dock_action_group.get_action("move_right_action")
+
+        show_win_1_action = self.dock_action_group.get_action("show_win_1_action")
+        show_win_1_action.set_visible(False)
+        show_win_2_action = self.dock_action_group.get_action("show_win_2_action")
+        show_win_2_action.set_visible(False)
+        show_win_3_action = self.dock_action_group.get_action("show_win_3_action")
+        show_win_3_action.set_visible(False)
+        show_win_4_action = self.dock_action_group.get_action("show_win_4_action")
+        show_win_4_action.set_visible(False)
+        show_win_5_action = self.dock_action_group.get_action("show_win_5_action")
+        show_win_5_action.set_visible(False)
+        show_win_6_action = self.dock_action_group.get_action("show_win_6_action")
+        show_win_6_action.set_visible(False)
+        show_win_7_action = self.dock_action_group.get_action("show_win_7_action")
+        show_win_7_action.set_visible(False)
+        show_win_8_action = self.dock_action_group.get_action("show_win_8_action")
+        show_win_8_action.set_visible(False)
+
+        close_win_action = self.dock_action_group.get_action("close_win_action")
+        close_win_action.set_visible(False)
+
+        index = self.get_app_position_in_dock(app)
+        pin_action.set_visible(not app.is_pinned)
+        unpin_action.set_visible(app.is_pinned)
+
+
+        orientation = self.applet.get_orient()
+
+        if orientation == MatePanelApplet.AppletOrient.LEFT or \
+           orientation == MatePanelApplet.AppletOrient.RIGHT:
+            move_up_action.set_visible(index > 0)
+            move_down_action.set_visible(index < (len(self.box.get_children()))-1)
+            move_left_action.set_visible(False)
+            move_right_action.set_visible(False)
+            move_up_action.set_label("Move %s up the dock" %app.app_name)
+            move_down_action.set_label("Move %s down the dock" %app.app_name)
+        else:
+            move_up_action.set_visible(False)
+            move_down_action.set_visible(False)
+            move_left_action.set_visible(index > 0)
+            move_right_action.set_visible(index < (len(self.box.get_children()))-1)
+            move_left_action.set_label("Move %s to the left on the dock" %app.app_name)
+            move_right_action.set_label("Move %s to the right on the dock" %app.app_name)
+
+        if pin_action.is_visible():
+            pin_action.set_label("Pin %s to the dock" %app.app_name)
+        else:
+            unpin_action.set_label("Unpin %s from the dock" %app.app_name)
+
+        # set the actions for selecting specific windows
+
+        num_win = app.get_num_windows()
+        if num_win > 1:
+            # there is more than one window available so we need to enable some actions and
+            # set them up
+
+            action_list = [show_win_1_action, show_win_2_action, show_win_3_action, \
+                           show_win_5_action, show_win_5_action, show_win_6_action, \
+                           show_win_7_action, show_win_8_action]
+            win_list = app.get_wnck_windows()
+
+            for loop in range(0, num_win):
+                wnck_window = win_list[loop]
+                action = action_list[loop]
+
+                action.set_visible(True)
+                action.set_icon_name(app.icon_name)
+                action.set_label(wnck_window.get_name())
+
+        if num_win == 1:
+            close_win_action.set_label("Close %s" %app.app_name)
+        else:
+            close_win_action.set_label("Close all windows")
+
+        if num_win > 0:
+            close_win_action.set_visible(True)
+
+
+    def setup_menu(self):
+        """Set up the actions and right click menu for the applet
+        """
+
+        self.dock_action_group = Gtk.ActionGroup("DockActions")
+        self.dock_action_group.add_actions([("pin_action", Gtk.STOCK_ADD, \
+                             "_Pin app to the dock", None, "Pin app to the dock", \
+                             self.pin_app), \
+                             ("unpin_action", Gtk.STOCK_REMOVE, \
+                             "_Unpin app from the dock", None, "Unpin app from the dock", \
+                             self.unpin_app), \
+                             ("move_up_action", Gtk.STOCK_GO_UP,\
+                             "Move app _up the dock", None, "Move app up the dock", \
+                             self.move_app_up), \
+                             ("move_down_action", Gtk.STOCK_GO_DOWN, \
+                             "Move app _down the dock", None, "Move app down the dock", \
+                             self.move_app_down), \
+                             ("move_left_action", Gtk.STOCK_GO_BACK,\
+                             "Move app _left in the dock", None, "Move app left in the dock",\
+                             self.move_app_up), \
+                             ("move_right_action", Gtk.STOCK_GO_FORWARD, \
+                             "Move app _right in the dock", None, "Move app right in the dock",\
+                             self.move_app_down), \
+                             ("prefs_action", Gtk.STOCK_PREFERENCES, \
+                             "Dock P_references", None, "Dock Preferences", \
+                             self.show_prefs_win), \
+                             ("about_action", Gtk.STOCK_ABOUT, \
+                             "About...", None, "About...", self.show_about_win), \
+                             ("show_win_1_action", None, \
+                              "Show window 1", None, None, self.show_win_1), \
+                             ("show_win_2_action", None, \
+                              "Show window 2", None, None, self.show_win_2), \
+                             ("show_win_3_action", None, \
+                              "Show window 3", None, None, self.show_win_3), \
+                             ("show_win_4_action", None,  \
+                              "Show window 4", None, None, self.show_win_4), \
+                             ("show_win_5_action", None, \
+                              "Show window 5", None, None, self.show_win_5), \
+                             ("show_win_6_action", None, \
+                              "Show window 6", None, None, self.show_win_6), \
+                             ("show_win_7_action", None, \
+                              "Show window 7", None, None, self.show_win_7), \
+                             ("show_win_8_action", None, \
+                              "Show window 8", None, None, self.show_win_8), \
+                             ("close_win_action", Gtk.STOCK_CLOSE, \
+                              "_Close", None, "Close", self.close_win) \
+                             ])
+
+
+        menu_xml = '<menuitem name="show_win_1" action="show_win_1_action"/>'
+        menu_xml += '<menuitem name="show_win_2" action="show_win_2_action"/>'
+        menu_xml += '<menuitem name="show_win_3" action="show_win_3_action"/>'
+        menu_xml += '<menuitem name="show_win_4" action="show_win_4_action"/>'
+        menu_xml += '<menuitem name="show_win_5" action="show_win_5_action"/>'
+        menu_xml += '<menuitem name="show_win_6" action="show_win_6_action"/>'
+        menu_xml += '<menuitem name="show_win_7" action="show_win_7_action"/>'
+        menu_xml += '<menuitem name="show_win_8" action="show_win_8_action"/><separator/>'
+        menu_xml += '<menuitem name="close_win" action="close_win_action"/><separator/>'
+        menu_xml += '<menuitem name="move_up" action="move_up_action"/>'
+        menu_xml += '<menuitem name="move_down" action="move_down_action"/>'
+        menu_xml += '<menuitem name="move_left" action="move_left_action"/>'
+        menu_xml += '<menuitem name="move_right" action="move_right_action"/>'
+        menu_xml += '<separator/><menuitem name="Pin" action="pin_action"/>'
+        menu_xml += '<menuitem name="Unpin" action="unpin_action"/><separator/>'
+        menu_xml += '<menuitem name="Preferences" action="prefs_action"/>'
+        menu_xml += '<menuitem name="About" action="about_action"/><separator/>'
+
+        self.applet.setup_menu(menu_xml, self.dock_action_group)
+
+    def unpin_app(self, data=None):
+        """Unpin the right clicked app from the dock.
+
+        Unpin the app and update the dock settings.
+
+        If the app is not running, remove it from the dock also
+        """
+
+        if self.right_clicked_app is not None:
+            self.right_clicked_app.is_pinned = False
+            self.write_settings()
+            if not self.right_clicked_app.is_running():
+                self.remove_app_from_dock(self.right_clicked_app)
+                self.right_clicked_app = None
+
+    def pin_app(self, data=None):
+        """Pin the right clicked app to the dock.
+
+        Pin the app and update the dock settings"""
+
+        if self.right_clicked_app is not None:
+            self.right_clicked_app.is_pinned = True
+            self.write_settings()
+
+    def get_app_position_in_dock(self, app):
+        """ Get the position of a specified app in the dock.
+
+        Args : app - A DockedApp
+
+        Returns : the index of the app, or -1 if it wasn't found
+        """
+
+        index = 0
+        for app_da in self.box.get_children():
+            if app_da == app.drawing_area:
+                return index
+            index += 1
+
+        return -1
+
+    def move_app_up(self, data=None):
+        """ Move the right clicked app up one position on the dock (or left if the
+            panel is on the top or bottom of the screen).
+
+        Moves the app and then recaculates the minimize location for it's windows.
+
+        Writes the dock settings once all is done.
+        """
+
+        if self.right_clicked_app is not None:
+
+            index = self.get_app_position_in_dock(self.right_clicked_app)
+            if index > 0:
+
+                # we need to move the app both in self.applist and self.box
+                self.box.reorder_child(self.right_clicked_app.drawing_area, index-1)
+
+                app = self.app_list[index-1]
+                self.app_list[index-1] = self.app_list[index]
+                self.app_list[index] = app
+
+                # recalculate the minimize targets for each app
+                self.app_list[index-1].set_icon_geometry()
+                self.app_list[index].set_icon_geometry()
+
+                self.write_settings()
+
+    def move_app_down(self, data=None):
+        """ Move the right clicked app down one position on the dock (or right if the
+            panel is on the top or bottom of the screen).
+
+        Moves the app and then recaculates the minimize location for it's windows.
+
+        Writes the dock settings once all is done.
+        """
+
+        if self.right_clicked_app is not None:
+
+            index = self.get_app_position_in_dock(self.right_clicked_app)
+            if index < len(self.box.get_children()) -1:
+
+                # we need to move the app both in self.applist and self.box
+                self.box.reorder_child(self.right_clicked_app.drawing_area, index+1)
+
+                app = self.app_list[index+1]
+                self.app_list[index+1] = self.app_list[index]
+                self.app_list[index] = app
+
+                # recalculate the minimize targets for each app
+                self.app_list[index+1].set_icon_geometry()
+                self.app_list[index].set_icon_geometry()
+
+                self.write_settings()
+
+    def show_prefs_win(self, data=None):
+        """ Show the preferences window.
+
+        If, necessary create the window and register a callback for the 'ok' button
+        press
+
+        If the window has already been shown, just show it again.
+        """
+
+        if self.prefs_win is None:
+            self.prefs_win = dock_prefs.DockPrefsWindow(self.prefs_win_ok_cb)
+            self.prefs_win.set_indicator(self.indicator)
+        else:
+            self.prefs_win.show_all()
+
+    def show_about_win(self, data=None):
+        """ Show the About window.
+
+        If, necessary create the window and show it.
+
+        If the window has already been shown, just show it again.
+        """
+        if self.about_win is None:
+            self.about_win = dock_about.AboutWindow()
+
+        self.about_win.show_all()
+
+    def prefs_win_ok_cb(self, widget, event):
+        """ Callback for the 'ok' button on the preferences window.
+
+        If the preferences have been changed then:
+            write the new settings
+            redraw each running app in app_list with the new indicator type
+
+        Args:
+            widget - the button the caused the event
+            event - the event args
+        """
+
+        if self.indicator != self.prefs_win.get_indicator_type():
+            self.indicator = self.prefs_win.get_indicator_type()
+            self.write_settings()
+            # redraw everything here
+            for app in self.app_list:
+                app.set_indicator(self.indicator)
+                if app.is_running():
+                    app.queue_draw()
+
+        self.prefs_win.hide()
+
+    def show_win(self, win_no):
+        """
+        Bring the specified window number of the right clicked app to the front
+
+        Args:
+            win_no - the window number, starting at 1
+
+        """
+
+        win_list = self.right_clicked_app.get_wnck_windows()
+        wnck_win = win_list[win_no-1]
+        wnck_win.activate(0)
+
+    def show_win_1(self, data=None):
+        """Callback for showing window 1 of the right clicked app"""
+        self.show_win(1)
+
+    def show_win_2(self, data=None):
+        """Callback for showing window 2 of the right clicked app"""
+        self.show_win(2)
+
+    def show_win_3(self, data=None):
+        """Callback for showing window 3 of the right clicked app"""
+        self.show_win(3)
+
+    def show_win_4(self, data=None):
+        """Callback for showing window 4 of the right clicked app"""
+        self.show_win(4)
+
+    def show_win_5(self, data=None):
+        """Callback for showing window 5 of the right clicked app"""
+        self.show_win(5)
+
+    def show_win_6(self, data=None):
+        """Callback for showing window 6 of the right clicked app"""
+        self.show_win(6)
+
+    def show_win_7(self, data=None):
+        """Callback for showing window 7 of the right clicked app"""
+        self.show_win(7)
+
+    def show_win_8(self, data=None):
+        """Callback for showing window 8 of the right clicked app"""
+        self.show_win(8)
+
+    def close_win(self, data=None):
+        """Close all windows for the right clicked app"""
+
+        win_list = self.right_clicked_app.get_wnck_windows()
+        for wnck_win in win_list:
+            wnck_win.close(0) # have to send 0 as the event time because we have
+                              # no event time to send
+
+    def icon_theme_changed(self, icontheme):
+        """ Callback for when the Gtk icon theme changes
+
+        Load the new icon set
+        Iterate through each app in self.app_list and get it to reload it's icon
+    """
+
+        self.icontheme.rescan_if_needed()
+
+        size = self.applet.get_size()
+        for app in self.app_list:
+            self.set_app_icon(app, size)
+
+    def copy_wnck_info_to_app(self, app_from_dock, app_from_wnck, wnck_window):
+        """Copy info from wnck into a docked applet
+
+        If the wnck app pid is already present in the docked app, just
+        copy the windows xids that are not in the docked app
+
+        If the wnck app pid is not present, copy all of the the app_info
+        """
+
+        app_from_dock.wnck_class = app_from_wnck.wnck_class
+        app_from_dock.set_app_name(app_from_wnck.app_name)
+        app_from_dock.wm_class_name = app_from_wnck.wm_class_name
+
+        for wai in app_from_wnck.app_info:
+            # look for a process in the docked app with an identical pid
+
+            existing_pid = False
+            for dai in app_from_dock.app_info:
+
+                if (dai.pid == 0) and (wai.pid == 0):
+                    # the pids returned by libwnk were both 0 (not sure why) 
+                    # so check the wnck_apps for equivalency
+                    existing_pid = True
+                else:
+                    if dai.pid == wai.pid:
+                        existing_pid = True
+
+                if existing_pid == True:
+                    # we need to merge info from the new details into the dock_app
+
+                    for xid in wai.windows:
+                        try:
+                            unused_var = dai.windows.index(xid)
+                            #if we get here, the window was found, so there's no
+                            #need to do anything else
+
+                        except ValueError:
+                            # if we get here, the window wasn't found so it needs to be added
+                            dai.windows.append(xid)
+
+                    break
+
+            if existing_pid == False:
+                # add the info for the new process
+                app_from_dock.app_info.append(wai)
+
+    def setup_app_list(self):
+        """Setup the list of docked apps.
+
+        First, read the list of pinned apps from the settings and add them to the app list
+
+        Then iterate through the running apps, and then either:
+            if this is a non-pinned app add it to app list
+            if this is a pinned app, integrate the running app info with the pinned app details
+            already set up
+
+        Also, set up event handlers allowing us keep track of window open and close events
+        and active window change events
+        """
+
+        self.app_list = []
+
+        pinned_apps = self.settings.get_value("pinned-apps").unpack()
+
+        # the settings contain a list of .desktop files, so we need to find and read each
+        # file
+        for pinned_app in pinned_apps:
+            dock_app = docked_app.DockedApp()
+
+            if os.path.isfile("/usr/share/applications/" + pinned_app):
+                dock_app.desktop_file = "/usr/share/applications/" + pinned_app
+            elif os.path.isfile("/usr/local/share/applications/" + pinned_app):
+                dock_app.desktop_file = "/usr/local/share/applications/" + pinned_app
+            elif os.path.isfile(os.path.expanduser(("~/.local/share/applications/") + pinned_app)):
+                dock_app.desktop_file = os.path.expanduser("~/.local/share/applications/") + pinned_app
+         
+            if dock_app.read_info_from_desktop_file():
+                self.app_list.append(dock_app)
+
+            dock_app.is_pinned = True
+
+        wnck_screen = Wnck.Screen.get_default()
+        wnck_screen.force_update()  # recommended per Wnck documentation
+
+        for wnck_window in wnck_screen.get_windows():
+
+            win_type = wnck_window.get_window_type()
+
+            if ((win_type == Wnck.WindowType.NORMAL) or (win_type == Wnck.WindowType.DIALOG)) and \
+                    wnck_window.is_skip_tasklist() == False:
+
+                wnck_class = wnck_window.get_class_group()
+
+                wnck_app = wnck_window.get_application()
+
+                # setup a new docked app object with info from wnck
+                dock_app = docked_app.DockedApp()
+                dock_app.applet_win = self.applet.window
+                dock_app.setup_from_wnck(wnck_app, wnck_class)
+
+                # if this is a pinned app, merge the running app details with the item already
+                # set up in app_list
+                for app in self.app_list:
+                    if app.desktop_file == dock_app.desktop_file:
+                        # copy the running app's info to the pinned dock item
+                        self.copy_wnck_info_to_app(app, dock_app, wnck_window)
+                        break
+                else:
+                    # it's not a pinned app so add it to the app list
+                    self.app_list.append(dock_app)
+
+        wnck_screen.connect("active-window-changed", self.active_win_changed)
+        wnck_screen.connect("window-opened", self.window_opened)
+        wnck_screen.connect("window_closed", self.window_closed)
+
+    def active_win_changed(self, wnck_screen, prev_active_window):
+        """Event handler for the window change event
+
+        Remove the highlighted background from any prevously active app and redraw its icon
+
+        Set the new app as active and redraw it with a highlighted background
+
+        Args:
+            wnck_screen :  the screen on which the event occurred
+            prev_active_window : the wnck_window that was previously active
+
+        """
+
+
+        if prev_active_window is not None:
+
+            prev_cg = prev_active_window.get_class_group()
+            prev_wm_class_name = prev_cg.get_res_class()
+            old_app = prev_active_window.get_application()
+            # iteratate through each docked app and each of its processes to find the app
+            # associated with the previously active window
+            for app in self.app_list:
+        #        for aai in app.app_info:
+                 if prev_wm_class_name == app.wm_class_name:
+#                    if old_app == aai.app:
+                        # redraw the icon withouht the highlight
+                        app.is_active = False
+                        app.queue_draw()
+                        break
+
+        # highlight the newly active apps's button
+        new_win = wnck_screen.get_active_window()
+
+        if new_win is not None:
+            new_cg = new_win.get_class_group()
+            new_wm_class_name = new_cg.get_res_class()
+
+            new_app = new_win.get_application()
+            for app in self.app_list:
+                if app.wm_class_name == new_wm_class_name:
+#                for aai in app.app_info:
+#                    if new_app == aai.app:
+                    app.is_active = True
+                    app.queue_draw()
+                    break
+
+    def window_opened(self, wnck_screen, wnck_window):
+        """Event handler for the window_opened event
+
+        If an aready running app has opened a new window, the window
+        is added to to the running apps info
+
+        If a newly lauched app opening a new window, setup the app on the
+        dock
+
+        Args:
+            wnck_screen : the screen on which the event occurred
+            wnck_window : the newly opened window
+
+        """
+
+        wnck_app = wnck_window.get_application()
+
+        if not wnck_window.is_skip_tasklist():
+
+            # setup a new DockedApp
+            wnck_class = wnck_window.get_class_group()
+            dock_app = docked_app.DockedApp()
+            dock_app.applet_win = self.applet.window
+            dock_app.applet_orient = self.applet.get_orient()
+            dock_app.set_indicator(self.indicator)
+            dock_app.setup_from_wnck(wnck_app, wnck_class)
+
+            # look for the app relating to the window in the dock
+            in_dock = False
+            for app in self.app_list:
+                if app.desktop_file == dock_app.desktop_file:
+                    in_dock = True
+
+                    # found it, so copy the running app's info to the pinned dock item
+                    self.copy_wnck_info_to_app(app, dock_app, wnck_window)
+
+                    # set the minimize target for the new window
+                    app.set_icon_geometry()
+
+
+            if in_dock == False:
+                # append the app to the dock
+
+                size = self.applet.get_size()
+                self.set_app_icon(dock_app, size)
+                self.app_list.append(dock_app)
+                self.add_app(dock_app)
+                self.box.show_all()
+
+    def window_closed(self, wnck_screen, wnck_window):
+        """Event handler for the window_closed event
+
+        Find the app relating to the closed window.
+
+        If it has no more open windows mark it as not running and
+        redraw its icon without the running indicator.
+
+        If the are open windows remaining, remove the closed window from
+        the apps list of windows
+
+        Args:
+            wnck_screen : the screen on which the event occurred
+            wnck_window : the closed window
+
+        """
+
+
+        # we're only interested in the closure of normal and dialog windows
+        if (wnck_window.get_window_type() != Wnck.WindowType.NORMAL) and \
+           (wnck_window.get_window_type() != Wnck.WindowType.DIALOG):
+            return
+
+        wnck_app = wnck_window.get_application()
+        if wnck_app is None:
+
+            # this always seems to be the case - so we need to find the app another
+            # way - look through each of the running apps for the one which
+            # has the closed window in it's window list
+
+            # this is done by using xids - using wnck_windows in the app_info tuple
+            # didn't seem to work very well
+
+            xid = wnck_window.get_xid()
+            for app in self.app_list:
+                for aai in app.app_info:
+                    try:
+                        # a valueerror exception occurs if the window is not found
+                        unused_var = aai.windows.index(xid)
+
+                        # we've found the app so remove the window from it's list
+                        aai.windows.remove(xid)
+
+                        # if the app has no more open windows, mark it as closed
+                        if len(aai.windows) == 0:
+                            # there no more open windows for this process. Does the app
+                            # have any other running processes ?
+                            if len(app.app_info) == 1:
+                                # No, it doesn't ////
+
+                                app.app_info = []
+                                if not app.is_pinned:
+
+                                    #rmeove the app from the dock
+                                    self.remove_app_from_dock(app)
+                                else:
+                                    app.is_active = False
+                                    app.queue_draw()
+                            else:
+                                # remove this processes info from docked app
+                                app.app_info.remove(aai)
+                        break
+
+                    except ValueError:
+                        pass
+
+    def remove_app_from_dock(self, app):
+        """Remove an app from the dock.
+
+        Remove the app from the app_list
+
+        Remove the app's drawing area from self.box
+
+        Args:
+            app : the app to be removed
+
+        """
+
+        self.app_list.remove(app)
+        self.box.remove(app.drawing_area)
+
+        app = None
+
+    def set_app_icon(self, dock_app, size):
+        """ Sets up an app's icon, scaling it to a specified size
+
+        Select an appropriate icon size based on the specified size
+
+        Load the app's icon, using a fallback STOCK_EXEC as a fallback
+
+        Scale the icon to the specified size
+
+        Args:
+            dock_app : the DockedApp
+            size : the required icon size in pixels
+        """
+
+        if size >= 56:
+            icon_size = 64
+            stock_size = Gtk.IconSize.DIALOG
+        elif size >= 40:
+            icon_size = 48
+            stock_size = Gtk.IconSize.DIALOG
+        elif size >= 28:
+            icon_size = 32
+            stock_size = Gtk.IconSize.DND
+        elif size >= 20:
+            icon_size = 24
+            stock_size = Gtk.IconSize.LARGE_TOOLBAR
+        else:
+            icon_size = 16
+            stock_size = Gtk.IconSize.BUTTON
+
+        if self.icontheme.has_icon(dock_app.icon_name):
+
+            icon_info = self.icontheme.choose_icon([dock_app.icon_name, None], icon_size, 0)
+            dock_app.icon_filename = icon_info.get_filename()
+
+            try:
+                pixbuf = icon_info.load_icon()
+
+            except GLib.GError:
+                # default to a stock icon if we couldn't load the app icon
+                pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size, None)
+                dock_app.icon_filename = "STOCK_EXECUTE"
+
+        else:
+            # the default theme has no icon for the app, so there are a couple of things we
+            # can do...
+            # 1 .. quick and dirty - look in /usr/share/pixmaps for an icon of any type with
+            #                        the same name as the app
+            # 2 .. sloooow         - iterate through each installed icon theme and try to
+            #                        find the app - not implement for now
+
+            # the png method. look for lower and uppercased variations of the filename
+            # and note that all files in /usr/share/pixmaps are .png
+
+            icon_file = ""
+            icon_name = os.path.splitext(dock_app.icon_name)[0] # remove any extension
+            if os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name):
+                icon_file = icon_name + ".png"
+            elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.upper()):
+                icon_file = icon_name.upper() + ".png"
+            elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.lower()):
+                icon_file = icon_name.lower() + ".png"
+
+
+            if icon_file != "":
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file("/usr/share/pixmaps/%s"%icon_file)
+            else:
+                pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size, None)
+                dock_app.icon_filename = "STOCK_EXECUTE"
+
+        # scale the icon to the size that is available
+        # Note - we're allowing for a 3 pixel border all around the icon, hence using size-6
+        pixbuf = pixbuf.scale_simple(size -6, size - 6, \
+                              GdkPixbuf.InterpType.BILINEAR)
+
+        dock_app.set_drawing_area_size(size)
+        dock_app.set_pixbuf(pixbuf)
+
+    def add_app(self, dock_app):
+        """
+        Add an app's drawing area to the VBox/Hbox container
+
+        Args:
+            dock_app : the DockedApp
+        """
+
+        self.box.add(dock_app.drawing_area)
+
+
+    def create_box(self, orientation):
+        """Create a vertical or horizontal (depending on the applet orientation)
+           box to contain the docked apps areas.
+
+        Args:
+            orientation : the applet orientation
+        """
+
+        if orientation == MatePanelApplet.AppletOrient.LEFT or \
+           orientation == MatePanelApplet.AppletOrient.RIGHT:
+            self.box = Gtk.VBox()
+        else:
+            self.box = Gtk.HBox()
+
+        self.box.set_spacing(1)
+
+    def setup_dock(self):
+        """Setup the dock."
+
+        Add all pinned apps to the dock
+
+        Add all non-pinned running apps to the dock
+
+        Setup all apps according to the applet size and orientation
+
+        """
+
+
+        # make sure the applet is correctly oriented
+        orientation = self.applet.get_orient()
+        self.create_box(orientation)
+
+        # setup up pinned and non-pinned running apps
+        self.setup_app_list()
+        applet_size = self.applet.get_size()
+
+        # add the apps to the dock
+        for dock_app in self.app_list:
+            dock_app.applet_orient = orientation
+            dock_app.applet_win = self.applet.window
+            self.set_app_icon(dock_app, applet_size)
+            dock_app.set_indicator(self.indicator)
+            self.add_app(dock_app)
+
+    def set_new_orientation(self, new_orient):
+        """Change the dock applet to a new applet orientation
+
+        Remove all app's drawing areas from the V/HBox
+
+        Remove the V/HBox and create a new one according to the new orientation
+
+        Add all of the app's drawing areas to the new V/HBox
+
+        Set all of the apps to use the new orientations and recalculate all
+        of their minimize targets
+
+        Args:
+            new_orient : the new applet orientation
+        """
+
+        for dock_app in self.app_list:
+            self.box.remove(dock_app.drawing_area)
+
+        self.applet.remove(self.box)
+        self.box = None
+
+        self.create_box(new_orient)
+
+        for dock_app in self.app_list:
+            self.box.add(dock_app.drawing_area)
+            dock_app.set_icon_geometry()   # reset minimize target
+            dock_app.applet_orient = new_orient
+
+
+        self.applet.add(self.box)
+
+    def set_app_minimise_targets(self):
+        """ Set all docked apps to recalculate their minimise targets"""
+
+        for app in self.app_list:
+            app.set_icon_geometry()
+
+    def get_app_at_mouse(self, mouse_x, mouse_y):
+        """
+        Find the app underneath the mouse cursor.
+
+        Args:
+            mouse_x : the x coord of the mouse
+            mouse_y : the y coord of the mouse
+
+        Returns:
+            The app under the mouse, or None if one could not be found
+        """
+
+        for app in self.app_list:
+            alloc = app.drawing_area.get_allocation()
+            if (mouse_x >= alloc.x) and (mouse_x <= alloc.x + alloc.width):
+                if (mouse_y >= alloc.y) and (mouse_y <= alloc.y + alloc.height):
+                    return app
+
+        return None
+
+

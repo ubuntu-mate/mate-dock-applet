@@ -1,0 +1,7 @@
+.*.*~
+*.*~
+*.py
+*.swp
+*.pyc
+__pycache__
+*.valid

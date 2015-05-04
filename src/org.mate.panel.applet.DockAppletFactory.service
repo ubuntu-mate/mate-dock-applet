@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.mate.panel.applet.DockAppletFactory
+Exec=/usr/local/libexec/dock_applet.py

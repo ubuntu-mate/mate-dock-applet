@@ -1,0 +1,7 @@
+An application dock applet for the MATE panel
+
+Depends on: 
+
+Python3
+gir1.2-wnck-1.0
+

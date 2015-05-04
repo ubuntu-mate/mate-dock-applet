@@ -1,0 +1,368 @@
+#!/usr/bin/python3
+
+"""Provide an application dock applet for the MATE panel
+
+Create a Mate panel applet and handle events generated
+by it
+
+Note: Functionality for docked apps is provided in docked_app.py
+
+      Function for the dock is provided in dock.py
+
+"""
+
+# Copyright (C) 1997-2003 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Author:
+#     Robin Thompson
+
+import sys
+sys.path.insert(1, '@pythondir@')
+
+import gi
+gi.require_version("Gtk", "2.0")
+from gi.repository import Gtk
+from gi.repository import MatePanelApplet
+from gi.repository import Gdk
+from gi.repository import Gio
+
+gi.require_version("Wnck", "1.0")
+from gi.repository import Wnck
+
+import xdg.DesktopEntry as DesktopEntry
+
+import docked_app
+import dock
+
+from log_it import log_it as log_it
+
+
+def applet_button_press(widget, event, the_dock):
+    """Button press event for the applet
+
+    Handle right button press events only
+
+    Find the app that was right clicked and make a record of it
+
+    Args:
+        widget : the widget that was clicked
+        event : the event args
+        the_dock : the Dock object
+    """
+
+    # we don't get click events for the right mouse button presumably
+    # because the panel hijacks them in order to produce the context menu
+    # However, we do get button press event for the right mouse button,
+    # so we can do what we need to do here ....
+    if event.button == 3:
+        #right click, so save the app that was clicked because
+        # the_dock.app_with_mouse is going to be set to None when the
+        # right click menu appears and we move the mouse over the menu to select
+        # an option
+        app = the_dock.get_app_at_mouse(event.x, event.y)
+        the_dock.right_clicked_app = app
+
+def applet_button_release(widget, event, the_dock):
+    """Button press event for the applet
+
+    Handle left button release events only
+
+    If the button is released over a non-running app, start the app
+
+    If the button is released over a runnning app that isn't on the
+    current workspace, change workspace
+
+    If the button is released over a running app on the current workspace:
+        if it is the active app minmize all of its windows
+        Otherwise, restore them all
+
+    Args:
+        widget : the widget that registered the release event
+        event : the event args
+        the_dock : the Dock object
+
+    """
+
+    if event.button == 1:
+
+        app = the_dock.get_app_at_mouse(event.x, event.y)
+        if app is not None:
+
+            if not app.is_running():
+                # the app is not running, so start it
+                the_de = DesktopEntry.DesktopEntry(app.desktop_file)
+                run_it = the_de.getExec()
+                if run_it is not None:
+
+                    # remove any command line arguments
+                    if "%" in run_it:
+                        i = run_it.rfind("%")
+                        run_it = run_it[0:i-1]
+
+                app_info = Gio.AppInfo.create_from_commandline(run_it,
+                                                               None,
+                                                               Gio.AppInfoCreateFlags.NONE)
+                alc = Gdk.AppLaunchContext()
+                alc.set_desktop(-1)                   # use default screen & desktop
+                app_info.launch()
+                # set the app icon pulsing
+                throbber = docked_app.PulseTimer(app)
+
+            else:
+                # the action to perform (minimizing, moving workspace, activating)
+                # is based on the first normal window of app that we find
+                # this should be ok for more situations, but where windows from
+                # the app are spread over more than one workspace, there will
+                # will be problems...
+
+                is_active_app = False
+                do_change_workspace = False
+
+                win_list = app.get_wnck_windows()
+                for window in win_list:
+                    if is_active_app:
+                        break
+
+                    win_type = window.get_window_type()
+                    if ((win_type == Wnck.WindowType.NORMAL) or \
+                         (win_type == Wnck.WindowType.DIALOG)) and \
+                         (window.is_skip_tasklist() == False):
+
+                        wnck_screen = window.get_screen()
+                        wnck_aws = wnck_screen.get_active_workspace()
+                        wnck_ws = window.get_workspace()
+
+                        if (wnck_aws != wnck_ws) and (wnck_ws is not None):
+                            do_change_workspace = True
+                            break
+
+                        if window.is_active():
+                            is_active_app = True
+                            break
+
+                for window in win_list:
+
+                    win_type = window.get_window_type()
+                    if ((win_type == Wnck.WindowType.NORMAL) or \
+                        (win_type == Wnck.WindowType.DIALOG)) and \
+                        (window.is_skip_tasklist() == False):
+
+                        if is_active_app:
+                            window.minimize()
+                        elif do_change_workspace:
+                            #change workspace if necessary
+                            wnck_ws.activate(event.time)
+                            window.activate(event.time)
+                        else:
+                            window.activate(event.time)
+
+def applet_enter_notify(widget, event, the_dock):
+    """Enter notify event for the applet
+
+    Brighten the icon of the app which the mouse is currently over
+
+    If another app is currently brightened, darken it to normal
+
+    Set the applet tooltip text to the name of the app which the
+    mouse is currently over
+
+    Set up the right click menu for the dock based on the app which
+    the mouse is currently over
+
+    Args:
+        widget : the widget that registered the event i.e. the applet
+        event : the event args
+        the_dock : the Dock object
+    """
+
+    # get the app underneath the mouse cursor
+    app = the_dock.get_app_at_mouse(event.x, event.y)
+
+    # if an app is currently highlighted, de-highlight it
+    if the_dock.app_with_mouse is not None:
+
+        the_dock.app_with_mouse.has_mouse = False
+        the_dock.app_with_mouse.queue_draw()
+        the_dock.app_with_mouse = None
+        widget.set_has_tooltip(False)
+
+    # highlight the app under the mouse cursor
+    if app is not None:
+        app.has_mouse = True
+        app.queue_draw()
+        the_dock.app_with_mouse = app
+        widget.set_tooltip_text(app.app_name)
+
+        # set up the available options for the app
+        the_dock.set_actions_for_app(app)
+
+def applet_leave_notify(widget, event, the_dock):
+    """Leave notifiy event handle for the applet
+
+    Unbrighten any brightened app icon
+
+    Hide any tooltips
+
+    Args:
+        widget : the widget that registered the event i.e. the applet
+        event : the event args
+        the_dock : the Dock object
+    """
+
+    if the_dock.app_with_mouse is not None:
+        the_dock.app_with_mouse.has_mouse = False
+        the_dock.app_with_mouse.queue_draw()
+        the_dock.app_with_mouse = None
+        widget.set_has_tooltip(False)
+
+def applet_motion_notify(widget, event, the_dock):
+    """Motion notify event for the applet
+
+    If the docked app under the mouse cursor does not have its icon
+    brightened and another app has a brightened icon then darken the other app icon
+    and reset the applet tooltip text
+
+    Then, if the docked app under the mouse cursor does not have its icon
+    brightened then brighten it and set the applet tooltip set to the app name
+    and setup the applet right click menu
+
+    Args:
+        widget : the widget that registered the event i.e. the applet
+        event : the event args
+        the_dock : the Dock object
+    """
+
+    app = the_dock.get_app_at_mouse(event.x, event.y)
+
+    if (the_dock.app_with_mouse is not None) and (the_dock.app_with_mouse != app):
+        the_dock.app_with_mouse.has_mouse = False
+        the_dock.app_with_mouse.queue_draw()
+
+        # hide the current tooltip (if any)
+        widget.set_has_tooltip(False)
+        widget.trigger_tooltip_query()
+        widget.queue_draw()
+
+    if (app is not None) and (app.has_mouse == False):
+        app.has_mouse = True
+        app.queue_draw()
+        the_dock.app_with_mouse = app
+        widget.set_tooltip_text(app.app_name)
+
+        the_dock.set_actions_for_app(app)
+
+def applet_change_orient(applet, orient, the_dock):
+    """Handler for applet change orientation event
+
+    Set the dock to the new orientation and re-show the applet
+
+    Args:
+        widget : the widget that registered the event i.e. the applet
+        event : the event args
+        the_dock : the Dock object
+    """
+
+    the_dock.set_new_orientation(orient)
+    the_dock.applet.show_all()
+
+def applet_change_size(applet, size, the_dock):
+    """Handler for the applet change size event
+
+    Resize the icon and recalculate the minimize location of each app in the dock
+
+    Args:
+        widget : the widget that registered the event i.e. the applet
+        event : the event args
+        the_dock : the Dock object
+    """
+
+    for app in the_dock.app_list:
+        the_dock.set_app_icon(app, size)
+        the_dock.set_icon_geometry()
+
+
+def applet_fill(applet):
+    """
+    Create the applet
+
+    Register the events that we're interested in getting events for and
+    connect event handlers for them
+
+    Create a dock and add it V/HBox to the applet
+
+
+    Args:
+        applet : the applet
+    """
+
+    applet.set_events(applet.get_events() | Gdk.EventMask.BUTTON_PRESS_MASK \
+                       | Gdk.EventMask.BUTTON_RELEASE_MASK \
+                       | Gdk.EventMask.POINTER_MOTION_MASK \
+                       | Gdk.EventMask.STRUCTURE_MASK)
+
+    the_dock = dock.Dock(applet)
+    the_dock.setup_dock()
+
+    applet.add(the_dock.box)
+
+    applet.show_all()
+
+    applet.connect("enter-notify-event", applet_enter_notify, the_dock)
+    applet.connect("leave-notify-event", applet_leave_notify, the_dock)
+    applet.connect("motion-notify-event", applet_motion_notify, the_dock)
+    applet.connect("button-press-event", applet_button_press, the_dock)
+    applet.connect("button-release-event", applet_button_release, the_dock)
+    applet.connect("change-orient", applet_change_orient, the_dock)
+    applet.connect("change-size", applet_change_size, the_dock)
+
+    applet.set_background_widget(applet) # hack for panel transparency
+
+
+def applet_factory(applet, iid, data):
+    """Factory routine called when an applet needs to be created
+
+    Create a dock applet if necessary
+
+    Args:
+        applet : the applet
+        iid    : the id of the applet that needs to be created
+    Returns:
+        True if we created a dock applet, False otherwise
+    """
+
+    if iid != "DockApplet":
+        return False
+
+    applet_fill(applet)
+
+    return True
+
+
+MatePanelApplet.Applet.factory_main("DockAppletFactory", True,
+                                    MatePanelApplet.Applet.__gtype__,
+                                    applet_factory, None)
+
+def main():
+    """Main function.
+
+    Debugging code can go here
+    """
+    pass
+
+if __name__ == "__main__":
+    main()

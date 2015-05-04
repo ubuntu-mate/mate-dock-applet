@@ -1,0 +1,15 @@
+V0.59 - initial commit to git. 
+
+	Honour panel transparency and background settings
+	Pin and unpin apps to the dock
+	Rearrange application icons on the dock
+	Works when panel is aligned to any side of the screen
+	Launch apps by clicking on their icons in the dock
+	Minimize/unminimize running app windows by clicking the app's dock
+	icon
+	Detect changes in the current icon theme and update the dock
+	accordinly
+	Use an indicator by each app to show when it is running
+	Allow the user to specify whether a light or dark indicator is used so
+	that it can always be seen no matter what colour the panel is
+	Provide an About dialog

@@ -1,0 +1,209 @@
+#!/usr/bin/python3
+
+"""Provide a configuration dialog for the dock panel applet
+
+    Allow the user to specify whether the application running
+    indicator is light or dark coloured, so that it can always be
+    easily seen no matter what colour the panel is
+"""
+# Copyright (C) 1997-2003 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Author:
+#     Robin Thompson
+
+
+import gi
+gi.require_version("Gtk", "2.0")
+from gi.repository import Gtk
+import cairo
+import math
+
+class IndicatorType:
+    """Call to define the indicator types"""
+    LIGHT = 0
+    DARK = 1
+
+class DockPrefsWindow(Gtk.Window):
+    """Class to provide the preferences window functionality
+
+    Create and display the preferences window
+
+    Provide methods to get and set the type of indicator to be
+    used by the dock applet
+
+    """
+
+    def __init__(self, ok_callback):
+        """ Constructor for the preferences window
+
+        Create the window and its contents and display them
+
+        set the callback for the ok button press
+
+        Args:
+            ok_callback : the method to be called when the ok button is
+                          is pressed
+
+        """
+
+        super().__init__(title="Preferences")
+
+        self.DA_SIZE = 32    # the size of the drawing areas for the light and dark
+                             # indicators
+
+        self.connect("delete-event", self.win_delete_event)
+
+        # setup the window contents
+        self.set_border_width(5)
+        self.__hbox = Gtk.HBox()
+        self.__hbox.set_spacing(2)
+        self.__hbox1 = Gtk.HBox()
+        self.__hbox1.set_spacing(2)
+        self.__vbox = Gtk.VBox()
+        self.__vbox.set_spacing(2)
+        self.__cancel_btn = Gtk.Button(label=("Cancel1"), stock=Gtk.STOCK_CANCEL)
+        self.__cancel_btn.connect("button-press-event",
+                                  self.win_cancel_button_press)
+        self.__ok_btn = Gtk.Button(label="Ok", stock=Gtk.STOCK_OK)
+        self.__ok_btn.connect("button-press-event", ok_callback)
+        self.__hbbx = Gtk.HButtonBox()
+        self.__hbbx.set_spacing(4)
+        self.__hbbx.set_layout(Gtk.ButtonBoxStyle.END)
+
+        self.__hbbx.pack_start(self.__ok_btn, False, False, 4)
+        self.__hbbx.pack_start(self.__cancel_btn, False, False, 4)
+
+
+        self.__rb_light_ind = Gtk.RadioButton(label="Light indicator (for dark panels)")
+        self.__rb_dark_ind = Gtk.RadioButton(group=self.__rb_light_ind, \
+                                             label="Dark indicator (for light panels)")
+        self.__da_light_ind = Gtk.DrawingArea()
+        self.__da_light_ind.set_size_request(self.DA_SIZE, self.DA_SIZE)
+
+        # connect an event handler to draw the light indicator
+        self.__da_light_ind.connect("expose-event", self.draw_light_ind)
+
+        self.__da_dark_ind = Gtk.DrawingArea()
+        self.__da_dark_ind.set_size_request(self.DA_SIZE, self.DA_SIZE)
+
+        # connect an event handler to draw the dark indicator
+        self.__da_dark_ind.connect("expose-event", self.draw_dark_ind)
+
+        self.__hbox.pack_start(self.__rb_light_ind, True, True, 4)
+        self.__hbox.pack_start(self.__da_light_ind, True, True, 4)
+        self.__hbox1.pack_start(self.__rb_dark_ind, True, True, 4)
+        self.__hbox1.pack_start(self.__da_dark_ind, True, True, 4)
+        self.__vbox.pack_start(self.__hbox, True, True, 4)
+        self.__vbox.pack_start(self.__hbox1, True, True, 4)
+
+        self.__vbox.pack_start(Gtk.HSeparator(), True, True, 4)
+        self.__vbox.pack_start(self.__hbbx, False, False, 0)
+        self.add(self.__vbox)
+        self.show_all()
+
+    def win_delete_event(self, widget, event, data=None):
+        """Callback for the preferences window delete event
+
+        Do not delete the window, hide it instead so that it can be shown again
+        later if needed
+
+        """
+
+        self.hide()
+        return True
+
+    def win_cancel_button_press(self, widget, event):
+        """Callback for the preferences window Cancel button press
+
+        Hide the window
+        """
+
+        self.hide()
+
+    def draw_light_ind(self, drawing_area, event):
+        """Draw a light indicator on a dark background"""
+
+        ctx = self.__da_light_ind.window.cairo_create()
+        ctx.set_source_rgb(0.1, 0.5, 0.5)
+        ctx.rectangle(0, 0, self.DA_SIZE, self.DA_SIZE)
+        ctx.fill()
+
+        ctx.set_source_rgb(0.05, 0.05, 0.3)
+        ctx.rectangle(1, 1, self.DA_SIZE-2, self.DA_SIZE-2)
+        ctx.fill()
+
+        ind_x = self.DA_SIZE/2
+        ind_y = ind_x
+
+        rad_patt = cairo.RadialGradient(ind_x, ind_y, 2, ind_x, ind_y, 4)
+        rad_patt.add_color_stop_rgba(0, 0.9, 0.9, 0.9, 1)
+        rad_patt.add_color_stop_rgba(1, 0.0, 0.0, 0.0, 0)
+        ctx.set_source(rad_patt)
+        ctx.arc(ind_x, ind_y, 6, 0, 2*math.pi)
+        ctx.fill()
+
+    def draw_dark_ind(self, drawing_area, event):
+        """Draw a dark indicator on a dark background."""
+
+        ctx = self.__da_dark_ind.window.cairo_create()
+        ctx.set_source_rgb(0.5, 0.5, 0.5)
+        ctx.rectangle(0, 0, self.DA_SIZE, self.DA_SIZE)
+        ctx.fill()
+
+        ctx.set_source_rgb(0.1, 0.8, 0.8)
+        ctx.rectangle(1, 1, self.DA_SIZE-2, self.DA_SIZE-2)
+        ctx.fill()
+
+        ind_x = self.DA_SIZE/2
+        ind_y = ind_x
+
+        rad_patt = cairo.RadialGradient(ind_x, ind_y, 2, ind_x, ind_y, 4)
+        rad_patt.add_color_stop_rgba(0, 0.0, 0.0, 0.0, 1)
+        rad_patt.add_color_stop_rgba(1, 0.9, 0.9, 0.9, 0)
+        ctx.set_source(rad_patt)
+        ctx.arc(ind_x, ind_y, 6, 0, 2*math.pi)
+        ctx.fill()
+
+    def get_indicator_type(self):
+        """Get the indicator type specified in the preferences window.
+
+        Returns : IndicatorType
+        """
+
+        if self.__rb_light_ind.get_active() == True:
+            return IndicatorType.LIGHT
+        else:
+            return IndicatorType.DARK
+
+    def set_indicator(self, indicator):
+        """Set the indicator type
+
+        Args : indicator - an IndicatorType
+        """
+
+        if indicator == IndicatorType.LIGHT:
+            self.__rb_light_ind.set_active(True)
+        else:
+            self.__rb_dark_ind.set_active(True)
+def main():
+    """main function - debug code can go here"""
+    dpw = DockPrefsWindow(Gtk.main_quit)
+    Gtk.main()
+
+if __name__ == "__main__":
+    main()

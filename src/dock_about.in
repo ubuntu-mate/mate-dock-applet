@@ -1,0 +1,122 @@
+#!/usr/bin/python3
+"""
+Provide an about dialog for the MATE dock applet
+
+The applet displays the following:
+	applet name and version number
+        licensing info (GPL3) with a clickable link for the full version
+        a close button
+"""
+
+# Copyright (C) 1997-2003 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Author:
+#     Robin Thompson
+#
+
+import sys
+
+import gi
+gi.require_version("Gtk", "2.0")
+from gi.repository import Gtk
+
+class AboutWindow(Gtk.Window):
+    """Provides the About window"""
+
+    def __init__(self):
+        """Init for the About window class
+
+        Create the window and its contents
+        """
+
+        super().__init__(title="Dock Applet")
+
+        self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
+        self.__button.connect("button-press-event", self.win_button_press)
+        self.connect("delete-event", self.win_delete_event)
+        self.set_border_width(5)
+        self.__vbox = Gtk.VBox()
+        self.__vbox.set_spacing(2)
+        self.__hbx = Gtk.HButtonBox()
+        self.__hbx.set_layout(Gtk.ButtonBoxStyle.END)
+        self.__hbx.pack_start(self.__button, False, False, 4)
+
+        self.__image = Gtk.Image()
+        self.__image.set_from_stock(Gtk.STOCK_ABOUT, Gtk.IconSize.DIALOG)
+        self.__lbl_title = Gtk.Label()
+        self.__lbl_title.set_use_markup(True)
+
+        self.__lbl_title.set_markup('<b><span size="17408">' +'Dock Applet ' + 'V'+ \
+                                            "@VERSION@" + '</span></b>')
+
+        self.__lbl_blurb1 = \
+            Gtk.Label("An applet to provide an application dock for the MATE panel.")
+        self.__lbl_blurb2 = \
+            Gtk.Label("This program comes with ABSOLUTELY NO WARRENTY.")
+
+        self.__hbx_gpl = Gtk.HBox()
+        self.__lbl_gpl1 = Gtk.Label("See the")
+        self.__lb_gpl = \
+            Gtk.LinkButton("http://www.gnu.org/licenses/gpl-3.0.html",
+                           "GNU General Public License, version 3 or later")
+        self.__lbl_gpl = Gtk.Label("for details")
+
+        self.__hbx_gpl.pack_start(self.__lbl_gpl1, False, False, 2)
+        self.__hbx_gpl.pack_start(self.__lb_gpl, False, False, 1)
+        self.__hbx_gpl.pack_start(self.__lbl_gpl, False, False, 0)
+
+        self.__vbox.pack_start(self.__image, False, False, 2)
+        self.__vbox.pack_start(self.__lbl_title, False, False, 0)
+        self.__vbox.pack_start(self.__lbl_blurb1, False, False, 8)
+        self.__vbox.pack_start(self.__lbl_blurb2, False, False, 0)
+        self.__vbox.pack_start(self.__hbx_gpl, False, False, 0)
+        self.__vbox.pack_end(self.__hbx, False, False, 5)
+        self.add(self.__vbox)
+
+    def win_delete_event(self, widget, event, data=None):
+        """Callback for the about window delete event
+
+        Note: the window is not deleted, it is hidden instead so that it can
+        be shown again if required later
+        """
+
+        self.hide()
+        return True
+
+    def win_button_press(self, widget, event):
+        """
+        callback for the Ok button on the About dialog
+
+	The window is hidden so that it can be shown again
+        """
+
+        self.hide()
+
+def main():
+    """
+    main function - debugging code goes here
+    """
+
+    about_win = AboutWindow()
+    about_win.show_all()
+    Gtk.main()
+
+    return
+
+if __name__ == "__main__":
+    main()
