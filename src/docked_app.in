@@ -511,6 +511,10 @@ class DockedApp(object):
 
         """
 
+        # if the serch dir doesn't exist, don't do anything
+        if os.path.isdir(srch_dir) == False:
+            return False
+
         short_name = self.app_name.upper().split(" ", 1)[0]
         sn_v1 = short_name.replace("-", " ") # variation on the short name
 
