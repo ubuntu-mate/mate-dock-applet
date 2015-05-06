@@ -293,7 +293,7 @@ def applet_change_size(applet, size, the_dock):
 
     for app in the_dock.app_list:
         the_dock.set_app_icon(app, size)
-        the_dock.set_icon_geometry()
+        app.set_icon_geometry()
 
 
 def applet_fill(applet):
