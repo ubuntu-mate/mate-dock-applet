@@ -3,9 +3,9 @@ SUBDIRS =
 
 applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.py log_it.py
 
-appletdir = $(libexecdir)
+appletdir = $(libdir)/mate-applets/mate-dock-applet/
 
-APPLET_LOCATION = $(libexecdir)/dock_applet.py
+APPLET_LOCATION = $(appletdir)/dock_applet.py
 
 appletsdir       = $(datadir)/mate-panel/applets
 applets_in_files = org.mate.panel.DockApplet.mate-panel-applet 
@@ -114,9 +114,9 @@ install-data-hook:
 # in /usr/local/share/mate-panel/applets
 	mv $(appletsdir)/org.mate.panel.DockApplet.mate-panel-applet /usr/share/mate-panel/applets/
 
-CLEANFILES = $(applet_SCRIPTS) \
-	     $(gsettings_SCHEMAS) \
-	     org.mate.panel.applet.DockAppletFactory.service 
+CLEANFILES = $(applet_SCRIPTS) 
+#	     $(gsettings_SCHEMAS) \
+#	     org.mate.panel.applet.DockAppletFactory.service 
 
 #	     $(gsettings_SCHEMAS).in 
 	
