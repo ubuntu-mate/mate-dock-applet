@@ -5,7 +5,7 @@ applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.p
 
 appletdir = $(libdir)/mate-applets/mate-dock-applet/
 
-APPLET_LOCATION = $(appletdir)/dock_applet.py
+APPLET_LOCATION = $(appletdir)dock_applet.py
 
 appletsdir       = $(datadir)/mate-panel/applets
 applets_in_files = org.mate.panel.DockApplet.mate-panel-applet 
