@@ -1,7 +1,7 @@
 [Applet Factory]
 Id=DockAppletFactory
 InProcess=false
-Location=/usr/local/libexec
+Location=@LOCATION@
 Name=Dock Applet Factory
 Description=An application dock for the MATE panel
 
