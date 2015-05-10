@@ -108,11 +108,11 @@ applet_PYTHON = \
 		     docked_app.py \
 		     log_it.py
 
-install-data-hook:
+#install-data-hook:
 # TODO: find a better way of coping with this
 #  move the .mate-panel-applet file to /usr/share/mate-panel/applets since it doesn't seem to work
 # in /usr/local/share/mate-panel/applets
-	mv $(appletsdir)/org.mate.panel.DockApplet.mate-panel-applet /usr/share/mate-panel/applets/
+#	mv $(appletsdir)/org.mate.panel.DockApplet.mate-panel-applet /usr/share/mate-panel/applets/
 
 CLEANFILES = $(applet_SCRIPTS) 
 #	     $(gsettings_SCHEMAS) \
