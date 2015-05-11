@@ -304,8 +304,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = 
 applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.py log_it.py
-appletdir = $(libexecdir)
-APPLET_LOCATION = $(libexecdir)/dock_applet.py
+appletdir = $(libdir)/mate-applets/mate-dock-applet/
+APPLET_LOCATION = $(appletdir)dock_applet.py
 appletsdir = $(datadir)/mate-panel/applets
 applets_in_files = org.mate.panel.DockApplet.mate-panel-applet 
 applets_DATA = $(applets_in_files:.mate-panel-applet.in=.mate-panel-applet)
@@ -356,10 +356,15 @@ applet_PYTHON = \
 		     docked_app.py \
 		     log_it.py
 
-CLEANFILES = $(applet_SCRIPTS) \
-	     $(gsettings_SCHEMAS) \
-	     org.mate.panel.applet.DockAppletFactory.service 
 
+#install-data-hook:
+# TODO: find a better way of coping with this
+#  move the .mate-panel-applet file to /usr/share/mate-panel/applets since it doesn't seem to work
+# in /usr/local/share/mate-panel/applets
+#	mv $(appletsdir)/org.mate.panel.DockApplet.mate-panel-applet /usr/share/mate-panel/applets/
+CLEANFILES = $(applet_SCRIPTS) 
+#	     $(gsettings_SCHEMAS) \
+#	     org.mate.panel.applet.DockAppletFactory.service 
 
 #	     $(gsettings_SCHEMAS).in 
 EXTRA_DIST = dock_applet.in \
@@ -745,8 +750,7 @@ info-am:
 
 install-data-am: install-appletPYTHON install-appletSCRIPTS \
 	install-appletsDATA install-serviceDATA
-	@$(NORMAL_INSTALL)
-	$(MAKE) $(AM_MAKEFLAGS) install-data-hook
+
 install-dvi: install-dvi-recursive
 
 install-dvi-am:
@@ -792,24 +796,23 @@ ps-am:
 uninstall-am: uninstall-appletPYTHON uninstall-appletSCRIPTS \
 	uninstall-appletsDATA uninstall-serviceDATA
 
-.MAKE: $(am__recursive_targets) install-am install-data-am \
-	install-strip
+.MAKE: $(am__recursive_targets) install-am install-strip
 
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am check \
 	check-am clean clean-generic cscopelist-am ctags ctags-am \
 	distclean distclean-generic distclean-tags distdir dvi dvi-am \
 	html html-am info info-am install install-am \
 	install-appletPYTHON install-appletSCRIPTS install-appletsDATA \
-	install-data install-data-am install-data-hook install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-serviceDATA install-strip installcheck installcheck-am \
-	installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
-	pdf-am ps ps-am tags tags-am uninstall uninstall-am \
-	uninstall-appletPYTHON uninstall-appletSCRIPTS \
-	uninstall-appletsDATA uninstall-serviceDATA
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-serviceDATA \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am tags \
+	tags-am uninstall uninstall-am uninstall-appletPYTHON \
+	uninstall-appletSCRIPTS uninstall-appletsDATA \
+	uninstall-serviceDATA
 
 .PRECIOUS: Makefile
 
@@ -861,12 +864,6 @@ docked_app.py: docked_app.in Makefile
 log_it.py: log_it.in Makefile
 	$(do_substitution) < $(srcdir)/log_it.in > log_it.py
 	chmod +x log_it.py
-
-install-data-hook:
-# TODO: find a better way of coping with this
-#  move the .mate-panel-applet file to /usr/share/mate-panel/applets since it doesn't seem to work
-# in /usr/local/share/mate-panel/applets
-	mv $(appletsdir)/org.mate.panel.DockApplet.mate-panel-applet /usr/share/mate-panel/applets/
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
