@@ -546,7 +546,7 @@ class Dock(object):
                 if (dai.pid == 0) and (wai.pid == 0):
                     # the pids returned by libwnk were both 0 (not sure why) 
                     # so check the wnck_apps for equivalency
-                    if dia.app == wai.app:
+                    if dai.app == wai.app:
                         existing_pid = True
                 else:
                     if dai.pid == wai.pid:
