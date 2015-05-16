@@ -643,10 +643,10 @@ class DockedApp(object):
         Does the following:
             draw the app icon
             if the mouse is over the app icon, highlight the icon
-            if the is running draw the app running indicator (according to the applet orientation)
+            if the is running draw the app running indicators(according to the applet orientation)
             if the app is the foreground app, highlight the background with a gradient fill
             if the app is pulsing, draw the icon with a variable level of transparency according to
-            the pulse cound
+            the pulse count
 
         Additionally, if necessary, calculate and set the app's on screen minimise location
         (this is done here as it can only be done after the drawing area has been created, set to
@@ -670,13 +670,13 @@ class DockedApp(object):
             if self.set_all_windows_icon_geometry(dxc, dyc):
                 self.icon_geometry_set = True
 
-        # now do the actual drawing
-        ctx = self.drawing_area.window.cairo_create()
-        ctx.rectangle(event.area.x, event.area.y, \
-                     event.area.width, event.area.height)
-        ctx.clip()
+        # there are lots of drawing operations to be done, so do them to an offscreen
+        # surface and when all is finished copy this to the docked app
+        offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, event.area.width, event.area.height)
+        print ("%d %d" %(event.area.x, event.area.y))
+        ctx = cairo.Context(offscreen_surface)
 
-        # convert the higlhight values to their cairo equivalents
+        # convert the highlight values to their cairo equivalents
         red = self.highlight_color.r / 255
         green = self.highlight_color.g / 255
         blue = self.highlight_color.b / 255
@@ -700,13 +700,13 @@ class DockedApp(object):
                 pattern.add_color_stop_rgba(0.0, red, green, blue, 1)
                 pattern.add_color_stop_rgba(1.0, red, green, blue, 0)
 
-            ctx.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
+            ctx.rectangle(0, 0, event.area.width, event.area.height)
             ctx.set_source(pattern)
             ctx.fill()
 
         # draw the app icon
-        Gdk.cairo_set_source_pixbuf(ctx, self.app_pb, event.area.x+3, event.area.y+3)
-        ctx.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
+        Gdk.cairo_set_source_pixbuf(ctx, self.app_pb, 3, 3)
+        ctx.rectangle(0, 0, event.area.width, event.area.height)
 
         if self.is_pulsing:
             # draw the icon semi-transparently according to how far through the animation
@@ -729,38 +729,67 @@ class DockedApp(object):
             ctx.paint_with_alpha(0.2)
             ctx.set_operator(cairo.OPERATOR_OVER)
 
-        # draw the app running indicator
+        # draw the app running indicators
         if self.is_running():
+
+            # work out how many indicators to draw - one for each open window up to
+            # a maximum of 4
+            num_ind = self.get_num_windows()
+            if num_ind > 4:
+                num_ind = 4
 
             if self.applet_orient == MatePanelApplet.AppletOrient.RIGHT:
                 ind_x = event.area.x+2
-                ind_y = event.area.y + (event.area.height/2) -1
+#                ind_y = event.area.y + event.area.height/(num_ind+1)
+                ind_y = (event.area.height-4)/(num_ind+1) +2
+
             elif self.applet_orient == MatePanelApplet.AppletOrient.LEFT:
                 ind_x = event.area.x + event.area.width - 2
-                ind_y = event.area.y + (event.area.height/2) -1
+                ind_y = (event.area.height-4)/(num_ind+1) +2
 
             elif self.applet_orient == MatePanelApplet.AppletOrient.DOWN:
-                ind_x = event.area.x + (event.area.width/2) -1
+                ind_x = event.area.x + event.area.width/(num_ind+1)
                 ind_y = event.area.y + 2
             else:
-                ind_x = event.area.x + (event.area.width/2) -1
+                ind_x = event.area.x + event.area.width/(num_ind+1)
                 ind_y = event.area.y + event.area.height - 2
 
-            rad_patt = cairo.RadialGradient(ind_x, ind_y, 2, ind_x, ind_y, 4)
+            this_ind = 1
+            while this_ind <= num_ind:
+                rad_patt = cairo.RadialGradient(ind_x, ind_y, 2, ind_x, ind_y, 4)
 
-            # do a light or dark indicator as necessary
-            if self.indicator == dock_prefs.IndicatorType.LIGHT:
-                rad_patt.add_color_stop_rgba(0, 0.9, 0.9, 0.9, 1)
-                rad_patt.add_color_stop_rgba(1, 0.0, 0.0, 0.0, 0)
-            else:
-                rad_patt.add_color_stop_rgba(0, 0.0, 0.0, 0.0, 1)
-                rad_patt.add_color_stop_rgba(1, 0.9, 0.9, 0.9, 0)
+                # do a light or dark indicator as necessary
+                if self.indicator == dock_prefs.IndicatorType.LIGHT:
+                    rad_patt.add_color_stop_rgba(0, 0.9, 0.9, 0.9, 1)
+                    rad_patt.add_color_stop_rgba(1, 0.0, 0.0, 0.0, 0)
+                else:
+                    rad_patt.add_color_stop_rgba(0, 0.0, 0.0, 0.0, 1)
+                    rad_patt.add_color_stop_rgba(1, 0.9, 0.9, 0.9, 0)
 
-            ctx.set_source(rad_patt)
-            ctx.arc(ind_x, ind_y, 6, 0, 2*math.pi)
-            ctx.fill()
+                ctx.set_source(rad_patt)               
+                ctx.arc(ind_x, ind_y, 6, 0, 2*math.pi)
 
+                if num_ind > 1:
+                    if(self.applet_orient == MatePanelApplet.AppletOrient.RIGHT) or \
+                       (self.applet_orient == MatePanelApplet.AppletOrient.LEFT):
+                        ind_y += (event.area.height-6)/(num_ind+1)
+                    else:
+                        ind_x += event.area.width/(num_ind+1)
+
+                this_ind += 1
+                ctx.fill()
+
+        
+        # now draw to the screen
+        screen_ctx = self.drawing_area.window.cairo_create()
+        screen_ctx.rectangle(event.area.x, event.area.y, \
+                     event.area.width, event.area.height)
+        screen_ctx.clip()
+
+        screen_ctx.set_source_surface(offscreen_surface, event.area.x, event.area.y)
+        screen_ctx.paint()
         ctx = None
+        screen_ctx = None
 
     def set_pixbuf(self, pixbuf):
         """Set the app pixbuf and calculate its average colour.
