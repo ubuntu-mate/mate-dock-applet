@@ -31,6 +31,7 @@ Note: Functionality for docked apps is provided in docked_app.py
 # Author:
 #     Robin Thompson
 
+import os
 import sys
 sys.path.insert(1, '@pythondir@')
 
@@ -310,6 +311,7 @@ def applet_fill(applet):
         applet : the applet
     """
 
+    os.chdir (os.path.expanduser("~"))
     applet.set_events(applet.get_events() | Gdk.EventMask.BUTTON_PRESS_MASK \
                        | Gdk.EventMask.BUTTON_RELEASE_MASK \
                        | Gdk.EventMask.POINTER_MOTION_MASK \

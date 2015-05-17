@@ -34,7 +34,7 @@ import cairo
 import math
 
 class IndicatorType:
-    """Call to define the indicator types"""
+    """Class to define the indicator types"""
     LIGHT = 0
     DARK = 1
 
@@ -88,12 +88,18 @@ class DockPrefsWindow(Gtk.Window):
         self.__hbbx.pack_start(self.__ok_btn, False, False, 4)
         self.__hbbx.pack_start(self.__cancel_btn, False, False, 4)
 
+        self.__frame_ind_type = Gtk.Frame(label="Indicator type")
+        lbl = self.__frame_ind_type.get_label_widget()
+        lbl.set_use_markup(True)
+        lbl.set_label("<b>" +"Indicator type" + "</b>")
+        self.__frame_ind_type.set_shadow_type(Gtk.ShadowType.NONE)
 
-        self.__rb_light_ind = Gtk.RadioButton(label="Light indicator (for dark panels)")
+        self.__rb_light_ind = Gtk.RadioButton(label="Light (for dark panels)")
         self.__rb_dark_ind = Gtk.RadioButton(group=self.__rb_light_ind, \
-                                             label="Dark indicator (for light panels)")
+                                             label="Dark (for light panels)")
         self.__da_light_ind = Gtk.DrawingArea()
         self.__da_light_ind.set_size_request(self.DA_SIZE, self.DA_SIZE)
+        self.__table_ind_type = Gtk.Table(rows=2, columns=2, homogeneous=False)
 
         # connect an event handler to draw the light indicator
         self.__da_light_ind.connect("expose-event", self.draw_light_ind)
@@ -104,12 +110,36 @@ class DockPrefsWindow(Gtk.Window):
         # connect an event handler to draw the dark indicator
         self.__da_dark_ind.connect("expose-event", self.draw_dark_ind)
 
-        self.__hbox.pack_start(self.__rb_light_ind, True, True, 4)
-        self.__hbox.pack_start(self.__da_light_ind, True, True, 4)
-        self.__hbox1.pack_start(self.__rb_dark_ind, True, True, 4)
-        self.__hbox1.pack_start(self.__da_dark_ind, True, True, 4)
-        self.__vbox.pack_start(self.__hbox, True, True, 4)
-        self.__vbox.pack_start(self.__hbox1, True, True, 4)
+        # add the indicator ui elements to a table
+        self.__table_ind_type.attach(self.__rb_light_ind, 0, 1, 0, 1,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+        
+        self.__table_ind_type.attach(self.__da_light_ind, 1, 2, 0, 1,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+        
+        self.__table_ind_type.attach(self.__rb_dark_ind, 0, 1, 1, 2,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+        
+        self.__table_ind_type.attach(self.__da_dark_ind, 1, 2, 1, 2,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+
+        # make sure the indicator type ui elements are aligned properly
+        self.__frame_ind_type_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                   xscale=1.0, yscale=1.0)
+        self.__frame_ind_type_align.set_padding(0, 0, 12, 0)
+        self.__frame_ind_type_align.add(self.__table_ind_type)
+        self.__frame_ind_type.add(self.__frame_ind_type_align)
+
+        # create ui elements for multiple indicators for open windows
+        self.__cb_multi_ind = Gtk.CheckButton(label="Show an indicator for each open window")
+        self.__cb_multi_ind.set_tooltip_text("Show an indicator (max 4) for each open window")
+
+        self.__vbox.pack_start(self.__frame_ind_type, True, True, 4)
+        self.__vbox.pack_start(self.__cb_multi_ind, True, True, 4)
 
         self.__vbox.pack_start(Gtk.HSeparator(), True, True, 4)
         self.__vbox.pack_start(self.__hbbx, False, False, 0)
@@ -200,6 +230,24 @@ class DockPrefsWindow(Gtk.Window):
             self.__rb_light_ind.set_active(True)
         else:
             self.__rb_dark_ind.set_active(True)
+
+    def get_multi_ind(self):
+        """Gets whether or not to use display an indicator for each open
+           window that a docked app has
+
+        Returns: boolean
+        """
+        
+        return self.__cb_multi_ind.get_active()
+
+    def set_multi_ind(self, use_multi_ind):
+        """Sets whether or not to display multiple indicators
+
+        Args: use_multi_ind - boolean
+        """
+
+        self.__cb_multi_ind.set_active(use_multi_ind)
+
 def main():
     """main function - debug code can go here"""
     dpw = DockPrefsWindow(Gtk.main_quit)

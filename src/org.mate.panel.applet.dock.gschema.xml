@@ -4,12 +4,17 @@
      <key type="as" name="pinned-apps">
       <default>[]</default>
       <summary>the apps which have been pinned to the dock</summary>
-      <description>A string array containing the names of the apps which have been pinned to the dock</description>
+      <description>A string array containing the names of the apps which have been pinned to the dock.</description>
     </key>
     <key type="i" name="indicator-type">
       <default>0</default>
       <summary>The type of indicator (light or dark)</summary>
       <description>The type of indicator (light or dark) which is displayed next to running apps.</description>
+    </key>
+    <key type="b" name="multi-ind">
+       <default>false</default>
+       <summary>Whether to display an indicator for each open window</summary>
+       <description>Whether to display an indicator for each open window (maximum 4) that an application has.</description>
     </key>
    </schema>
 </schemalist>
