@@ -294,7 +294,7 @@ class DockedApp(object):
         self.is_pinned = False
 
         self.indicator = dock_prefs.IndicatorType.LIGHT     # default to a light indicator
-
+        self.multi_ind = False                              # default to single indicator
         self.drawing_area.connect("expose-event", self.do_expose_event)   # the draw event
 
     def setup_from_wnck(self, wnck_app, wnck_class):
@@ -594,6 +594,14 @@ class DockedApp(object):
         """
         self.indicator = indicator
 
+    def set_multi_ind (self, multi_ind):
+        """ Set whether to use an indicator for each open window
+
+        Args:
+            multi_ind - boolean
+        """
+        self.multi_ind = multi_ind
+
     def set_icon_geometry(self):
         """Ensure that the  minimize location is for all of the app's open windows
            is recalculated.
@@ -673,7 +681,6 @@ class DockedApp(object):
         # there are lots of drawing operations to be done, so do them to an offscreen
         # surface and when all is finished copy this to the docked app
         offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, event.area.width, event.area.height)
-        print ("%d %d" %(event.area.x, event.area.y))
         ctx = cairo.Context(offscreen_surface)
 
         # convert the highlight values to their cairo equivalents
@@ -732,15 +739,18 @@ class DockedApp(object):
         # draw the app running indicators
         if self.is_running():
 
-            # work out how many indicators to draw - one for each open window up to
-            # a maximum of 4
-            num_ind = self.get_num_windows()
-            if num_ind > 4:
-                num_ind = 4
+            # work out how many indicators to draw - either a single one or 
+            # one for each open window up to a maximum of 4
+
+            if self.multi_ind == False:
+                num_ind = 1
+            else:
+                num_ind = self.get_num_windows()
+                if num_ind > 4:
+                    num_ind = 4
 
             if self.applet_orient == MatePanelApplet.AppletOrient.RIGHT:
                 ind_x = event.area.x+2
-#                ind_y = event.area.y + event.area.height/(num_ind+1)
                 ind_y = (event.area.height-4)/(num_ind+1) +2
 
             elif self.applet_orient == MatePanelApplet.AppletOrient.LEFT:
