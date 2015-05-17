@@ -114,6 +114,7 @@ class Dock(object):
         self.prefs_win = None
         self.about_win = None
         self.indicator = self.settings.get_int("indicator-type")
+        self.multi_ind = self.settings.get_boolean("multi-ind")
 
         self.dock_action_group = None
         self.setup_menu()
@@ -134,6 +135,7 @@ class Dock(object):
         if self.settings:
             self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
             self.settings.set_int("indicator-type", self.indicator)
+            self.settings.set_boolean("multi-ind", self.multi_ind)
 
     def set_actions_for_app(self, app):
         """Show or hide actions in the context menu so that only relevant ones are
@@ -420,6 +422,7 @@ class Dock(object):
         if self.prefs_win is None:
             self.prefs_win = dock_prefs.DockPrefsWindow(self.prefs_win_ok_cb)
             self.prefs_win.set_indicator(self.indicator)
+            self.prefs_win.set_multi_ind(self.multi_ind)
         else:
             self.prefs_win.show_all()
 
@@ -447,12 +450,16 @@ class Dock(object):
             event - the event args
         """
 
-        if self.indicator != self.prefs_win.get_indicator_type():
+        if (self.indicator != self.prefs_win.get_indicator_type()) or \
+           (self.multi_ind != self.prefs_win.get_multi_ind()):
+
             self.indicator = self.prefs_win.get_indicator_type()
+            self.multi_ind = self.prefs_win.get_multi_ind()
             self.write_settings()
             # redraw everything here
             for app in self.app_list:
                 app.set_indicator(self.indicator)
+                app.set_multi_ind(self.multi_ind)
                 if app.is_running():
                     app.queue_draw()
 
@@ -712,6 +719,7 @@ class Dock(object):
             dock_app.applet_win = self.applet.window
             dock_app.applet_orient = self.applet.get_orient()
             dock_app.set_indicator(self.indicator)
+            dock_app.set_multi_ind(self.multi_ind)
             dock_app.setup_from_wnck(wnck_app, wnck_class)
 
             # look for the app relating to the window in the dock
@@ -949,6 +957,7 @@ class Dock(object):
             dock_app.applet_win = self.applet.window
             self.set_app_icon(dock_app, applet_size)
             dock_app.set_indicator(self.indicator)
+            dock_app.set_multi_ind(self.multi_ind)
             self.add_app(dock_app)
 
     def set_new_orientation(self, new_orient):
