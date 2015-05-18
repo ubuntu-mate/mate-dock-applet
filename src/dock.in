@@ -550,14 +550,10 @@ class Dock(object):
             existing_pid = False
             for dai in app_from_dock.app_info:
 
-                if (dai.pid == 0) and (wai.pid == 0):
-                    # the pids returned by libwnk were both 0 (not sure why) 
-                    # so check the wnck_apps for equivalency
-                    if dai.app == wai.app:
-                        existing_pid = True
-                else:
-                    if dai.pid == wai.pid:
-                        existing_pid = True
+                # different wnck_apps for a single app can share the same pid
+                # so just check the wnck_apps for equivalency
+                if dai.app == wai.app:
+                    existing_pid = True
 
                 if existing_pid == True:
                     # we need to merge info from the new details into the dock_app
