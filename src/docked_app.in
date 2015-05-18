@@ -400,7 +400,7 @@ class DockedApp(object):
                 win_wm_class_name = win_cg.get_res_class()
                 if ((win_type == Wnck.WindowType.NORMAL) or \
                     (win_type == Wnck.WindowType.DIALOG)) and \
-                    (win_wm_class_name == self.wm_class_name) and \
+                    (win_wm_class_name.lower() == self.wm_class_name.lower()) and \
                     (wnck_win.is_skip_tasklist() == False):
                     num_win += 1
 
@@ -417,7 +417,7 @@ class DockedApp(object):
                 win_wm_class_name = win_cg.get_res_class()
                 if ((win_type == Wnck.WindowType.NORMAL) or \
                     (win_type == Wnck.WindowType.DIALOG)) and \
-                    (win_wm_class_name == self.wm_class_name) and \
+                    (win_wm_class_name.lower() == self.wm_class_name.lower()) and \
                     (wnck_win.is_skip_tasklist() == False):
                     win_list.append(wnck_win)
 
