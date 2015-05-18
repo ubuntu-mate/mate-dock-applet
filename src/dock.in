@@ -880,10 +880,14 @@ class Dock(object):
                 dock_app.icon_filename = "STOCK_EXECUTE"
 
         else:
-            # the default theme has no icon for the app, so there are a couple of things we
+            # the default theme has no icon for the app, so there are a few things we
             # can do...
-            # 1 .. quick and dirty - look in /usr/share/pixmaps for an icon of any type with
+            #
+            # 1 .. quick and dirty - check to see if the icon points to an actual file
+            #                        or ...
+            #                        look in /usr/share/pixmaps for an icon of any type with
             #                        the same name as the app
+            #
             # 2 .. sloooow         - iterate through each installed icon theme and try to
             #                        find the app - not implement for now
 
@@ -891,20 +895,24 @@ class Dock(object):
             # and note that all files in /usr/share/pixmaps are .png
 
             icon_file = ""
-            icon_name = os.path.splitext(dock_app.icon_name)[0] # remove any extension
-            if os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name):
-                icon_file = icon_name + ".png"
-            elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.upper()):
-                icon_file = icon_name.upper() + ".png"
-            elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.lower()):
-                icon_file = icon_name.lower() + ".png"
-
-
-            if icon_file != "":
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file("/usr/share/pixmaps/%s"%icon_file)
+            if os.path.isfile(dock_app.icon_name):
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(dock_app.icon_name)
             else:
-                pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size, None)
-                dock_app.icon_filename = "STOCK_EXECUTE"
+                icon_file = ""
+                icon_name = os.path.splitext(dock_app.icon_name)[0] # remove any extension
+                if os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name):
+                    icon_file = icon_name + ".png"
+                elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.upper()):
+                    icon_file = icon_name.upper() + ".png"
+                elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.lower()):
+                    icon_file = icon_name.lower() + ".png"
+
+
+                if icon_file != "":
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file("/usr/share/pixmaps/%s"%icon_file)
+                else:
+                    pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size, None)
+                    dock_app.icon_filename = "STOCK_EXECUTE"
 
         # scale the icon to the size that is available
         # Note - we're allowing for a 3 pixel border all around the icon, hence using size-6
