@@ -660,23 +660,33 @@ class Dock(object):
 
         """
 
-
         if prev_active_window is not None:
 
             prev_cg = prev_active_window.get_class_group()
             if prev_cg is not None:
                 prev_wm_class_name = prev_cg.get_res_class()
-                old_app = prev_active_window.get_application()
-                # iteratate through each docked app and each of its processes to find the app
-                # associated with the previously active window
-                for app in self.app_list:
-            #        for aai in app.app_info:
-                     if prev_wm_class_name == app.wm_class_name:
-    #                    if old_app == aai.app:
-                            # redraw the icon withouht the highlight
-                            app.is_active = False
-                            app.queue_draw()
-                            break
+            else:
+                prev_wm_class_name = None
+
+            old_app = prev_active_window.get_application()
+
+            # iterate through each docked app and each of its processes to find the app
+            # associated with the previously active window
+            do_redraw = False
+            for app in self.app_list:
+                if prev_wm_class_name is not None:
+                    if prev_wm_class_name == app.wm_class_name:
+                        do_redraw = True
+                else:
+                    for aai in app.app_info:
+                        if old_app == aai.app:
+                            do_redraw = True
+
+                if do_redraw == True:
+                    # redraw the icon withouht the highlight
+                    app.is_active = False
+                    app.queue_draw()
+                    break
 
         # highlight the newly active apps's button
         new_win = wnck_screen.get_active_window()
