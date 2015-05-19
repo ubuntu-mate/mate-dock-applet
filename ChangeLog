@@ -13,3 +13,22 @@ V0.59 - initial commit to git.
 	Allow the user to specify whether a light or dark indicator is used so
 	that it can always be seen no matter what colour the panel is
 	Provide an About dialog
+
+V0.60 - various bugfixes and minor additions including:
+
+	Added an option in the preferences dialog to display multiple
+	indicators for each open window an app has. The maximum number
+	of indicators has been limited to 4 because on small panels
+	(<32 pixels) there just isn't room for any more
+	changed the app icon drawing code so that most drawing is
+	done off screen and only copied to the panel at the very
+	end
+	Improved detection of app icons and app windows. In general
+	this is a good thing, and in particular it means that the
+	applet now works correctly with guvcview on Ubuntu Mate 
+	15.04
+	Fixed a bug on Ubuntu Mate 15.04 where terminals started
+	from the applet would have their working directory set
+	as / instead of the home directory
+	Updated the readme with instructions on how to compile the
+	applet from source
