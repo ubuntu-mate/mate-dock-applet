@@ -758,10 +758,10 @@ class DockedApp(object):
                 ind_y = (event.area.height-4)/(num_ind+1) +2
 
             elif self.applet_orient == MatePanelApplet.AppletOrient.DOWN:
-                ind_x = event.area.x + event.area.width/(num_ind+1)
+                ind_x = (event.area.width-4)/(num_ind+1) +2
                 ind_y = event.area.y + 2
             else:
-                ind_x = event.area.x + event.area.width/(num_ind+1)
+                ind_x = (event.area.width-4)/(num_ind+1) +2
                 ind_y = event.area.y + event.area.height - 2
 
             this_ind = 1
