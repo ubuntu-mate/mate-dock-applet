@@ -1,5 +1,11 @@
 An application dock applet for the MATE panel
 
+To install from source, run:
+	
+configure --prefix=/usr
+make
+sudo make install
+
 Depends on: 
 
 Python3
