@@ -18,7 +18,9 @@ The applet allows you to:
 To install from source, run:
 	
 configure --prefix=/usr
+
 make
+
 sudo make install
 
 ### Dependencies
