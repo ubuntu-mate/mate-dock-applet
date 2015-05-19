@@ -31,11 +31,11 @@ gir1.2-wnck-1.0
 
 Running on Arch with a Unity style layout
 
-![Arch screenshot](https://github.com/robint99/screenshots/arch_V0.6_ss.png)
+![Arch screenshot](https://github.com/robint99/screenshots/raw/master/arch_V0.6_ss.png)
 
 Running on Ubuntu with a Windows 7 style layout
 
-![Ubuntu Layout](https://github.com/robint99/screenshots/Ubuntu_V0.6_ss.png)
+![Ubuntu screenshot](https://github.com/robint99/screenshots/raw/master/Ubuntu_V0.6_ss.png)
 
 
 
