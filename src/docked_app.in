@@ -137,7 +137,8 @@ def get_avg_color(pixbuf):
     ## convert the pixels into an rgb array with alpha channel
     data = []
     for y_count in range(height-1):
-        for x_count in range((width*nchannels)-1):
+        x_count = 0
+        while x_count < (width * nchannels):
             pix_red = pixels[x_count+(rowstride*y_count)]
             pix_green = pixels[x_count+1+(rowstride*y_count)]
             pix_blue = pixels[x_count+2+(rowstride*y_count)]
@@ -147,6 +148,8 @@ def get_avg_color(pixbuf):
                 pix_alpha = 255
 
             data.append([pix_red, pix_green, pix_blue, pix_alpha])
+            
+            x_count += nchannels
 
     red = 0
     green = 0
@@ -297,6 +300,20 @@ class DockedApp(object):
         self.multi_ind = False                              # default to single indicator
         self.drawing_area.connect("expose-event", self.do_expose_event)   # the draw event
 
+    def has_wnck_app (self, wnck_app):
+        """ see if this app has a process with the specified wnck_app
+
+        Returns True if the wnck_app is found, False otherwise
+        """
+
+        ret_val = False
+        for aai in self.app_info:
+            if aai.app == wnck_app:
+                ret_val = True
+                break
+
+        return ret_val
+
     def setup_from_wnck(self, wnck_app, wnck_class):
         """Set up for an already running app, obtaining info from libWnck.
 
@@ -347,18 +364,13 @@ class DockedApp(object):
     def set_app_name(self, app_name):
         """sets the app name.
 
-        If the app name contains the chars " - " then only the chars
-        following the last occurrence of these are used. This is because
-        some apps (e.g. editors, web browsers, use a document title
-        as the first part of the app name and we need to get rid of this)
-
-        Args: The app name, which may include a document title
+        Stores the entire name, which may or may not also contain a 
+        document title or other app specific info. This will need to 
+        be parsed when necessary to obtain the actual app name
+        
+        Args: The app name
 
         """
-
-        if " - " in app_name:
-            i = app_name.rfind(" - ")
-            app_name = app_name[i+3:len(app_name)]
 
         self.app_name = app_name
 
@@ -515,12 +527,23 @@ class DockedApp(object):
         if os.path.isdir(srch_dir) == False:
             return False
 
-        short_name = self.app_name.upper().split(" ", 1)[0]
-        sn_v1 = short_name.replace("-", " ") # variation on the short name
-
+        # split the app name into it's various parts using ' - ' as a
+        # delimeter
+        name_parts = self.app_name.upper().split(" - ")
+        for name in name_parts:
+            name = name.strip()
+            
         for the_file in os.listdir(srch_dir):
             if the_file.endswith(".desktop"):
                 the_de = DesktopEntry.DesktopEntry(srch_dir+the_file)
+
+                # if the app name in the desktop file matches any of the parts
+                # of the app name, we have a match
+                try:
+                    unused_var = name_parts.index(the_de.getName().upper())
+                    name_part_found = True
+                except ValueError:
+                    name_part_found = False
 
                 # remove command line args from the Exec field of the .desktop
                 de_exec = the_de.getExec().split(None, 1)[0]
@@ -532,13 +555,9 @@ class DockedApp(object):
                 # .desktop file the Exec field is '/usr/bin/software-center' whilst
                 # it's command line while running is 'usr/bin/python /usr/bin/software-center'
 
-                if (the_de.getName().upper() == self.app_name.upper()) or \
+                if (name_part_found == True) or \
                         (self.cmd_line.find(de_exec) != -1) or \
-                        (the_de.getStartupWMClass() == self.wm_class_name) or \
-                        (short_name == the_de.getName().upper()) or \
-                        (short_name == the_de.getGenericName().upper()) or \
-                        (sn_v1 == the_de.getName().upper()) or \
-                        (sn_v1 == the_de.getGenericName().upper()):
+                        (the_de.getStartupWMClass() == self.wm_class_name):
                     self.desktop_file = srch_dir+the_file
                     return True
 
