@@ -351,8 +351,8 @@ class DockedApp(object):
             self.get_cmdline_from_pid(new_app_info.pid)
 
         if not self.get_desktop_from_app_info("/usr/share/applications/"):
-            if not self.get_desktop_from_app_info("/usr/local/share/applications"):
-                if not self.get_desktop_from_app_info(os.path.expanduser("~/.local/share/applications")):
+            if not self.get_desktop_from_app_info("/usr/local/share/applications/"):
+                if not self.get_desktop_from_app_info(os.path.expanduser("~/.local/share/applications/")):
                     if not self.brute_force_find_desktop_file("/usr/share/applications/"):
                         if not self.brute_force_find_desktop_file("/usr/local/share/applications/"):
                             if not self.brute_force_find_desktop_file(os.path.expanduser("~/.local/share/applications/")):
