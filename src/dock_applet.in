@@ -104,8 +104,12 @@ def applet_button_release(widget, event, the_dock):
         app = the_dock.get_app_at_mouse(event.x, event.y)
         if app is not None:
 
-            if not app.is_running():
-                # the app is not running, so start it
+            # if the app is not running start the app
+            # if the app is running and the shift key is being pressed, start another
+            # instance of the app
+            start_app = app.is_running() == False
+            start_app = start_app | (event.state & Gdk.ModifierType.SHIFT_MASK) != 0
+            if start_app:
                 the_de = DesktopEntry.DesktopEntry(app.desktop_file)
                 run_it = the_de.getExec()
                 if run_it is not None:
@@ -195,6 +199,10 @@ def applet_enter_notify(widget, event, the_dock):
     Set the applet tooltip text to the name of the app which the
     mouse is currently over
 
+    if the app is running, extend the tooltip so that with text
+    indicating that a new window can be opend by shift clicking
+    the app icon
+
     Set up the right click menu for the dock based on the app which
     the mouse is currently over
 
@@ -220,7 +228,12 @@ def applet_enter_notify(widget, event, the_dock):
         app.has_mouse = True
         app.queue_draw()
         the_dock.app_with_mouse = app
-        widget.set_tooltip_text(app.app_name)
+        if app.is_running():
+            tooltip_text = "%s\n%s" %(app.app_name, "(shift click for new window)")
+        else:
+            tooltip_text = app.app_name
+
+        widget.set_tooltip_text(tooltip_text)
 
         # set up the available options for the app
         the_dock.set_actions_for_app(app)
@@ -255,6 +268,10 @@ def applet_motion_notify(widget, event, the_dock):
     brightened then brighten it and set the applet tooltip set to the app name
     and setup the applet right click menu
 
+    if the new app is running, extend the tooltip so that with text
+    indicating that a new window can be opend by shift clicking
+    the app icon
+
     Args:
         widget : the widget that registered the event i.e. the applet
         event : the event args
@@ -276,7 +293,12 @@ def applet_motion_notify(widget, event, the_dock):
         app.has_mouse = True
         app.queue_draw()
         the_dock.app_with_mouse = app
-        widget.set_tooltip_text(app.app_name)
+        if app.is_running():
+            tooltip_text = "%s\n%s" %(app.app_name, "(shift click for new window)")
+        else:
+            tooltip_text = app.app_name
+
+        widget.set_tooltip_text(tooltip_text)
 
         the_dock.set_actions_for_app(app)
 
@@ -328,6 +350,8 @@ def applet_fill(applet):
     applet.set_events(applet.get_events() | Gdk.EventMask.BUTTON_PRESS_MASK \
                        | Gdk.EventMask.BUTTON_RELEASE_MASK \
                        | Gdk.EventMask.POINTER_MOTION_MASK \
+                       | Gdk.EventMask.KEY_PRESS_MASK \
+                       | Gdk.EventMask.KEY_RELEASE_MASK \
                        | Gdk.EventMask.STRUCTURE_MASK)
 
     the_dock = dock.Dock(applet)
