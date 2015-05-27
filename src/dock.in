@@ -62,7 +62,9 @@ class Dock(object):
 
         Attributes:
             applet : the MATE panel applet
-            window : ?
+            wnck_screen : the currently active wnck_screen. Assumed to be the default
+                          wnck_screen on applet start up
+            window : 
             app_list : the list of DockedApp objects. Will contain running/non-running
                        pinned apps and running unpinned apps
             box    : A Gtk HBox or VBox (depending on the applet orientation) containing
@@ -101,6 +103,8 @@ class Dock(object):
 
         self.window = None
 
+        self.wnck_screen = Wnck.Screen.get_default()
+
         self.app_with_mouse = None      # the dock app that mouse is currently over
         self.active_app = None          # the currently active app
         self.right_clicked_app = None     # the app that most recently had a right click
@@ -115,6 +119,7 @@ class Dock(object):
         self.about_win = None
         self.indicator = self.settings.get_int("indicator-type")
         self.multi_ind = self.settings.get_boolean("multi-ind")
+        self.show_all_apps = self.settings.get_boolean("apps-from-all-workspaces")
 
         self.dock_action_group = None
         self.setup_menu()
@@ -136,6 +141,7 @@ class Dock(object):
             self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
             self.settings.set_int("indicator-type", self.indicator)
             self.settings.set_boolean("multi-ind", self.multi_ind)
+            self.settings.set_boolean("apps-from-all-workspaces", self.show_all_apps)
 
     def set_actions_for_app(self, app):
         """Show or hide actions in the context menu so that only relevant ones are
@@ -423,6 +429,7 @@ class Dock(object):
             self.prefs_win = dock_prefs.DockPrefsWindow(self.prefs_win_ok_cb)
             self.prefs_win.set_indicator(self.indicator)
             self.prefs_win.set_multi_ind(self.multi_ind)
+            self.prefs_win.set_show_unpinned_apps_on_all_ws(self.show_all_apps)
         else:
             self.prefs_win.show_all()
 
@@ -451,10 +458,12 @@ class Dock(object):
         """
 
         if (self.indicator != self.prefs_win.get_indicator_type()) or \
-           (self.multi_ind != self.prefs_win.get_multi_ind()):
+           (self.multi_ind != self.prefs_win.get_multi_ind()) or \
+           (self.show_all_apps != self.prefs_win.get_show_unpinned_apps_on_all_ws()):
 
             self.indicator = self.prefs_win.get_indicator_type()
             self.multi_ind = self.prefs_win.get_multi_ind()
+            self.show_all_apps = self.prefs_win.get_show_unpinned_apps_on_all_ws()
             self.write_settings()
             # redraw everything here
             for app in self.app_list:
@@ -462,6 +471,7 @@ class Dock(object):
                 app.set_multi_ind(self.multi_ind)
                 if app.is_running():
                     app.queue_draw()
+            self.show_or_hide_app_icons()
 
         self.prefs_win.hide()
 
@@ -611,10 +621,9 @@ class Dock(object):
 
             dock_app.is_pinned = True
 
-        wnck_screen = Wnck.Screen.get_default()
-        wnck_screen.force_update()  # recommended per Wnck documentation
+        self.wnck_screen.force_update()  # recommended per Wnck documentation
 
-        for wnck_window in wnck_screen.get_windows():
+        for wnck_window in self.wnck_screen.get_windows():
 
             win_type = wnck_window.get_window_type()
 
@@ -641,9 +650,27 @@ class Dock(object):
                     # it's not a pinned app so add it to the app list
                     self.app_list.append(dock_app)
 
-        wnck_screen.connect("active-window-changed", self.active_win_changed)
-        wnck_screen.connect("window-opened", self.window_opened)
-        wnck_screen.connect("window_closed", self.window_closed)
+        self.wnck_screen.connect("active-window-changed", self.active_win_changed)
+        self.wnck_screen.connect("active-workspace-changed", self.active_workspace_changed)
+        self.wnck_screen.connect("window-opened", self.window_opened)
+        self.wnck_screen.connect("window_closed", self.window_closed)
+
+    def active_workspace_changed(self, wnck_screen, previously_active_space):
+        """ Event handler for the active workspace change even
+
+        If we're only showing unpinned apps from the current workspace then
+        hide all unpinned apps which do not have windows open on the new
+        screen/workspace
+
+        Arguments : 
+            wnck_screen : the screen that emitted the event. Will be the same as
+                          self.wnck_screen
+            previously_active_space : the workspace that was previously active
+            
+        """
+
+        if not self.show_all_apps:
+            self.show_or_hide_app_icons()
 
     def active_win_changed(self, wnck_screen, prev_active_window):
         """Event handler for the window change event
@@ -653,7 +680,8 @@ class Dock(object):
         Set the new app as active and redraw it with a highlighted background
 
         Args:
-            wnck_screen :  the screen on which the event occurred
+            wnck_screen :  the screen on which the event occurred - will be the same as
+                        :  self.wnck_screen
             prev_active_window : the wnck_window that was previously active
 
         """
@@ -663,7 +691,7 @@ class Dock(object):
                 app.is_active = False
                 app.queue_draw()
 
-        new_win = wnck_screen.get_active_window()
+        new_win = self.wnck_screen.get_active_window()
 
         if new_win is not None:
             new_cg = new_win.get_class_group()
@@ -683,7 +711,7 @@ class Dock(object):
         If an aready running app has opened a new window, the window
         is added to to the running apps info
 
-        If a newly lauched app opening a new window, setup the app on the
+        If a newly lauched app is opening a new window, setup the app on the
         dock
 
         Args:
@@ -733,7 +761,7 @@ class Dock(object):
                 self.set_app_icon(dock_app, size)
                 self.app_list.append(dock_app)
                 self.add_app(dock_app)
-                self.box.show_all()
+                self.show_or_hide_app_icons()
 
     def window_closed(self, wnck_screen, wnck_window):
         """Event handler for the window_closed event
@@ -809,6 +837,33 @@ class Dock(object):
 
                     except ValueError:
                         pass
+
+    def show_or_hide_app_icons(self):
+        """ If we're only showing unpinned apps from the current workspace then
+            then show/hide as appropriate
+
+            If we're showing unpinned apps from all workspaces then show them
+            all
+
+            Finally, recalculate all app minimization targets
+        """
+
+        if self.show_all_apps:
+            for app in self.app_list:
+                if not app.is_visible():
+                    app.show_icon()
+        else:
+            cur_ws = self.wnck_screen.get_active_workspace()
+            for app in self.app_list:
+                if not app.is_pinned:
+                    if app.has_windows_on_workspace(cur_ws):
+                        app.show_icon()
+                    else:
+                        app.hide_icon()
+   
+        # recalculate all apps icon geometry
+        for app in self.app_list:
+            app.set_icon_geometry()
 
     def remove_app_from_dock(self, app):
         """Remove an app from the dock.
@@ -968,6 +1023,8 @@ class Dock(object):
             dock_app.set_multi_ind(self.multi_ind)
             self.add_app(dock_app)
 
+        self.show_or_hide_app_icons()
+
     def set_new_orientation(self, new_orient):
         """Change the dock applet to a new applet orientation
 
@@ -1019,10 +1076,11 @@ class Dock(object):
         """
 
         for app in self.app_list:
-            alloc = app.drawing_area.get_allocation()
-            if (mouse_x >= alloc.x) and (mouse_x <= alloc.x + alloc.width):
-                if (mouse_y >= alloc.y) and (mouse_y <= alloc.y + alloc.height):
-                    return app
+            if app.is_visible():
+                alloc = app.drawing_area.get_allocation()
+                if (mouse_x >= alloc.x) and (mouse_x <= alloc.x + alloc.width):
+                    if (mouse_y >= alloc.y) and (mouse_y <= alloc.y + alloc.height):
+                        return app
 
         return None
 

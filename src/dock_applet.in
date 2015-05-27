@@ -315,6 +315,7 @@ def applet_change_orient(applet, orient, the_dock):
 
     the_dock.set_new_orientation(orient)
     the_dock.applet.show_all()
+    the_dock.show_or_hide_app_icons()
 
 def applet_change_size(applet, size, the_dock):
     """Handler for the applet change size event

@@ -16,5 +16,10 @@
        <summary>Whether to display an indicator for each open window</summary>
        <description>Whether to display an indicator for each open window (maximum 4) that an application has.</description>
     </key>
+    <key type="b" name="apps-from-all-workspaces">
+       <default>true</default>
+       <summary>Whether to show unpinned apps from all workspaces</summary>
+       <description>Whether to show running unpinned apps from all workspaces </description>
+    </key>
    </schema>
 </schemalist>

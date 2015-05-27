@@ -435,6 +435,43 @@ class DockedApp(object):
 
         return win_list
 
+    def has_windows_on_workspace(self, wnck_workspace):
+        """ test whether the app has at least one window open on a specified
+            workspace
+
+        Args: 
+            wnck_workspace - the workspace to check for
+
+        Returns:
+            boolean
+        """
+
+        win_list = self.get_wnck_windows()
+        for win in win_list:
+            win_ws = win.get_workspace()
+            if win_ws == wnck_workspace:
+                return True
+
+        return False
+
+    def hide_icon(self):
+        """ Hides the app's icon"""
+
+        self.drawing_area.set_visible(False)
+
+    def show_icon(self):
+        """ Shows the app's icon"""
+
+        self.drawing_area.set_visible(True)
+
+    def is_visible(self):
+        """ Method which returns whether or not the app's icon is visible
+            
+        Returns:
+            boolean
+        """
+        return self.drawing_area.get_visible()
+
     def get_desktop_from_app_info(self, srch_dir):
         """Attempt to find the .desktop file for the app based on the app wm_class
            and app name
@@ -662,7 +699,7 @@ class DockedApp(object):
 
             return True
 
-        return False
+        return Fals_wse
 
     def do_expose_event(self, drawing_area, event):
         """The main drawing event for the docked app.
