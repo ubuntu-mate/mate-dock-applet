@@ -32,3 +32,18 @@ V0.60 - various bugfixes and minor additions including:
 	as / instead of the home directory
 	Updated the readme with instructions on how to compile the
 	applet from source
+
+V0.61   improved the way in which the windows owned by apps are
+	detected
+	Fixed the function that calculates the average colour of
+	icons (for use when drawing highligts on the dock). It 
+	works now....
+	Fixed launching of Caja on linux mint
+	Fixed docked_app.setup_from_wnck so that it passes '/' terminated
+	versions of all directories to be searched for .desktop file
+	to get_desktop_from_app_info
+	Shift-clicking the icon of running applications now opens a new
+	window of the app
+	Added an option for the dock to only display unpinned apps from the
+	current workspace.Pinned apps are always displayed no matter what
+	workspace is active so that the user always has quick access to them)
