@@ -471,7 +471,6 @@ class DockedApp(object):
             boolean
         """
         return self.drawing_area.get_visible()
-
     def get_desktop_from_app_info(self, srch_dir):
         """Attempt to find the .desktop file for the app based on the app wm_class
            and app name
@@ -699,7 +698,7 @@ class DockedApp(object):
 
             return True
 
-        return Fals_wse
+        return False
 
     def do_expose_event(self, drawing_area, event):
         """The main drawing event for the docked app.
@@ -736,7 +735,7 @@ class DockedApp(object):
 
         # there are lots of drawing operations to be done, so do them to an offscreen
         # surface and when all is finished copy this to the docked app
-        offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, event.area.width, event.area.height)
+        offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.drawing_area_size, self.drawing_area_size)
         ctx = cairo.Context(offscreen_surface)
 
         # convert the highlight values to their cairo equivalents
@@ -763,13 +762,13 @@ class DockedApp(object):
                 pattern.add_color_stop_rgba(0.0, red, green, blue, 1)
                 pattern.add_color_stop_rgba(1.0, red, green, blue, 0)
 
-            ctx.rectangle(0, 0, event.area.width, event.area.height)
+            ctx.rectangle(0, 0, self.drawing_area_size, self.drawing_area_size)
             ctx.set_source(pattern)
             ctx.fill()
 
         # draw the app icon
         Gdk.cairo_set_source_pixbuf(ctx, self.app_pb, 3, 3)
-        ctx.rectangle(0, 0, event.area.width, event.area.height)
+        ctx.rectangle(0, 0, self.drawing_area_size, self.drawing_area_size)
 
         if self.is_pulsing:
             # draw the icon semi-transparently according to how far through the animation
@@ -806,19 +805,19 @@ class DockedApp(object):
                     num_ind = 4
 
             if self.applet_orient == MatePanelApplet.AppletOrient.RIGHT:
-                ind_x = event.area.x+2
-                ind_y = (event.area.height-4)/(num_ind+1) +2
+                ind_x = 2
+                ind_y = (self.drawing_area_size-4)/(num_ind+1) + 2
 
             elif self.applet_orient == MatePanelApplet.AppletOrient.LEFT:
-                ind_x = event.area.x + event.area.width - 2
-                ind_y = (event.area.height-4)/(num_ind+1) +2
+                ind_x = self.drawing_area_size - 1
+                ind_y = (self.drawing_area_size - 4)/(num_ind+1) + 2
 
             elif self.applet_orient == MatePanelApplet.AppletOrient.DOWN:
-                ind_x = (event.area.width-4)/(num_ind+1) +2
-                ind_y = event.area.y + 2
+                ind_x = (self.drawing_area_size - 4)/(num_ind+1) + 2
+                ind_y = 2
             else:
-                ind_x = (event.area.width-4)/(num_ind+1) +2
-                ind_y = event.area.y + event.area.height - 2
+                ind_x = (self.drawing_area_size - 4)/(num_ind+1) + 2
+                ind_y = self.drawing_area_size - 1
 
             this_ind = 1
             while this_ind <= num_ind:
@@ -838,9 +837,9 @@ class DockedApp(object):
                 if num_ind > 1:
                     if(self.applet_orient == MatePanelApplet.AppletOrient.RIGHT) or \
                        (self.applet_orient == MatePanelApplet.AppletOrient.LEFT):
-                        ind_y += (event.area.height-6)/(num_ind+1)
+                        ind_y += (self.drawing_area_size - 6)/(num_ind+1)
                     else:
-                        ind_x += event.area.width/(num_ind+1)
+                        ind_x += (self.drawing_area_size - 6)/(num_ind+1)
 
                 this_ind += 1
                 ctx.fill()
@@ -851,11 +850,17 @@ class DockedApp(object):
         screen_ctx.rectangle(event.area.x, event.area.y, \
                      event.area.width, event.area.height)
         screen_ctx.clip()
+   
+        if (self.applet_orient == MatePanelApplet.AppletOrient.UP) or \
+           (self.applet_orient == MatePanelApplet.AppletOrient.DOWN):
+            screen_ctx.set_source_surface(offscreen_surface, event.area.x, 0)
+        else:
+            screen_ctx.set_source_surface(offscreen_surface, 0, event.area.y)
 
-        screen_ctx.set_source_surface(offscreen_surface, event.area.x, event.area.y)
         screen_ctx.paint()
         ctx = None
         screen_ctx = None
+        
 
     def set_pixbuf(self, pixbuf):
         """Set the app pixbuf and calculate its average colour.
