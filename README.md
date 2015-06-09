@@ -15,7 +15,7 @@ The applet allows you to:
 
 ### Installation
 
-To install from source, run:
+To install from source, cd to the directory containing all of the development files and run:
 	
 configure --prefix=/usr
 
