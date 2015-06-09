@@ -17,7 +17,7 @@ The applet allows you to:
 
 To install from source, cd to the directory containing all of the development files and run:
 	
-configure --prefix=/usr
+./configure --prefix=/usr
 
 make
 
