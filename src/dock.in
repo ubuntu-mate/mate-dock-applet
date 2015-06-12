@@ -54,6 +54,7 @@ import os.path
 import docked_app
 import dock_prefs
 import dock_about
+import dock_custom_launcher
 
 from log_it import log_it as log_it
 
@@ -72,6 +73,7 @@ class Dock(object):
             icontheme : used to load application icons and detect changes in the icon theme
             about_win : the about window
             prefs_win : the preferences window
+            ccl_win   : the create custom launcher window
             app_with_mouse : the DockedApp that the mouse is currently over
             active_app : the DockedApp that is currently the foreground app
             right_clicked_app: the app that was most recently right clicked
@@ -117,6 +119,7 @@ class Dock(object):
 
         self.prefs_win = None
         self.about_win = None
+        self.ccl_win = None
         self.indicator = self.settings.get_int("indicator-type")
         self.multi_ind = self.settings.get_boolean("multi-ind")
         self.show_all_apps = self.settings.get_boolean("apps-from-all-workspaces")
@@ -279,6 +282,9 @@ class Dock(object):
                              ("prefs_action", Gtk.STOCK_PREFERENCES, \
                              "Dock P_references", None, "Dock Preferences", \
                              self.show_prefs_win), \
+                             ("ccl_action", Gtk.STOCK_EXECUTE, \
+                             "Create custo_m launcher", None, "Create custom launcher", \
+                             self.show_ccl_win), \
                              ("about_action", Gtk.STOCK_ABOUT, \
                              "About...", None, "About...", self.show_about_win), \
                              ("show_win_1_action", None, \
@@ -318,6 +324,7 @@ class Dock(object):
         menu_xml += '<separator/><menuitem name="Pin" action="pin_action"/>'
         menu_xml += '<menuitem name="Unpin" action="unpin_action"/><separator/>'
         menu_xml += '<menuitem name="Preferences" action="prefs_action"/>'
+        menu_xml += '<menuitem name="Create custom launcher" action="ccl_action"/>'
         menu_xml += '<menuitem name="About" action="about_action"/><separator/>'
 
         self.applet.setup_menu(menu_xml, self.dock_action_group)
@@ -475,6 +482,83 @@ class Dock(object):
 
         self.prefs_win.hide()
 
+    def show_ccl_win(self, data=None):
+        """ Show the create custom launcher window.
+
+        If, necessary create the window and register a callback for the 'ok' button
+        press
+
+        If the window has already been shown, clear all of the fields
+        before showing it
+        """
+
+        if self.ccl_win is None:
+            self.ccl_win = dock_custom_launcher.DockCLWindow(self.ccl_win_ok_cb)
+        else:
+            self.ccl_win.show_all()
+
+    def ccl_win_ok_cb(self, widget, event):
+        """ Callback for the 'ok' button on the create custom launcher window.
+
+        Check to ensure that all required fields (icon, launcher name and command) have been 
+        entered and display an error dialog if not.
+
+        If all required fields have been entered, use the info from the window to create a 
+        .desktop file in ~/.local/share/applications
+
+        The .desktop file will be named mda_<launcher name>.desktop - the initial
+        'mda_' will allow the applet to search for and priorities self created
+        .desktop files over system created ones...
+
+        Args:
+            widget - the button the caused the event
+            event - the event args
+        """
+
+        valid_launcher = False
+        if self.ccl_win.name == "":
+            error_text = "The name of the launcher has not been set"
+        elif self.ccl_win.command == "":
+            error_text = "The command of the launcher has not been set"
+        elif self.ccl_win.icon_filename == "":
+            error_text = "The icon of the launcher has not been set"
+        else:
+            valid_launcher = True
+
+        if valid_launcher == False:
+            md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.ERROR, 
+                                   Gtk.ButtonsType.OK,
+                                   None)
+            md.set_markup ('<span size="x-large"><b>Cannot create launcher</b></span>')
+            md.format_secondary_text(error_text)
+            md.run()
+            md.destroy()
+            return
+
+        else:
+            self.ccl_win.hide()
+            dfname = os.path.expanduser("~/.local/share/applications/mda_%s.desktop" %self.ccl_win.name)
+            dfile = open(dfname, "w")
+            dfile.write("[Desktop Entry]\n")
+            dfile.write("Name=%s\n" %self.ccl_win.name)
+            dfile.write("Comment=%s\n" %self.ccl_win.comment)
+            dfile.write("Exec=%s\n" %self.ccl_win.command)
+            dfile.write("Icon=%s\n" %self.ccl_win.icon_filename)
+            dfile.close()            
+
+            # create docked app from the .desktop we just created and add it to the dock
+            dock_app = docked_app.DockedApp()
+            dock_app.desktop_file = dfname
+
+            dock_app.read_info_from_desktop_file()
+            dock_app.is_pinned = True
+            size = self.applet.get_size()
+            self.set_app_icon(dock_app, size)
+            self.app_list.append(dock_app)
+            self.add_app(dock_app)
+            self.show_or_hide_app_icons()
+            self.write_settings()
+       
     def show_win(self, win_no):
         """
         Bring the specified window number of the right clicked app to the front

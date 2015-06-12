@@ -350,13 +350,14 @@ class DockedApp(object):
         if new_app_info.pid != 0:
             self.get_cmdline_from_pid(new_app_info.pid)
 
-        if not self.get_desktop_from_app_info("/usr/share/applications/"):
-            if not self.get_desktop_from_app_info("/usr/local/share/applications/"):
-                if not self.get_desktop_from_app_info(os.path.expanduser("~/.local/share/applications/")):
-                    if not self.brute_force_find_desktop_file("/usr/share/applications/"):
-                        if not self.brute_force_find_desktop_file("/usr/local/share/applications/"):
-                            if not self.brute_force_find_desktop_file(os.path.expanduser("~/.local/share/applications/")):
-                                return False
+        if not self.get_desktop_from_custom_launcher(os.path.expanduser("~/.local/share/applications/")):
+            if not self.get_desktop_from_app_info("/usr/share/applications/"):
+                if not self.get_desktop_from_app_info("/usr/local/share/applications/"):
+                    if not self.get_desktop_from_app_info(os.path.expanduser("~/.local/share/applications/")):
+                        if not self.brute_force_find_desktop_file("/usr/share/applications/"):
+                            if not self.brute_force_find_desktop_file("/usr/local/share/applications/"):
+                                if not self.brute_force_find_desktop_file(os.path.expanduser("~/.local/share/applications/")):
+                                    return False
 
         # now that we have the .desktop file, we can get the icon etc
         return self.read_info_from_desktop_file()
@@ -471,6 +472,7 @@ class DockedApp(object):
             boolean
         """
         return self.drawing_area.get_visible()
+
     def get_desktop_from_app_info(self, srch_dir):
         """Attempt to find the .desktop file for the app based on the app wm_class
            and app name
@@ -559,7 +561,7 @@ class DockedApp(object):
 
         """
 
-        # if the serch dir doesn't exist, don't do anything
+        # if the search dir doesn't exist, don't do anything
         if os.path.isdir(srch_dir) == False:
             return False
 
@@ -600,6 +602,37 @@ class DockedApp(object):
         self.desktop_file = None
         return False
 
+    def get_desktop_from_custom_launcher(self, srch_dir):
+        """ Search the custom launchers in a specified directory for
+            one where the Exec field is found withi self.cmd_line
+        
+        If a match is found found, self.desktop_file is set accordingly
+
+        Note: All custom launchers  .desktop filenames start
+              with "mda_"
+
+        Args:
+            srch_dir : the directory to search
+
+        Returns:
+            True if a match was found, False otherwise
+        """
+    
+        # if the search dir doesn't exist, don't do anything
+        if os.path.isdir(srch_dir) == False:
+            return False
+
+        for the_file in os.listdir(srch_dir):
+            if (the_file.startswith("mda_")) and (the_file.endswith(".desktop")):
+                the_de = DesktopEntry.DesktopEntry(srch_dir+the_file)
+
+                # remove command line args from the Exec field of the .desktop
+                de_exec = the_de.getExec().split(None, 1)[0]
+
+                if self.cmd_line.find(de_exec) != -1:
+                    self.desktop_file = srch_dir+the_file
+                    return True
+                
     def set_all_windows_icon_geometry(self, root_x, root_y):
         """Set the location on screen where all of the app's windows will be minimised
            to.
@@ -699,6 +732,18 @@ class DockedApp(object):
             return True
 
         return False
+
+    def app_has_custom_launcher(self):
+        """ Determines whether the docked app has a custom launcher
+
+        Examine the .desktop filename. If it starts with 
+        "~/.local/share/applications/mda_" the app has a custom launcher
+
+        Returns : True if the app has a custom launcher, False otherwise
+        """
+
+        cl_start = os.path.expanduser("~/.local/share/applications/mda_")
+        return os.path.expanduser(self.desktop_file).beginswith(cl_start)
 
     def do_expose_event(self, drawing_area, event):
         """The main drawing event for the docked app.
