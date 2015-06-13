@@ -896,12 +896,14 @@ class DockedApp(object):
                      event.area.width, event.area.height)
         screen_ctx.clip()
    
+        alloc = self.drawing_area.get_allocation()
+
         if (self.applet_orient == MatePanelApplet.AppletOrient.UP) or \
            (self.applet_orient == MatePanelApplet.AppletOrient.DOWN):
-            screen_ctx.set_source_surface(offscreen_surface, event.area.x, 0)
+            screen_ctx.set_source_surface(offscreen_surface, alloc.x, 0)
         else:
-            screen_ctx.set_source_surface(offscreen_surface, 0, event.area.y)
-
+            screen_ctx.set_source_surface(offscreen_surface, 0, alloc.y)
+            
         screen_ctx.paint()
         ctx = None
         screen_ctx = None
