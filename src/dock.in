@@ -804,6 +804,10 @@ class Dock(object):
 
         """
 
+        # we're only interested when normal and dialog windows are opened
+        if (wnck_window.get_window_type() != Wnck.WindowType.NORMAL) and \
+           (wnck_window.get_window_type() != Wnck.WindowType.DIALOG):
+            return
         wnck_app = wnck_window.get_application()
 
         if not wnck_window.is_skip_tasklist():
