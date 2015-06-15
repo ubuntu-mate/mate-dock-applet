@@ -116,7 +116,7 @@ class DockCLWindow(Gtk.Window):
         self.__vbox1.set_spacing(4)
         self.__vbox1.pack_start(self.__btn_icon, False, False, 4)
 
-        self.__table_layout = Gtk.Table(rows=3, columns=2, homogeneous=False)
+        self.__table_layout = Gtk.Table(rows=4, columns=2, homogeneous=False)
 
         self.__lbl_name = Gtk.Label()
         self.__lbl_name.set_use_markup(True)
@@ -146,6 +146,12 @@ class DockCLWindow(Gtk.Window):
 
         self.__entry_comment = Gtk.Entry()
 
+        self.__lbl_wm_class = Gtk.Label()
+        self.__lbl_wm_class.set_use_markup(True)
+        self.__lbl_wm_class.set_label("<b>Window Class</b>")
+        self.__entry_wm_class = Gtk.Entry()
+        self.__entry_wm_class.set_sensitive(False)
+
         self.__table_layout.attach(self.__lbl_name, 0, 1, 0, 1,
                                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
                                    2, 2)
@@ -167,6 +173,12 @@ class DockCLWindow(Gtk.Window):
                                    Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
                                    2, 2)
 
+        self.__table_layout.attach(self.__lbl_wm_class, 0, 1, 3, 4,
+                                   Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
+                                   2, 2)
+        self.__table_layout.attach(self.__entry_wm_class, 1, 2, 3, 4,
+                                   Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
+                                   2, 2)
         self.__hbox.pack_start(self.__vbox1, False, False, 0)
         self.__hbox.pack_end(self.__table_layout, True, True, 0)
 
@@ -189,6 +201,7 @@ class DockCLWindow(Gtk.Window):
         self.__entry_comment.set_text("")
         self.__entry_cmd.set_text("")
         self.__entry_name.set_text("")
+        self.__entry_wm_class.set_text("")
 
     def win_delete_event(self, widget, event, data=None):
         """Callback for the preferences window delete event
@@ -346,6 +359,25 @@ class DockCLWindow(Gtk.Window):
 
     name = property(get_name, set_name)
 
+    def get_wm_class(self):
+        """ Get the window wm_class_name
+
+        Returns: A string containing the wm_class_name
+        """
+        
+        return self.__entry_wm_class.get_text()
+
+    def set_wm_class(self, wm_class):
+        """ Set the text of the launcher's wm_class entry widget
+        
+        Args:
+            wm_class : The wm_class name
+        """
+
+        self.__entry_wm_class.set_text(wm_class)
+
+    wm_class = property(get_wm_class, set_wm_class)
+
     def help_btn_press(self, widget, event):
         """ Event handler for the Help button press event
 
@@ -361,7 +393,7 @@ class DockCLWindow(Gtk.Window):
                     "Normally, this will only happen when the apps have been installed " + \
                     "to a non standard location within the file system, so for the vast majority of " + \
                     "apps this feature is not needed.\n\n" + \
-                    "Note: if an app is running when a custom launcher is created for it, it will " + \
+                    "Note: if an app is running when a custom launcher is created for it, the app will " + \
                     "need to be closed and restarted for the dock to recognise it."
 
         md.format_secondary_text(info_text)
@@ -371,10 +403,12 @@ class DockCLWindow(Gtk.Window):
 def main():
     """main function - debug code can go here"""
     dclw = DockCLWindow(Gtk.main_quit)
+    dclw.set_skip_taskbar_hint(False)
     dclw.name = "My test launcher"
     dclw.comment = "This is a comment"
     dclw.icon_filename = "/usr/share/pixmaps/ericWeb.png"
     dclw.command = "/usr/bin/gvim"
+    dclw.wm_class = "Dock_custom_launcher.py"
     Gtk.main()
 
 if __name__ == "__main__":

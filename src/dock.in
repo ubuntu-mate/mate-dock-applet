@@ -168,6 +168,9 @@ class Dock(object):
            If the app is running and has one or more windows on screen, show
            an option allowing them to be closed
 
+           If the app does not have a desktop file, show an option allowing a 
+           custom launcher to be created
+
         Args:
             app : The DockedApp
         """
@@ -202,7 +205,6 @@ class Dock(object):
         index = self.get_app_position_in_dock(app)
         pin_action.set_visible(not app.is_pinned)
         unpin_action.set_visible(app.is_pinned)
-
 
         orientation = self.applet.get_orient()
 
@@ -255,6 +257,8 @@ class Dock(object):
         if num_win > 0:
             close_win_action.set_visible(True)
 
+        ccl_action = self.dock_action_group.get_action("ccl_action")
+        ccl_action.set_visible(not app.has_desktop_file())
 
     def setup_menu(self):
         """Set up the actions and right click menu for the applet
@@ -283,7 +287,7 @@ class Dock(object):
                              "Dock P_references", None, "Dock Preferences", \
                              self.show_prefs_win), \
                              ("ccl_action", Gtk.STOCK_EXECUTE, \
-                             "Create custo_m launcher", None, "Create custom launcher", \
+                             "Create custo_m launcher for this app", None, "Create custom launcher for this app", \
                              self.show_ccl_win), \
                              ("about_action", Gtk.STOCK_ABOUT, \
                              "About...", None, "About...", self.show_about_win), \
@@ -495,7 +499,11 @@ class Dock(object):
         if self.ccl_win is None:
             self.ccl_win = dock_custom_launcher.DockCLWindow(self.ccl_win_ok_cb)
         else:
-            self.ccl_win.show_all()
+            self.ccl_win.set_default_values()
+
+        self.ccl_win.name = self.right_clicked_app.app_name.strip()
+        self.ccl_win.wm_class = self.right_clicked_app.wm_class_name
+        self.ccl_win.show_all()
 
     def ccl_win_ok_cb(self, widget, event):
         """ Callback for the 'ok' button on the create custom launcher window.
@@ -544,14 +552,19 @@ class Dock(object):
             dfile.write("Comment=%s\n" %self.ccl_win.comment)
             dfile.write("Exec=%s\n" %self.ccl_win.command)
             dfile.write("Icon=%s\n" %self.ccl_win.icon_filename)
+            dfile.write("StartupWMClass=%s\n" %self.ccl_win.wm_class)
             dfile.close()            
 
-            # create docked app from the .desktop we just created and add it to the dock
+            # create a docked app from the .desktop we just created and add it to the dock
             dock_app = docked_app.DockedApp()
             dock_app.desktop_file = dfname
-
             dock_app.read_info_from_desktop_file()
             dock_app.is_pinned = True
+            dock_app.applet_win = self.applet.window
+            dock_app.applet_orient = self.applet.get_orient()
+            dock_app.set_indicator(self.indicator)
+            dock_app.set_multi_ind(self.multi_ind)
+
             size = self.applet.get_size()
             self.set_app_icon(dock_app, size)
             self.app_list.append(dock_app)
@@ -782,12 +795,12 @@ class Dock(object):
             new_wm_class_name = new_cg.get_res_class()
             new_app = new_win.get_application()
             for app in self.app_list:
-                if app.wm_class_name == new_wm_class_name:
-#                for aai in app.app_info:
-#                    if new_app == aai.app:
-                    app.is_active = True
-                    app.queue_draw()
-                    break
+#                if app.wm_class_name == new_wm_class_name:
+                 for aai in app.app_info:
+                    if new_app == aai.app:
+                        app.is_active = True
+                        app.queue_draw()
+                        break
 
     def window_opened(self, wnck_screen, wnck_window):
         """Event handler for the window_opened event
@@ -804,7 +817,7 @@ class Dock(object):
 
         """
 
-        # we're only interested when normal and dialog windows are opened
+        # we're only interested when normal and dialog windows
         if (wnck_window.get_window_type() != Wnck.WindowType.NORMAL) and \
            (wnck_window.get_window_type() != Wnck.WindowType.DIALOG):
             return

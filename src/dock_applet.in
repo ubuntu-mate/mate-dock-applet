@@ -170,6 +170,7 @@ def applet_button_release(widget, event, the_dock):
                             break
 
                         if window.is_active() and (not window.is_minimized()):
+                            app.last_active_win = window  #save the currently active window
                             is_active_app = True
                             break
 
@@ -187,7 +188,15 @@ def applet_button_release(widget, event, the_dock):
                             wnck_ws.activate(event.time)
                             window.activate(event.time)
                         else:
-                            window.activate(event.time)
+                            # when unminimising, don't restore the most recently active window
+                            if window != app.last_active_win:
+                                window.activate(event.time)
+
+                # if we're unminimising, th final window to restore is the one that was most
+                # recently active
+                if (is_active_app == False) and (do_change_workspace == False) and \
+                   (app.last_active_win is not None):
+                    app.last_active_win.activate(event.time)
 
 def applet_enter_notify(widget, event, the_dock):
     """Enter notify event for the applet
@@ -354,12 +363,11 @@ def applet_fill(applet):
                        | Gdk.EventMask.KEY_PRESS_MASK \
                        | Gdk.EventMask.KEY_RELEASE_MASK \
                        | Gdk.EventMask.STRUCTURE_MASK)
-
+    
     the_dock = dock.Dock(applet)
     the_dock.setup_dock()
 
     applet.add(the_dock.box)
-
     applet.show_all()
 
     applet.connect("enter-notify-event", applet_enter_notify, the_dock)

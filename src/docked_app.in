@@ -250,6 +250,7 @@ class DockedApp(object):
         has_mouse   : boolean - True = the mouse is over the app's icon
         is_pinned   : boolean - Whether or not the app is pinned to the dock
         indicator   : the type of indictor (light or dark) to draw under running apps
+        last_active_win : the wnck_window of the app's last active window
 
     """
 
@@ -298,6 +299,7 @@ class DockedApp(object):
 
         self.indicator = dock_prefs.IndicatorType.LIGHT     # default to a light indicator
         self.multi_ind = False                              # default to single indicator
+        self.last_active_win = None                         #
         self.drawing_area.connect("expose-event", self.do_expose_event)   # the draw event
 
     def has_wnck_app (self, wnck_app):
@@ -604,7 +606,7 @@ class DockedApp(object):
 
     def get_desktop_from_custom_launcher(self, srch_dir):
         """ Search the custom launchers in a specified directory for
-            one where the Exec field is found withi self.cmd_line
+            one where the Exec field is found within self.cmd_line
         
         If a match is found found, self.desktop_file is set accordingly
 
@@ -629,7 +631,8 @@ class DockedApp(object):
                 # remove command line args from the Exec field of the .desktop
                 de_exec = the_de.getExec().split(None, 1)[0]
 
-                if self.cmd_line.find(de_exec) != -1:
+                if (self.cmd_line.find(de_exec) != -1) and \
+                    (self.wm_class_name.upper()==the_de.getStartupWMClass().upper()):
                     self.desktop_file = srch_dir+the_file
                     return True
                 
@@ -711,6 +714,14 @@ class DockedApp(object):
                 break
 
         return ret_val
+
+    def has_desktop_file(self):
+         """ Does the app have a .desktop file?
+         
+         Returns: True if there is a desktop file, False otherwise
+         """
+
+         return self.desktop_file is not None
 
     def read_info_from_desktop_file(self):
         """Attempt to read from read the app's desktop file.
