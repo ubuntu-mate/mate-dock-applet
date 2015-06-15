@@ -1,0 +1,5 @@
+15 Jun 2015  - V0.62 uploaded to github.
+		This new version fixes issues relating to non-composited displays, 
+		allows custom launchers to be added to the dock, and fixes a bug
+		when minimising and then maximising an app's windows. Full details
+		are in the ChangeLog
