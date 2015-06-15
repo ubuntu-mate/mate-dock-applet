@@ -47,3 +47,18 @@ V0.61   improved the way in which the windows owned by apps are
 	Added an option for the dock to only display unpinned apps from the
 	current workspace.Pinned apps are always displayed no matter what
 	workspace is active so that the user always has quick access to them)
+
+V0.62	Fixed app icon drawing on non-composited displays.
+	For apps which the applet does not recognise (their names or icons
+	are incorrect) added a new right click menu option on the dock
+	to create a custom launcher for the app. This displays a dialog
+	(like the one for the MATE panel) allowing the app's command line,
+	name, and icon to be specified. For user convenience, the applet will 
+	automatically fill in as many of these details as it can. Once 
+	the new launcher has been created, the app needs to be closed and
+	reopened for it to be recognised by the dock. Typically, this 
+	option will only be needed for apps which have not been installed
+	into the usual locations within the Linux filesystem. 
+	When an app's windows are minimised by clicking on the app's dock
+	icon and then maximised by clicking it again, the app window that
+	was previously active is made active again.
