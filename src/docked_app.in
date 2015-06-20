@@ -586,7 +586,12 @@ class DockedApp(object):
                     name_part_found = False
 
                 # remove command line args from the Exec field of the .desktop
-                de_exec = the_de.getExec().split(None, 1)[0]
+                de_exec = the_de.getExec()
+                if (de_exec is not None) and (de_exec != ""):
+                    de_exec = de_exec.split(None, 1)[0]
+                    exec_found = self.cmd_line.find(de_exec) != -1
+                else:
+                    exec_found = False
 
                 # we can now search within self.cmd_line for de_exec
                 # Note: we don't test for equality because some apps are launched via
@@ -595,8 +600,7 @@ class DockedApp(object):
                 # .desktop file the Exec field is '/usr/bin/software-center' whilst
                 # it's command line while running is 'usr/bin/python /usr/bin/software-center'
 
-                if (name_part_found == True) or \
-                        (self.cmd_line.find(de_exec) != -1) or \
+                if (name_part_found == True) or (exec_found == True) or \
                         (the_de.getStartupWMClass() == self.wm_class_name):
                     self.desktop_file = srch_dir+the_file
                     return True
