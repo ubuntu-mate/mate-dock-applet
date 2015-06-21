@@ -275,11 +275,10 @@ class DockCLWindow(Gtk.Window):
         Args: filename  - the filename
         """
 
-        self.__icon_filename = filename
-
         pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
         pixbuf = pixbuf.scale_simple(48, 48, GdkPixbuf.InterpType.BILINEAR)
         self.__img_icon.set_from_pixbuf(pixbuf)
+        self.__icon_filename = filename
 
     def get_icon_filename (self):
         """ Get the filename of the icon to be used with the launcher
@@ -303,7 +302,12 @@ class DockCLWindow(Gtk.Window):
 
         ff_graphic = Gtk.FileFilter()
         ff_graphic.set_name("Image files")
-        ff_graphic.add_pixbuf_formats()
+        ff_graphic.add_pattern("*.svg")
+        ff_graphic.add_pattern("*.png")
+        ff_graphic.add_pattern("*.SVG")
+        ff_graphic.add_pattern("*.PNG")
+        ff_graphic.add_pattern("*.xpm")
+        ff_graphic.add_pattern("*.XPM")
         fdc_icon.add_filter(ff_graphic)
 
         # set the working directory of the dialog
