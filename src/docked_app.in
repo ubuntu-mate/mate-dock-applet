@@ -477,7 +477,7 @@ class DockedApp(object):
 
     def get_desktop_from_app_info(self, srch_dir):
         """Attempt to find the .desktop file for the app based on the app wm_class
-           and app name
+           and app name. Will search for files in srch_dir and its sub directories.
 
         In addition to <self.wm_class_name>.desktop looks for the following variations of
         name for the desktop flie:
@@ -500,47 +500,50 @@ class DockedApp(object):
 
         """
 
-        dfname = srch_dir + self.wm_class_name + ".desktop"
-        if os.path.isfile(dfname):
-            self.desktop_file = dfname
-            return True
+        for the_dir, dir_list, file_list in os.walk(srch_dir):
 
-        dfname = srch_dir + self.wm_class_name.lower() + ".desktop"
-        if os.path.isfile(dfname):
-            self.desktop_file = dfname
-            return True
+            dfname = the_dir + self.wm_class_name + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
 
-        dfname = srch_dir + self.wm_class_name.upper() + ".desktop"
-        if os.path.isfile(dfname):
-            self.desktop_file = dfname
-            return True
+            dfname = the_dir + self.wm_class_name.lower() + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
 
-        dfname = srch_dir + self.app_name + ".desktop"
-        if os.path.isfile(dfname):
-            self.desktop_file = dfname
-            return True
+            dfname = the_dir + self.wm_class_name.upper() + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
 
-        dfname = srch_dir + self.app_name.lower() + ".desktop"
-        if os.path.isfile(dfname):
-            self.desktop_file = dfname
-            return True
+            dfname = the_dir + self.app_name + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
 
-        dfname = srch_dir + self.app_name.replace(" ", "-") + ".desktop"
-        if os.path.isfile(dfname):
-            self.desktop_file = dfname
-            return True
+            dfname = the_dir + self.app_name.lower() + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
 
-        dfname = srch_dir + self.app_name.replace(" ", "-").lower() + ".desktop"
-        if os.path.isfile(dfname):
-            self.desktop_file = dfname
-            return True
+            dfname = the_dir + self.app_name.replace(" ", "-") + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
+            dfname = the_dir + self.app_name.replace(" ", "-").lower() + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
 
         self.desktop_file = None
         return False
 
     def brute_force_find_desktop_file(self, srch_dir):
         """Attempt to find the .desktop file for an app by examining
-           all of the .desktop files in a specified directory.
+           all of the .desktop files in a specified directory and its
+           subdirectories.
 
         A match occurs when any of the following condition are met:
 
@@ -573,37 +576,41 @@ class DockedApp(object):
         for name in name_parts:
             name = name.strip()
             
-        for the_file in os.listdir(srch_dir):
-            if the_file.endswith(".desktop"):
-                the_de = DesktopEntry.DesktopEntry(srch_dir+the_file)
+        # search search_dir and any sub-directories it contains for .desktop files
+        for the_dir, dir_list, file_list in os.walk(srch_dir):
+            for the_file in file_list:
 
-                # if the app name in the desktop file matches any of the parts
-                # of the app name, we have a match
-                try:
-                    unused_var = name_parts.index(the_de.getName().upper())
-                    name_part_found = True
-                except ValueError:
-                    name_part_found = False
+                if the_file.endswith(".desktop"):
 
-                # remove command line args from the Exec field of the .desktop
-                de_exec = the_de.getExec()
-                if (de_exec is not None) and (de_exec != ""):
-                    de_exec = de_exec.split(None, 1)[0]
-                    exec_found = self.cmd_line.find(de_exec) != -1
-                else:
-                    exec_found = False
+                    the_de = DesktopEntry.DesktopEntry(os.path.join(the_dir, the_file))
 
-                # we can now search within self.cmd_line for de_exec
-                # Note: we don't test for equality because some apps are launched via
-                # another (e.g. python apps) and therefore will be one of the command
-                # line args. An example of this is Ubuntu Software Center - in the
-                # .desktop file the Exec field is '/usr/bin/software-center' whilst
-                # it's command line while running is 'usr/bin/python /usr/bin/software-center'
+                    # if the app name in the desktop file matches any of the parts
+                    # of the app name, we have a match
+                    try:
+                        unused_var = name_parts.index(the_de.getName().upper())
+                        name_part_found = True
+                    except ValueError:
+                        name_part_found = False
 
-                if (name_part_found == True) or (exec_found == True) or \
-                        (the_de.getStartupWMClass() == self.wm_class_name):
-                    self.desktop_file = srch_dir+the_file
-                    return True
+                    # remove command line args from the Exec field of the .desktop
+                    de_exec = the_de.getExec()
+                    if (de_exec is not None) and (de_exec != ""):
+                        de_exec = de_exec.split(None, 1)[0]
+                        exec_found = self.cmd_line.find(de_exec) != -1
+                    else:
+                        exec_found = False
+    
+                    # we can now search within self.cmd_line for de_exec
+                    # Note: we don't test for equality because some apps are launched via
+                    # another (e.g. python apps) and therefore will be one of the command
+                    # line args. An example of this is Ubuntu Software Center - in the
+                    # .desktop file the Exec field is '/usr/bin/software-center' whilst
+                    # it's command line while running is 'usr/bin/python /usr/bin/software-center'
+
+                    if (name_part_found == True) or (exec_found == True) or \
+                            (the_de.getStartupWMClass() == self.wm_class_name):
+                        self.desktop_file = os.path.join(the_dir, the_file)
+                        return True
 
         self.desktop_file = None
         return False
