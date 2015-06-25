@@ -799,6 +799,7 @@ class Dock(object):
                  for aai in app.app_info:
                     if new_app == aai.app:
                         app.is_active = True
+                        app.last_active_win = new_win
                         app.queue_draw()
                         break
 
@@ -906,9 +907,9 @@ class Dock(object):
 
                         # we've found the app so remove the window from it's list
                         aai.windows.remove(xid)
-
+                        
                         do_redraw = False
-
+                        
                         # if the app has no more open windows, mark it as closed
                         if len(aai.windows) == 0:
                             # there no more open windows for this process. Does the app
@@ -930,6 +931,10 @@ class Dock(object):
                                 do_redraw = True
                         else:
                             do_redraw = True
+
+                            # was the closed window was the last active window for the app ?
+                            if app.last_active_window == wnck_window:
+                                app.last_active_window = None
 
                         if do_redraw:
                             app.queue_draw()

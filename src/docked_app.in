@@ -299,7 +299,8 @@ class DockedApp(object):
 
         self.indicator = dock_prefs.IndicatorType.LIGHT     # default to a light indicator
         self.multi_ind = False                              # default to single indicator
-        self.last_active_win = None                         #
+        self.last_active_win = None                         # the app's last active wnck_window
+
         self.drawing_area.connect("expose-event", self.do_expose_event)   # the draw event
 
     def has_wnck_app (self, wnck_app):
@@ -346,7 +347,6 @@ class DockedApp(object):
                 (self.wm_class_name == win_class_name) and \
                 (win.is_skip_tasklist() == False):
                 new_app_info.windows.append(win.get_xid())
-
         self.app_info.append(new_app_info)
 
         if new_app_info.pid != 0:
@@ -453,6 +453,20 @@ class DockedApp(object):
         for win in win_list:
             win_ws = win.get_workspace()
             if win_ws == wnck_workspace:
+                return True
+
+        return False
+
+    def has_unminimized_windows(self):
+        """ test whether the app has at least one unminimized window
+
+        Returns:
+            boolean
+        """
+
+        win_list = self.get_wnck_windows()
+        for win in win_list:
+            if not win.is_minimized():
                 return True
 
         return False
