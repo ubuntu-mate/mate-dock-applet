@@ -683,6 +683,42 @@ class Dock(object):
                 # add the info for the new process
                 app_from_dock.app_info.append(wai)
 
+    def find_desktop_file (self, df_name):
+        """ Find the full filename of a specified .desktop file
+
+        Search the following directories (and their subdirectories) for
+        the specified filename
+            /usr/share/applications
+            /usr/local/share/applications
+            ~/.local/share/applications
+
+        Args : 
+            df_name : the name of the .desktop file e.g. pluma.desktop. The
+                      .desktop extension must be included
+
+        Returns:
+            The full filename (path + filename) of the desktop file if it exists
+            or "" otherwise
+        """
+
+        srch_dirs = ["/usr/share/applications/", \
+                     "/usr/local/share/applications/", \
+                     os.path.expanduser("~/.local/share/applications/")]
+
+        for srch_dir in srch_dirs:
+            for the_dir, dir_list, file_list in os.walk(srch_dir):
+                try:
+                    unused_var = file_list.index(df_name)
+
+                    #if we get here the file is found
+                    the_name = os.path.join(the_dir, df_name)
+                    return the_name
+
+                except ValueError:
+                    pass
+
+        return ""
+
     def setup_app_list(self):
         """Setup the list of docked apps.
 
@@ -706,15 +742,11 @@ class Dock(object):
         for pinned_app in pinned_apps:
             dock_app = docked_app.DockedApp()
 
-            if os.path.isfile("/usr/share/applications/" + pinned_app):
-                dock_app.desktop_file = "/usr/share/applications/" + pinned_app
-            elif os.path.isfile("/usr/local/share/applications/" + pinned_app):
-                dock_app.desktop_file = "/usr/local/share/applications/" + pinned_app
-            elif os.path.isfile(os.path.expanduser(("~/.local/share/applications/") + pinned_app)):
-                dock_app.desktop_file = os.path.expanduser("~/.local/share/applications/") + pinned_app
-         
-            if dock_app.read_info_from_desktop_file():
-                self.app_list.append(dock_app)
+            full_name = self.find_desktop_file(pinned_app)
+            if full_name != "":
+                dock_app.desktop_file = full_name
+                if dock_app.read_info_from_desktop_file():
+                    self.app_list.append(dock_app)
 
             dock_app.is_pinned = True
 
