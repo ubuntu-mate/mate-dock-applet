@@ -17,7 +17,7 @@ The applet allows you to:
 
 Ubuntu and Mint users can install from the PPA kindly provided by ![webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
 
-For Arch users, there's a ![package](http://aur.archlinux.org/packages/mate-applet-dock-git) in the AUR. 
+For Arch users, there's a [package](http://aur.archlinux.org/packages/mate-applet-dock-git) in the AUR. 
 
 Users of other distros will need to install from source, so cd to the directory containing all of the development files and run:
 
@@ -33,7 +33,7 @@ sudo make install
 
 ### Installation on Ubuntu Mate on a Pi 2
 
-This is a little more involved. First download gir1.2-wnck-1.0 for arm architechure from ![here](http://launchpadlibrarian.net/160438738/gir1.2-wnck-1.0_2.30.7-0ubuntu4_armhf.deb) and install it with sudo dpkg -i. Then install other dependencies - sudo apt-get install git autoreconf libglib2.0-dev
+This is a little more involved. First download gir1.2-wnck-1.0 for arm architechure from [here](http://launchpadlibrarian.net/160438738/gir1.2-wnck-1.0_2.30.7-0ubuntu4_armhf.deb) and install it with sudo dpkg -i. Then install other dependencies - sudo apt-get install git autoreconf libglib2.0-dev
 
 From this point the instrcutions above for compiling from source should be followed.
 
@@ -57,5 +57,5 @@ Running on Ubuntu with a Windows 7 style layout
 
 Running on a Raspberry Pi 2 with Ubuntu MATE
 
-![Pi2 screenshot](https://github.com/robint99/screenshots/raw/maters/pi2_mate_V0.62_ss.png)
+![Pi2 screenshot](https://github.com/robint99/screenshots/raw/maer/pi2_mate_V0.62_ss.png)
 
