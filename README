@@ -16,14 +16,4 @@ The applet allows you to:
 	Use either a light or dark indicator that it can always be seen 
 	no matter what colour the panel is
 
-To install from source, run:
-	
-configure --prefix=/usr
-make
-sudo make install
-
-Depends on: 
-
-Python3
-gir1.2-wnck-1.0
-
+For installation instructions and screenshots, see README.md
