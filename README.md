@@ -15,7 +15,7 @@ The applet allows you to:
 
 ### Installation
 
-Ubuntu and Mint users can install from the PPA kindly provided by ![webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
+Ubuntu and Mint users can install from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
 
 For Arch users, there's a [package](http://aur.archlinux.org/packages/mate-applet-dock-git) in the AUR. 
 
@@ -57,5 +57,5 @@ Running on Ubuntu with a Windows 7 style layout
 
 Running on a Raspberry Pi 2 with Ubuntu MATE
 
-![Pi2 screenshot](https://github.com/robint99/screenshots/raw/maer/pi2_mate_V0.62_ss.png)
+![Pi2 screenshot](https://github.com/robint99/screenshots/raw/master/pi2_mate_V0.62_ss.png)
 
