@@ -94,6 +94,7 @@ class DockWinList(Gtk.Window):
         self.__the_app = None
         self.__icontheme = None
         self.__timer_id = None
+        self.__dismissed = False
 
         # create ui
         self.__vbox = Gtk.VBox()
@@ -231,10 +232,10 @@ class DockWinList(Gtk.Window):
             Delete the timer object
 
         """
-
-        GObject.source_remove(self.__timer_id)
-        self.__timer_id = None
-        self.__the_app = None
+        
+        if self.__timer_id != None:
+            GObject.source_remove(self.__timer_id)
+            self.__timer_id = None
 
     def query_tooltip(self, widget, x, y, keyboard_mode, tooltip):
         """ Handler for the query-tooltip event to determine whether or not
@@ -495,6 +496,9 @@ class DockWinList(Gtk.Window):
         self.__icontheme = the_icontheme
 
     icontheme = property(get_icontheme, set_icontheme)
+
+    the_app = property(get_app, set_app)
+
 
 def main():
     """

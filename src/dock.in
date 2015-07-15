@@ -1152,6 +1152,7 @@ class Dock(object):
         If the timer is already instantiated, delete it.
         
         Start a new timer with the appropriate delay
+
         """
 
         if self.win_list_timer is not None:
@@ -1165,14 +1166,14 @@ class Dock(object):
 
         if self.win_list_timer is not None:
             GObject.source_remove(self.win_list_timer)
-
-        self.win_list_timer = None
+            self.win_list_timer = None
 
     def show_win_list(self):
         """ Show the the list of open windows for the currently highlighted app
 
         Get the currently highlighted app. If the highlighted app is not running 
-        or a window list is already being displayed for it, then do nothing
+        or a window list is already being displayed for it, or a user interaction
+        has already dismissed the window list, then do nothing
 
         Otherwise, fill the window list, set the window position and set the
         screen areas where the mouse must remain or the window list will hide
@@ -1189,11 +1190,12 @@ class Dock(object):
         if (highlighted_app is None) or (highlighted_app.is_running == False):
             return
         
-        if highlighted_app != self.app_win_list.the_app:
+        if highlighted_app is not None:
 
             # we need to show to window list
 
             # first reset, the window list
+            self.app_win_list.dismissed = True
             self.app_win_list.hide()
             self.app_win_list.clear_win_list()
 

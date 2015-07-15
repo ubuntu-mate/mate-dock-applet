@@ -157,33 +157,25 @@ def applet_button_release(widget, event, the_dock):
                 #   if (the app's windows are all minimized) or 
                 #      (the app s one or more unminimized window but is not the active app)
                 #   then     
-                #       restore all windows and set the focus on the app's last active
-                #       window. If the active window is on a different workspace then
-                #       activate that workspace
+                #       restore the app's last active window. If the active window is on a 
+                #       different workspace then activate that workspace
                 #   else:
                 #       the app is currently the active app so all of the app 
                 #       windows will be minimized
-
+                #
+                # but first, hide any app window list that is being shown and stop the 
+                # window list time
+                
+                the_dock.stop_win_list_timer()
+                the_dock.hide_win_list()
+                
                 win_list = app.get_wnck_windows()
 
-                restore_all_win = (not app.has_unminimized_windows()) or \
+                restore_win = (not app.has_unminimized_windows()) or \
                                   (app.has_unminimized_windows() and (app.is_active==False))
 
-                if restore_all_win:
+                if restore_win:
                     last_active_win = app.last_active_win
-                    for window in win_list:
-                        win_type = window.get_window_type()
-                        if ((win_type == Wnck.WindowType.NORMAL) or \
-                             (win_type == Wnck.WindowType.DIALOG)) and \
-                             (not window.is_skip_tasklist()) and \
-                             (window != last_active_win):
-                                 window.activate(event.time)
-                                 sleep(0.01)   # allow the window manager time to activate
-                                               # the window
-
-                    # finally, reactivate the apps last active window and it's workspace
-                    # (if necessary)
-                    app.last_active_win = last_active_win
 
                     if last_active_win is not None:
                         wnck_screen = last_active_win.get_screen()
@@ -218,6 +210,7 @@ def applet_button_release(widget, event, the_dock):
                         last_active_win.minimize()
                         sleep(0.01)
 
+                
 def win_activation_timer(args):
     """ Timer function to be called by GObject.timeout_add and which
         will activate a specified wnck window
@@ -332,54 +325,6 @@ def applet_motion_notify(widget, event, the_dock):
             the_dock.app_with_mouse = app
             the_dock.set_actions_for_app(app)
 
-def applet_query_tooltip(widget, x, y, keyboard_mode, tooltip, the_dock):
-    """Handler for the query_has_tooltip event
-
-    Don't show a tooltip, but instead use this event as a trigger to displaya list 
-    of the currently highlighted app's windows
-
-    Args:
-        widget, the widget the registered the event, i.e. the applet
-        x - x position of the mouse relative to window.widget
-        y - y position of the mouse relative to window.widget
-        keyboard_mode - True if the tooltip was triggered from the keyboard
-        tooltip - the tooltip object that will be show
-
-    Returns: 
-        False - to prevent a tooltip from being shown
-    """
-
-    return False   
-    # what we need to do....
-    # 
-    # if the tooltip window is already being shown for the currrent docked app
-    #       exit
-    # else
-    #       clear the list
-    #
-    # set up the window list and realize the window
-    # set the window position (adjacent to the dock and centered on the current docked app)
-    # show the window
-
-    # (all of the above should be done by methods of the Dock object in dock.py)
-    #
-    # start a timer which periodically monitors the mouse coords. When the mouse is not:
-    #           over the dock
-    #           in the space between the dock and the window list
-    #           with a set distance of the window list (e.g. 15 pixels)
-    # then hide the window list and stop the timer
-    # 
-    # when a window is selected from the window list, close the window list and
-    # delete the timer
-
-#    win_list.move(x-15, y-10)
-
-    #win_list.move(x,y)
-    print ("tooltip query at %s %s" %(x, y))
-    
-    the_dock.show_winlist()
-    return False
-
 def applet_change_orient(applet, orient, the_dock):
     """Handler for applet change orientation event
 
@@ -410,6 +355,59 @@ def applet_change_size(applet, size, the_dock):
         the_dock.set_app_icon(app, size)
         app.set_icon_geometry()
 
+def applet_scroll_event (applet, event, the_dock):
+    """ Handler for the scroll event
+
+    Depending on the scroll direction, make the next or previous window of 
+    the current app active. Scrolling will wrap around in both directions
+
+    If the app only has one window or we don't know which window was last active
+    (e.g. because the applet has only just started) then make the first window
+    active
+
+    Also, hide the app window list and stop any timer that might be running
+    """
+
+    # we're only interested in scroll up and down events....
+    if (event.direction != Gdk.ScrollDirection.UP) and \
+       (event.direction != Gdk.ScrollDirection.DOWN):
+           return
+
+    if the_dock.app_with_mouse is not None:
+        app = the_dock.app_with_mouse
+
+        # if the app isn't running, there's nothing to do...
+        if app.is_running() == False:
+            return
+
+        windows = app.get_wnck_windows()
+        if (app.last_active_win is None) or (len(windows) == 1):
+            new_index = 0
+        else:
+
+            # work out which window we want to activate
+            try:
+                index = windows.index (app.last_active_win)
+            except ValueError:
+                index = 0  # in case of error activate the first window
+
+            if event.direction == Gdk.ScrollDirection.UP:
+                if index == 0:
+                    new_index = len(windows)-1
+                else:
+                    new_index = index - 1
+            else:
+                if index == len(windows)-1:
+                    new_index = 0
+                else:
+                    new_index = index +1
+    
+        # hide the window list and stop any timer
+        the_dock.hide_win_list()
+        the_dock.stop_win_list_timer()
+
+        #activate the new window
+        windows[new_index].activate(event.time)
 
 def applet_fill(applet):
     """
@@ -431,6 +429,7 @@ def applet_fill(applet):
                        | Gdk.EventMask.POINTER_MOTION_MASK \
                        | Gdk.EventMask.KEY_PRESS_MASK \
                        | Gdk.EventMask.KEY_RELEASE_MASK \
+                       | Gdk.EventMask.SCROLL_MASK \
                        | Gdk.EventMask.STRUCTURE_MASK)
     
     the_dock = dock.Dock(applet)
@@ -444,9 +443,9 @@ def applet_fill(applet):
     applet.connect("motion-notify-event", applet_motion_notify, the_dock)
     applet.connect("button-press-event", applet_button_press, the_dock)
     applet.connect("button-release-event", applet_button_release, the_dock)
-    applet.connect("query-tooltip", applet_query_tooltip, the_dock)
     applet.connect("change-orient", applet_change_orient, the_dock)
     applet.connect("change-size", applet_change_size, the_dock)
+    applet.connect("scroll-event", applet_scroll_event, the_dock)
 
     applet.set_background_widget(applet) # hack for panel transparency
 
