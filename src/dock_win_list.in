@@ -1,0 +1,523 @@
+
+"""
+    Provide a window showing a list of an app's open windows
+    and also allow the user to select a window from the list and
+    switch to it.
+
+    Each item in the list will include the app's icon, an
+    indicator to show if the window is currently active,
+    the window's title, and a close icon allowing the window to
+    be closed.
+
+    The window will function in a similar way to a tooltip i.e.
+    it will appear when the mouse hovers over a dock icon and
+    will disappear if the mouse moves away from the window or
+    the dock applet. It will also disappear when if  dock icon
+    is clicked of an item in the window is clicked
+"""
+
+#
+# Copyright (C) 1997-2003 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Author:
+#     Robin Thompson
+
+import gi
+gi.require_version("Gtk", "2.0")
+gi.require_version("Wnck", "1.0")
+from gi.repository import Gtk
+from gi.repository import Wnck
+from gi.repository import GdkPixbuf
+from gi.repository import Gio
+from gi.repository import Gdk
+from gi.repository import GObject
+
+import os
+import cairo
+import tempfile
+
+import docked_app
+
+CONST_TIMER_DELAY = 500
+CONST_CLOSE_ICON_SIZE = 16
+
+class DockWinList(Gtk.Window):
+
+    """
+
+        Attributes : (aside from ui elements)
+            __mouse_areas : a list containing Gdk.Rectangle objects - used when the
+                            window has been shown and defines the on screen areas in which
+                            the mouse pointer must stay, otherwise the window list
+                            will be hidden. The rectangles should therefore include the
+                            the applet, the area between the window and the applet, and the
+                            window itself with a suitable buffer area around it
+            __timer_id : a ref to a timer used for priodically checking the mouse cursor
+                         position to see if it is within the areas specified in
+                         __mouse_areas
+            __the_app : the docked_app to which the window list relates
+            __icontheme : used for drawing app icons in the window list. This is set from
+                          from the Gtk.IconIcon used by the dock, and will therefore
+                          track changes to the icon theme whilst the dock is running
+
+    """
+
+    def __init__(self):
+
+        """
+        create the window and its contents
+        """
+
+        super().__init__(title="", type=Gtk.WindowType.POPUP)
+
+        self.set_name("gtk-tooltips")  # allows the window to inherit tooltip colours
+        self.set_decorated(False)  # we don't want a titlebar..
+        self.set_skip_taskbar_hint(True) # we don't want to be in the taskbar
+
+        self.__icon_size = 32  # size of icons in the window
+
+        self.__the_app = None
+        self.__icontheme = None
+        self.__timer_id = None
+
+        # create ui
+        self.__vbox = Gtk.VBox()
+        self.__vbox.set_spacing(0)
+
+        # debug stuff
+        #  self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
+        #  self.__button.connect("button-press-event", self.win_button_press)
+        #  self.connect("delete-event", Gtk.main_quit)
+        #  self.__mbutton = Gtk.Button(label="Menu...", stock=Gtk.STOCK_REFRESH)
+        #  self.__mbutton.connect("button-press-event", self.mbutton_press)
+        #  self.__hbx = Gtk.HButtonBox()
+        #  self.__hbx.set_layout(Gtk.ButtonBoxStyle.END)
+        #  self.__hbx.pack_start(self.__button, False, False, 4)
+        #  self.__hbx.pack_start(self.__mbutton, False, False, 4)
+        #  self.__vbox.pack_start(self.__hbx, True, True, 0)
+
+        self.__lbl_app_name = Gtk.Label()
+        self.__lbl_app_name.set_use_markup(True)
+        self.__hbox_title = Gtk.HBox()
+        self.__vbox.pack_start(self.__lbl_app_name, True, True, 0)
+
+        # we use a treeview to list each window, so initialise it and its liststore
+        self.__tree_view = Gtk.TreeView()
+        self.__tree_view.set_headers_visible(False)
+
+        # turn grid lines off, although they still seem to appear in some themes e.g. Menta
+        self.__tree_view.set_grid_lines(Gtk.TreeViewGridLines.NONE)
+
+        self.__tree_view.set_hover_selection(True)
+
+        # the list contains the window icon, active indicator, window title, close icon and
+        # the window itself
+        self.__list_store = Gtk.ListStore(GdkPixbuf.Pixbuf, str, str, GdkPixbuf.Pixbuf, Wnck.Window)
+        self.__active_renderer = Gtk.CellRendererText()
+        self.__icon_renderer = Gtk.CellRendererPixbuf()
+        self.__title_renderer = Gtk.CellRendererText()
+        self.__close_renderer = Gtk.CellRendererPixbuf()
+        self.__close_renderer.set_alignment(1, 0.0)   # align to to topright of the cell
+
+        # create columns for the treeview
+        self.__col_icon = Gtk.TreeViewColumn("",
+                                             self.__icon_renderer,
+                                             pixbuf=0)
+        self.__col_icon.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.__col_icon.set_fixed_width(self.__icon_size+4)
+
+        self.__col_active = Gtk.TreeViewColumn("",
+                                               self.__active_renderer,
+                                               text=1)
+        self.__col_active.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.__col_active.set_fixed_width(20)
+
+        self.__col_title = Gtk.TreeViewColumn("",
+                                              self.__title_renderer,
+                                              text=2)
+        self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+
+        self.__col_close = Gtk.TreeViewColumn("",
+                                              self.__close_renderer,
+                                              pixbuf=3)
+        self.__col_close.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.__col_close.set_fixed_width(40)
+
+        # add the columns
+        self.__tree_view.set_model(self.__list_store)
+        self.__tree_view.append_column(self.__col_icon)
+        self.__tree_view.append_column(self.__col_active)
+        self.__tree_view.append_column(self.__col_title)
+        self.__tree_view.append_column(self.__col_close)
+
+        self.__vbox.pack_start(self.__tree_view, True, True, 0)
+        self.__vbox.show_all()
+        self.add(self.__vbox)
+
+        self.__mouse_areas = []
+
+        self.__tree_view.set_has_tooltip(True)
+        self.__tree_view.connect("query-tooltip", self.query_tooltip)
+        self.__tree_view.connect("button-release-event", self.button_release)
+
+        # connect handlers for the show and hide events
+        self.connect("show", self.win_shown)
+        self.connect("hide", self.win_hidden)
+
+        self.__pb_close = None
+
+    def create_close_pixbuf(self):
+        """ Create a 'close' icon (based on the stock close icon) for use
+            in the treeview
+        """
+
+        # create a pixbuf for holding the 'close' icon
+        pb_close = self.render_icon(Gtk.STOCK_CLOSE, Gtk.IconSize.MENU, None)
+
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, CONST_CLOSE_ICON_SIZE,
+                                     CONST_CLOSE_ICON_SIZE)
+        ctx = cairo.Context(surface)
+        Gdk.cairo_set_source_pixbuf(ctx, pb_close, 0, 0)
+        ctx.paint()
+
+        # we now need to copy the cairo surface to a pixbuf. The best way to do this would
+        # be by calling GdkPixbuf.Pixbuf.new_from_data as in these comments. Unfortunately
+        # this function does not seem to be introspectable and therefore doesn't work.
+        #
+        #self.__pb_close = GdkPixbuf.Pixbuf.new_from_data(surface.get_data(),
+        #                                                 GdkPixbuf.Colorspace.RGB,
+        #                                                 True, 8, pb_close.get_width(),
+        #                                                 pb_close.get_height(),
+        #                                                 64)
+
+        # Therefore we have to resort to writing the surface to a temporary .png file
+        # and then loading it into our pixbuf ...
+
+        handle, tempfn = tempfile.mkstemp()
+        surface.write_to_png(tempfn)
+        self.__pb_close = GdkPixbuf.Pixbuf.new_from_file(tempfn)
+        os.remove(tempfn)
+
+    def win_shown(self, widget):
+        """ Event handler for the window's show event
+
+            Instantiate a timer to periodically check the mouse cursor position
+
+            Args :
+                widget : the widget the caused the event (i.e. self)
+
+        """
+
+        self.__timer_id = GObject.timeout_add(CONST_TIMER_DELAY, self.do_timer)
+
+    def win_hidden(self, widget):
+        """ Event handler for the window's hide event
+
+            Delete the timer object
+
+        """
+
+        GObject.source_remove(self.__timer_id)
+        self.__timer_id = None
+        self.__the_app = None
+
+    def query_tooltip(self, widget, x, y, keyboard_mode, tooltip):
+        """ Handler for the query-tooltip event to determine whether or not
+            to show the 'Close window' tooltip
+
+            If the tooltip was triggered by the keyboard, don't do anything
+
+            Get the mouse coords, and if the mouse if located over the close
+            icon show the tooltip
+
+        Args:
+            widget - the widget that received the event i.e. our treeview
+            x - mouse x coord
+            y - mouse y coord
+            keyboard_mode - was the tooltip triggered by the keyboard?
+            tooltip - the tooltip object that will be displayed
+
+        Returns:
+            True to display the tooltip, False otherwise
+        """
+
+        if keyboard_mode:
+            return False
+
+        path, col, xrel, yrel = self.__tree_view.get_path_at_pos(x, y)
+
+        if col == self.__col_close:
+            cell_area = self.__tree_view.get_cell_area(path, col)
+            if (x >= cell_area.x + cell_area.width  - CONST_CLOSE_ICON_SIZE) and \
+               (y <= cell_area.y + CONST_CLOSE_ICON_SIZE):
+                tooltip.set_text("Close window")
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def button_release(self, widget, event):
+        """ Handler for the button release event
+
+        If the middle or right mouse button was pressed, do nothing
+
+        If the mouse button was released over the close icon, close the
+        associated window
+
+        If the mouse button was released over any other part of the tree view
+        item, activate the associated  window
+
+        Finally, hide the window list
+
+        Args:
+
+            widget : the widget the received the signal i.e. our treeview
+            event  : the event parameters
+
+        Returns:
+            True: to stop any other handlers from being invoked
+        """
+
+        if event.button != 1:
+            return False # let other handlers run
+
+        path, col, xrel, yrel = self.__tree_view.get_path_at_pos(event.x, event.y)
+        sel_iter = self.__list_store.get_iter(path)
+
+        win = self.__list_store.get_value(sel_iter, 4)
+
+        if col == self.__col_close:
+            cell_area = self.__tree_view.get_cell_area(path, col)
+            if (event.x >= cell_area.x + cell_area.width  - CONST_CLOSE_ICON_SIZE) and \
+               (event.y <= cell_area.y + CONST_CLOSE_ICON_SIZE):
+                win.close(event.time)
+                self.hide()
+                return True
+
+        self.hide()
+        win.activate(event.time)
+        return True
+
+    def do_timer(self):
+        """
+            Check the current mouse position and if it is not within any of the
+            rectangles in self.__mouse_area hide the window
+        """
+
+        # get the mouse x y
+        root_win, x, y, mask = self.get_screen().get_root_window().get_pointer()
+        if not self.point_is_in_mouse_areas(x, y):
+            self.hide() 
+            self.__timer_id = None
+            return False
+
+        return True
+
+    def add_to_list(self, icon, is_active, title, window):
+        """ Add an item to the window list
+
+        Args:
+            icon - the app's icon in pixbuf format
+            is_active - True if the window is active, False otherwise
+            title - the windows's title
+            window - the wnck window relating to the app
+        """
+
+        # set the active indicator
+        if is_active:
+            active_text = "*"
+        else:
+            active_text = ""
+
+        if icon is None:
+            icon_pb = self.render_icon(Gtk.STOCK_EXECUTE, Gtk.IconSize.MENU, None)
+        else:
+            icon_pb = icon
+
+        self.__list_store.append([icon_pb, active_text, title, self.__pb_close, window])
+
+    def clear_win_list(self):
+        """ Clear the list of open windows """
+        self.__list_store.clear()
+
+    def set_app_name(self, app_name):
+        """ Sets the app name in the window
+
+        Args - app name
+
+        """
+
+        # use pango markup to make the app name bold and large
+
+        self.__lbl_app_name.set_markup('<span size="larger"><b>%s</b></span>' %(app_name))
+
+    def win_button_press(self, widget, event):
+        """ this is for debug puposes only"""
+        Gtk.main_quit()
+
+    def setup_list(self):
+        """ Setup the app list
+
+        Set the app name
+
+        Re-create the close icon in case the icon theme has changed
+
+        For every window the app has open add an entry containing the app icon,
+        window title, an indicator if the window is the active window, and a
+        close icon
+
+        """
+
+        self.create_close_pixbuf()
+
+        # reduce the size of the window - it will autosize to fit the contents...
+        self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.__col_title.set_fixed_width(150)
+        self.resize(100, 10)
+        self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+
+        self.set_app_name(self.__the_app.app_name)
+        win_list = self.__the_app.get_wnck_windows()
+
+        for win in win_list:
+
+            if self.__icontheme.has_icon(self.__the_app.icon_name):
+
+                # draw the app icon at the size we want
+                icon_info = self.__icontheme.choose_icon([self.__the_app.icon_name, None],
+                                                         self.__icon_size, 0)
+
+                try:
+                    pixbuf = icon_info.load_icon()
+                except GLib.GError:
+                    # default to a stock icon if we couldn't load the app icon
+                    pixbuf = self.render_icon(Gtk.STOCK_EXECUTE, Gtk.IconSize.DND, None)
+            else:
+                pixbuf = self.__the_app.app_pb.scale_simple(self.__icon_size,
+                                                            self.__icon_size,
+                                                            GdkPixbuf.InterpType.BILINEAR)
+            is_active = (len(win_list) == 1) or \
+                        (win == self.__the_app.last_active_win)
+            self.add_to_list(pixbuf, is_active, win.get_name(), win)
+
+    def mbutton_press(self, widget, event):
+        """ this is for debug purposes only and demonstrates that menu.popup does
+            not work with Gtk 2
+        """
+
+        self.menu = Gtk.Menu()
+        menu_item = Gtk.MenuItem("A menu item")
+        self.menu.append(menu_item)
+        menu_item.show()
+
+        self.menu.popup(None, None, None, event.button, event.time)
+
+    def clear_mouse_areas(self):
+        """ Clear the mouse areas list """
+        self.__mouse_areas = []
+
+    def add_mouse_area(self, rect):
+        """ Add a rectangle to the __mouse_area_list
+
+            Args: rect - a Gdk.Rectangle
+        """
+        self.__mouse_areas.append(rect)
+
+    def point_is_in_mouse_areas(self, x, y):
+        """ Checks to see if a specified position on the screen is within any of
+            the self.__mouse_areas rectangle list
+
+            Args:
+                x : the x position
+                y : the y position
+
+            Returns:
+                True if the position is within one of the rectangles in self.__mouse_areas,
+                False otherwise
+        """
+
+        for rect in self.__mouse_areas:
+            if ((x >= rect.x) and (x <= rect.x + rect.width)) and \
+               ((y >= rect.y) and (y <= rect.y + rect.height)):
+                return True
+
+        return False
+
+    def get_app(self):
+        """ Return the docked app the window list refers to
+
+            Returns:
+                A docked_app
+        """
+
+        return self.__the_app
+
+    def set_app(self, app):
+        """ Set the docked app the window list refers to
+
+            Args : app - a docked_app
+        """
+
+        self.__the_app = app
+
+    the_app = property(get_app, set_app)
+
+    def get_icontheme(self):
+        """ Return the icontheme
+
+            Returns:
+                A Gtk.Icontheme
+        """
+
+        return self.__icontheme
+
+    def set_icontheme(self, the_icontheme):
+        """ Sets the icontheme currently being used
+            Args : the_icontheme
+        """
+
+        self.__icontheme = the_icontheme
+
+    icontheme = property(get_icontheme, set_icontheme)
+
+def main():
+    """
+    main function - debugging code goes here
+    """
+
+#    thewin = DockWinList()
+#    thewin.set_app_name("Testing....")
+#    thewin.add_to_list(None, False, "Win 1")
+#    thewin.add_to_list(None, True, "Win 2 is active")
+#    thewin.add_to_list(None, False, "Win 3")
+#    thewin.show_all()
+
+#    thewin.move(100, 110)
+#    pos = thewin.get_position()
+#    size = thewin.get_size()
+#    print("pos %d %d" %(pos[0], pos[1]))
+#    print("size %d %d" %(size[0], size[1]))
+#    thewin.add_mouse_area(Gdk.Rectangle(pos[0]-15, pos[1]-15, size[0]+30, size[1]+30))
+#    thewin.add_mouse_area(Gdk.Rectangle(0, 0, 48, 500))
+#    thewin.add_mouse_area(Gdk.Rectangle(48, 110, 100, size[1]))
+#    Gtk.main()
+    return
+
+if __name__ == "__main__":
+    main()

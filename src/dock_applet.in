@@ -51,6 +51,7 @@ import xdg.DesktopEntry as DesktopEntry
 
 import docked_app
 import dock
+from dock_win_list import DockWinList
 
 from log_it import log_it as log_it
 
@@ -79,6 +80,10 @@ def applet_button_press(widget, event, the_dock):
         app = the_dock.get_app_at_mouse(event.x, event.y)
         the_dock.right_clicked_app = app
 
+        # because the right click menu is about to be shown, we need to hide
+        # the window list
+        the_dock.hide_win_list()
+
 def applet_button_release(widget, event, the_dock):
     """Button press event for the applet
 
@@ -101,6 +106,10 @@ def applet_button_release(widget, event, the_dock):
     """
 
     if event.button == 1:
+
+        # hide the window list window 
+
+        the_dock.hide_win_list()
 
         app = the_dock.get_app_at_mouse(event.x, event.y)
         if app is not None:
@@ -233,15 +242,10 @@ def applet_enter_notify(widget, event, the_dock):
 
     If another app is currently brightened, darken it to normal
 
-    Set the applet tooltip text to the name of the app which the
-    mouse is currently over
-
-    if the app is running, extend the tooltip so that with text
-    indicating that a new window can be opend by shift clicking
-    the app icon
-
     Set up the right click menu for the dock based on the app which
     the mouse is currently over
+
+    Start the timer for showing app window lists
 
     Args:
         widget : the widget that registered the event i.e. the applet
@@ -258,29 +262,22 @@ def applet_enter_notify(widget, event, the_dock):
         the_dock.app_with_mouse.has_mouse = False
         the_dock.app_with_mouse.queue_draw()
         the_dock.app_with_mouse = None
-        widget.set_has_tooltip(False)
 
     # highlight the app under the mouse cursor
     if app is not None:
         app.has_mouse = True
         app.queue_draw()
         the_dock.app_with_mouse = app
-        if app.is_running():
-            tooltip_text = "%s\n%s" %(app.app_name, "(shift click for new window)")
-        else:
-            tooltip_text = app.app_name
-
-        widget.set_tooltip_text(tooltip_text)
 
         # set up the available options for the app
         the_dock.set_actions_for_app(app)
+    
+        the_dock.reset_win_list_timer()
 
 def applet_leave_notify(widget, event, the_dock):
     """Leave notifiy event handle for the applet
 
     Unbrighten any brightened app icon
-
-    Hide any tooltips
 
     Args:
         widget : the widget that registered the event i.e. the applet
@@ -292,7 +289,8 @@ def applet_leave_notify(widget, event, the_dock):
         the_dock.app_with_mouse.has_mouse = False
         the_dock.app_with_mouse.queue_draw()
         the_dock.app_with_mouse = None
-        widget.set_has_tooltip(False)
+
+    the_dock.stop_win_list_timer()
 
 def applet_motion_notify(widget, event, the_dock):
     """Motion notify event for the applet
@@ -302,12 +300,7 @@ def applet_motion_notify(widget, event, the_dock):
     and reset the applet tooltip text
 
     Then, if the docked app under the mouse cursor does not have its icon
-    brightened then brighten it and set the applet tooltip set to the app name
-    and setup the applet right click menu
-
-    if the new app is running, extend the tooltip so that with text
-    indicating that a new window can be opend by shift clicking
-    the app icon
+    brightened then brighten it and setup the applet right click menu
 
     Args:
         widget : the widget that registered the event i.e. the applet
@@ -321,23 +314,71 @@ def applet_motion_notify(widget, event, the_dock):
         the_dock.app_with_mouse.has_mouse = False
         the_dock.app_with_mouse.queue_draw()
 
-        # hide the current tooltip (if any)
-        widget.set_has_tooltip(False)
-        widget.trigger_tooltip_query()
         widget.queue_draw()
 
-    if (app is not None) and (app.has_mouse == False):
-        app.has_mouse = True
-        app.queue_draw()
-        the_dock.app_with_mouse = app
-        if app.is_running():
-            tooltip_text = "%s\n%s" %(app.app_name, "(shift click for new window)")
-        else:
-            tooltip_text = app.app_name
+        # because a new app is highlighted reset the window list timer and hide any 
+        # currently open window list
+        the_dock.hide_win_list()
+        the_dock.reset_win_list_timer()
 
-        widget.set_tooltip_text(tooltip_text)
+    if (app is not None):
 
-        the_dock.set_actions_for_app(app)
+        # reset the window list timer
+        the_dock.reset_win_list_timer()
+       
+        if app.has_mouse == False:
+            app.has_mouse = True
+            app.queue_draw()
+            the_dock.app_with_mouse = app
+            the_dock.set_actions_for_app(app)
+
+def applet_query_tooltip(widget, x, y, keyboard_mode, tooltip, the_dock):
+    """Handler for the query_has_tooltip event
+
+    Don't show a tooltip, but instead use this event as a trigger to displaya list 
+    of the currently highlighted app's windows
+
+    Args:
+        widget, the widget the registered the event, i.e. the applet
+        x - x position of the mouse relative to window.widget
+        y - y position of the mouse relative to window.widget
+        keyboard_mode - True if the tooltip was triggered from the keyboard
+        tooltip - the tooltip object that will be show
+
+    Returns: 
+        False - to prevent a tooltip from being shown
+    """
+
+    return False   
+    # what we need to do....
+    # 
+    # if the tooltip window is already being shown for the currrent docked app
+    #       exit
+    # else
+    #       clear the list
+    #
+    # set up the window list and realize the window
+    # set the window position (adjacent to the dock and centered on the current docked app)
+    # show the window
+
+    # (all of the above should be done by methods of the Dock object in dock.py)
+    #
+    # start a timer which periodically monitors the mouse coords. When the mouse is not:
+    #           over the dock
+    #           in the space between the dock and the window list
+    #           with a set distance of the window list (e.g. 15 pixels)
+    # then hide the window list and stop the timer
+    # 
+    # when a window is selected from the window list, close the window list and
+    # delete the timer
+
+#    win_list.move(x-15, y-10)
+
+    #win_list.move(x,y)
+    print ("tooltip query at %s %s" %(x, y))
+    
+    the_dock.show_winlist()
+    return False
 
 def applet_change_orient(applet, orient, the_dock):
     """Handler for applet change orientation event
@@ -403,6 +444,7 @@ def applet_fill(applet):
     applet.connect("motion-notify-event", applet_motion_notify, the_dock)
     applet.connect("button-press-event", applet_button_press, the_dock)
     applet.connect("button-release-event", applet_button_release, the_dock)
+    applet.connect("query-tooltip", applet_query_tooltip, the_dock)
     applet.connect("change-orient", applet_change_orient, the_dock)
     applet.connect("change-size", applet_change_size, the_dock)
 

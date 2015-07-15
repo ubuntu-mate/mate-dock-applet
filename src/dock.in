@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 
 """Provide functionality relating to an application dock
 
@@ -40,7 +40,9 @@ respond to selections made in the applet right click menu, specifically
 import gi
 gi.require_version("Gtk", "2.0")
 from gi.repository import Gtk
+from gi.repository import Gdk
 from gi.repository import MatePanelApplet
+from gi.repository import GObject
 
 gi.require_version("Wnck", "1.0")
 from gi.repository import Wnck
@@ -55,6 +57,7 @@ import docked_app
 import dock_prefs
 import dock_about
 import dock_custom_launcher
+import dock_win_list
 
 from log_it import log_it as log_it
 
@@ -83,6 +86,12 @@ class Dock(object):
             indicator : the indicator type (light or dark)
             dock_action_group : Gtk Action group containing all of the actions
                                 for the applet right click menu
+            app_win_list : a replacement for the default tooltip - a window which lists
+                           the currently highlighted  app's open windows and allows the 
+                           user to select one
+            win_list_delay : the amount of time (in milliseconds) after which the app's
+                             window list will pop up when the mouse hovers over the app
+            win_list_timer : timer object used to cound win_list_delay
 
     """
 
@@ -125,6 +134,12 @@ class Dock(object):
         self.show_all_apps = self.settings.get_boolean("apps-from-all-workspaces")
 
         self.dock_action_group = None
+        
+        self.app_win_list  = dock_win_list.DockWinList()
+        self.app_win_list.icontheme = self.icontheme
+        self.win_list_delay = 500
+        self.win_list_timer = None
+
         self.setup_menu()
 
     def write_settings(self):
@@ -182,23 +197,6 @@ class Dock(object):
         move_left_action = self.dock_action_group.get_action("move_left_action")
         move_right_action = self.dock_action_group.get_action("move_right_action")
 
-        show_win_1_action = self.dock_action_group.get_action("show_win_1_action")
-        show_win_1_action.set_visible(False)
-        show_win_2_action = self.dock_action_group.get_action("show_win_2_action")
-        show_win_2_action.set_visible(False)
-        show_win_3_action = self.dock_action_group.get_action("show_win_3_action")
-        show_win_3_action.set_visible(False)
-        show_win_4_action = self.dock_action_group.get_action("show_win_4_action")
-        show_win_4_action.set_visible(False)
-        show_win_5_action = self.dock_action_group.get_action("show_win_5_action")
-        show_win_5_action.set_visible(False)
-        show_win_6_action = self.dock_action_group.get_action("show_win_6_action")
-        show_win_6_action.set_visible(False)
-        show_win_7_action = self.dock_action_group.get_action("show_win_7_action")
-        show_win_7_action.set_visible(False)
-        show_win_8_action = self.dock_action_group.get_action("show_win_8_action")
-        show_win_8_action.set_visible(False)
-
         close_win_action = self.dock_action_group.get_action("close_win_action")
         close_win_action.set_visible(False)
 
@@ -232,23 +230,6 @@ class Dock(object):
         # set the actions for selecting specific windows
 
         num_win = app.get_num_windows()
-        if num_win > 1:
-            # there is more than one window available so we need to enable some actions and
-            # set them up
-
-            action_list = [show_win_1_action, show_win_2_action, show_win_3_action, \
-                           show_win_5_action, show_win_5_action, show_win_6_action, \
-                           show_win_7_action, show_win_8_action]
-            win_list = app.get_wnck_windows()
-
-            for loop in range(0, num_win):
-                wnck_window = win_list[loop]
-                action = action_list[loop]
-
-                action.set_visible(True)
-                action.set_icon_name(app.icon_name)
-                action.set_label(wnck_window.get_name())
-
         if num_win == 1:
             close_win_action.set_label("Close %s" %app.app_name)
         else:
@@ -291,36 +272,11 @@ class Dock(object):
                              self.show_ccl_win), \
                              ("about_action", Gtk.STOCK_ABOUT, \
                              "About...", None, "About...", self.show_about_win), \
-                             ("show_win_1_action", None, \
-                              "Show window 1", None, None, self.show_win_1), \
-                             ("show_win_2_action", None, \
-                              "Show window 2", None, None, self.show_win_2), \
-                             ("show_win_3_action", None, \
-                              "Show window 3", None, None, self.show_win_3), \
-                             ("show_win_4_action", None,  \
-                              "Show window 4", None, None, self.show_win_4), \
-                             ("show_win_5_action", None, \
-                              "Show window 5", None, None, self.show_win_5), \
-                             ("show_win_6_action", None, \
-                              "Show window 6", None, None, self.show_win_6), \
-                             ("show_win_7_action", None, \
-                              "Show window 7", None, None, self.show_win_7), \
-                             ("show_win_8_action", None, \
-                              "Show window 8", None, None, self.show_win_8), \
                              ("close_win_action", Gtk.STOCK_CLOSE, \
                               "_Close", None, "Close", self.close_win) \
                              ])
 
-
-        menu_xml = '<menuitem name="show_win_1" action="show_win_1_action"/>'
-        menu_xml += '<menuitem name="show_win_2" action="show_win_2_action"/>'
-        menu_xml += '<menuitem name="show_win_3" action="show_win_3_action"/>'
-        menu_xml += '<menuitem name="show_win_4" action="show_win_4_action"/>'
-        menu_xml += '<menuitem name="show_win_5" action="show_win_5_action"/>'
-        menu_xml += '<menuitem name="show_win_6" action="show_win_6_action"/>'
-        menu_xml += '<menuitem name="show_win_7" action="show_win_7_action"/>'
-        menu_xml += '<menuitem name="show_win_8" action="show_win_8_action"/><separator/>'
-        menu_xml += '<menuitem name="close_win" action="close_win_action"/><separator/>'
+        menu_xml = '<menuitem name="close_win" action="close_win_action"/><separator/>'
         menu_xml += '<menuitem name="move_up" action="move_up_action"/>'
         menu_xml += '<menuitem name="move_down" action="move_down_action"/>'
         menu_xml += '<menuitem name="move_left" action="move_left_action"/>'
@@ -584,38 +540,6 @@ class Dock(object):
         win_list = self.right_clicked_app.get_wnck_windows()
         wnck_win = win_list[win_no-1]
         wnck_win.activate(0)
-
-    def show_win_1(self, data=None):
-        """Callback for showing window 1 of the right clicked app"""
-        self.show_win(1)
-
-    def show_win_2(self, data=None):
-        """Callback for showing window 2 of the right clicked app"""
-        self.show_win(2)
-
-    def show_win_3(self, data=None):
-        """Callback for showing window 3 of the right clicked app"""
-        self.show_win(3)
-
-    def show_win_4(self, data=None):
-        """Callback for showing window 4 of the right clicked app"""
-        self.show_win(4)
-
-    def show_win_5(self, data=None):
-        """Callback for showing window 5 of the right clicked app"""
-        self.show_win(5)
-
-    def show_win_6(self, data=None):
-        """Callback for showing window 6 of the right clicked app"""
-        self.show_win(6)
-
-    def show_win_7(self, data=None):
-        """Callback for showing window 7 of the right clicked app"""
-        self.show_win(7)
-
-    def show_win_8(self, data=None):
-        """Callback for showing window 8 of the right clicked app"""
-        self.show_win(8)
 
     def close_win(self, data=None):
         """Close all windows for the right clicked app"""
@@ -965,8 +889,8 @@ class Dock(object):
                             do_redraw = True
 
                             # was the closed window was the last active window for the app ?
-                            if app.last_active_window == wnck_window:
-                                app.last_active_window = None
+                            if app.last_active_win == wnck_window:
+                                app.last_active_win = None
 
                         if do_redraw:
                             app.queue_draw()
@@ -1222,4 +1146,137 @@ class Dock(object):
 
         return None
 
+    def reset_win_list_timer(self):
+        """ Reset win_list timer
 
+        If the timer is already instantiated, delete it.
+        
+        Start a new timer with the appropriate delay
+        """
+
+        if self.win_list_timer is not None:
+            GObject.source_remove(self.win_list_timer)
+        
+        self.win_list_timer = GObject.timeout_add(self.win_list_delay, self.show_win_list)
+
+    def stop_win_list_timer(self):
+        """ Stop the win list timer
+        """
+
+        if self.win_list_timer is not None:
+            GObject.source_remove(self.win_list_timer)
+
+        self.win_list_timer = None
+
+    def show_win_list(self):
+        """ Show the the list of open windows for the currently highlighted app
+
+        Get the currently highlighted app. If the highlighted app is not running 
+        or a window list is already being displayed for it, then do nothing
+
+        Otherwise, fill the window list, set the window position and set the
+        screen areas where the mouse must remain or the window list will hide
+        """
+
+        panel_space = 5 # how many pixels away from the panel the window list will
+                        # appear
+
+        win_border = 15 # size of the border (in pixels) around the window list where
+                        # the mouse must remain, outside of which the window list wil;
+                        # hide
+
+        highlighted_app = self.app_with_mouse 
+        if (highlighted_app is None) or (highlighted_app.is_running == False):
+            return
+        
+        if highlighted_app != self.app_win_list.the_app:
+
+            # we need to show to window list
+
+            # first reset, the window list
+            self.app_win_list.hide()
+            self.app_win_list.clear_win_list()
+
+            self.app_win_list.the_app = highlighted_app
+            self.app_win_list.setup_list()
+            self.app_win_list.clear_mouse_areas()
+
+            # add the applet to the mouse areas
+            applet_x, applet_y = self.applet.window.get_root_coords(0,0)
+            applet_w, applet_h = self.applet.window.get_size()
+
+            if applet_x < 0:
+                applet_x = 0
+            if applet_y < 0:
+                applet_y = 0
+
+            self.app_win_list.add_mouse_area (Gdk.Rectangle(applet_x, applet_y, applet_w, applet_h))
+            
+            # work out where to place the window - adjacent to the panel and centered on the
+            # highlighted dock app
+
+            app_alloc = highlighted_app.drawing_area.get_allocation()
+            aax, aay = self.applet.window.get_root_coords(app_alloc.x, app_alloc.y)
+            self.app_win_list.realize()
+            win_w, win_h = self.app_win_list.get_size()
+
+            orientation = self.applet.get_orient()
+            if orientation == MatePanelApplet.AppletOrient.RIGHT:
+                centre_pos  = aay + app_alloc.height/2
+                win_x = applet_w + panel_space
+                win_y = centre_pos - (win_h/2)
+
+                # setup a new mouse area covering the window (minus a border) and extending
+                # to the panel
+                self.app_win_list.add_mouse_area(Gdk.Rectangle(applet_x, 
+                                                               win_y - win_border ,
+                                                               win_x +win_w + win_border, 
+                                                               win_h + (2*win_border)))
+                
+            elif orientation == MatePanelApplet.AppletOrient.LEFT:
+                centre_pos  = aay + app_alloc.height/2
+                win_x = applet_x - panel_space - win_w
+                win_y = centre_pos - (win_h/2)
+
+                # setup a new mouse area covering the window (minus a border) and extending
+                # to the panel
+                self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border, 
+                                                               win_y - win_border,
+                                                               applet_x + applet_w, 
+                                                               win_h + (2*win_border)))
+               
+            elif orientation == MatePanelApplet.AppletOrient.DOWN:
+                centre_pos  = aax+ app_alloc.width/2
+                win_x = centre_pos - (win_w / 2) 
+                win_y = applet_h +  panel_space
+
+                # setup a new mouse area covering the window (minus a border) and extending
+                # to the panel
+                self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border, 
+                                                               applet_y,
+                                                               win_w + (2*win_border), 
+                                                               win_y + win_h + win_border))
+            else:
+                centre_pos  = aax+ app_alloc.width/2
+                win_x = centre_pos - (win_w / 2) 
+                win_y = applet_y - panel_space - win_h
+
+                # setup a new mouse area covering the window (minus a border) and extending
+                # to the panel
+                self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border, 
+                                                               win_y - win_border,
+                                                               win_w + (2*win_border), 
+                                                               applet_y  + applet_h))
+            self.app_win_list.move (win_x, win_y)
+            self.app_win_list.show_all()
+            
+            self.win_list_timer = None
+            return False
+
+    def hide_win_list(self):
+        """ Hide the window list """
+
+        if self.app_win_list is not None:
+            self.app_win_list.hide()
+
+        
