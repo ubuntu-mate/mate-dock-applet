@@ -21,15 +21,17 @@ For Arch users, there's a [package](http://aur.archlinux.org/packages/mate-apple
 
 Users of other distros will need to install from source, so cd to the directory containing all of the development files and run:
 
+```
 automake --add-missing
 
-autoreconf	
+autoreconf
 
 ./configure --prefix=/usr
 
 make
 
 sudo make install
+```
 
 ### Installation on Ubuntu Mate on a Pi 2
 
