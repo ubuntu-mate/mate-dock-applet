@@ -35,7 +35,7 @@ sudo make install
 
 This is a little more involved. First download gir1.2-wnck-1.0 for arm architechure from [here](http://launchpadlibrarian.net/160438738/gir1.2-wnck-1.0_2.30.7-0ubuntu4_armhf.deb) and install it with sudo dpkg -i. Then install other dependencies - sudo apt-get install git autoreconf libglib2.0-dev
 
-From this point the instrcutions above for compiling from source should be followed.
+From this point the instructions above for compiling from source should be followed.
 
 ### Dependencies
 
