@@ -21,21 +21,23 @@ For Arch users, there's a [package](http://aur.archlinux.org/packages/mate-apple
 
 Users of other distros will need to install from source, so cd to the directory containing all of the development files and run:
 
+```
 automake --add-missing
 
-autoreconf	
+autoreconf
 
 ./configure --prefix=/usr
 
 make
 
 sudo make install
+```
 
 ### Installation on Ubuntu Mate on a Pi 2
 
 This is a little more involved. First download gir1.2-wnck-1.0 for arm architechure from [here](http://launchpadlibrarian.net/160438738/gir1.2-wnck-1.0_2.30.7-0ubuntu4_armhf.deb) and install it with sudo dpkg -i. Then install other dependencies - sudo apt-get install git autoreconf libglib2.0-dev
 
-From this point the instrcutions above for compiling from source should be followed.
+From this point the instructions above for compiling from source should be followed.
 
 ### Dependencies
 
