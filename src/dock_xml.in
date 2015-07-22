@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+
+"""Provide functionality allowing the dock applets configuration to be saved
+   and loaded
+
+Store the configuration in a specified XML file 
+
+The file will contain the following information:
+    : a list of all pinned app's .desktop files
+    : the indicator type (light or dark)
+    : whether unpinned apps from all workspaces are to be displayed
+    : whether an indicator for each open window is to be displayed
+"""
+
+# Copyright (C) 1997-2003 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Author:
+#     Robin Thompson
+
+import xml.etree.ElementTree as ET
+
+def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind):
+    """ Write the xml file using the specified information
+
+    The xml file will be in the following format:
+        
+        <root>
+            <pinned_apps>
+                <desktop_file name="name1"/>
+                <desktop_file name="name2"/>
+                etc...
+            </pinned_apps>
+            <light_ind>int</>
+            <unpinned_from_all>True or False</>
+            <multi_ind>True or False</>
+        </root>
+
+    Args: 
+        filename - the filename to use. If the file already exists it will be
+                   overwritten.
+        desktop_files: a list containing the names of the applet's pinned app's
+                       .desktop files e.g. ['pluma.desktop']
+        light_ind : boolean - Whether or not a light indicator is to be used
+        unpinned_from_all : boolean - Whethr or not unpinned apps from all workspaces
+                            are to be shown 
+        multi_ind : Whether indicators for each of an app's open windows are to be 
+                   shown
+
+    Returns:
+        Boolean - True if the file was written successfully, False otherwise
+
+    """
+
+    root = ET.Element("root")
+    pa_el = ET.Element ("pinned_apps")
+
+    for df in desktop_files:
+        df_el = ET.Element("desktop_file", name = df)
+        pa_el.append(df_el)
+
+    ind_el = ET.Element("ind_type", light = "%d" %light_ind)
+    ufa_el = ET.Element("unpinned_from_all", show_all = "%s" %unpinned_from_all)
+    mi_el = ET.Element("multi_ind", show_multi = "%s" %multi_ind)
+
+    root.append (pa_el)
+    root.append (ind_el)
+    root.append (ufa_el)
+    root.append (mi_el)
+
+    try:
+        ET.ElementTree(root).write(filename, xml_declaration=True)
+    except FileNotFoundError:
+        return False # invalid file or path name
+
+    return True
+
+def read_xml (filename):
+    """ Reads an xml file created using the write_xml method
+    
+    Args: 
+        filename - the filename to read.
+
+    Returns:
+        boolean : True if the file was read successfully, False otherwise
+
+        A tuple containing the following:
+            a list of the .desktop files in the file (i.e. the pinned apps)
+            an interger - the light indicator setting
+            a boolean - the unpinned from all setting
+            a boolean - the multiple indicators setting
+
+    """
+
+    try:
+        root = ET.parse(filename) 
+    except FileNotFoundError:
+        return [False]
+
+    df_list = []
+    pinned_apps = root.find("pinned_apps")
+    if pinned_apps is not None:
+        for df in pinned_apps:
+            df_list.append(df.get("name"))
+
+    ind_el = root.find("ind_type")
+    if ind_el is not None:
+        light_ind = int(ind_el.get("light"))
+    else:
+        return [False] # indicator type should always be there...
+
+    ufa_el = root.find("unpinned_from_all")
+    if ufa_el is not None:
+        show_all = ufa_el.get("show_all") == "True"
+    else:
+        return [False]
+
+    mi_el = root.find("multi_ind")
+    if mi_el is not None:
+        multi_ind = mi_el.get("show_multi") == "True"
+    else:
+        return [False]
+
+    return [True, df_list, light_ind, show_all, multi_ind] 
+
+def main():
+    """Main function.
+
+    Debugging code can go here
+    """
+    
+    write_xml ("/home/robin/tmp/text.xml", ["thing.desktop","blah.desktop"], 99, False, True)
+    results = read_xml ("/home/robin/tmp/text.xml")
+    if results[0] == True:
+        for df in results[1]:
+            print ("Desktop file found: %s" %df)
+        
+        print ("Use light ind = %d" %results[2])
+        print ("Show unpinned on all = %s" %results[3])
+        print ("Multi ind = %s" %results[4])
+    else:
+        print ("Error reading file....")
+    
+if __name__ == "__main__":
+    main()
