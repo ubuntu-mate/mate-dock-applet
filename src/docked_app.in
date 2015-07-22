@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env/ python3
 """Provide functionality relating to an app in a dock.
 
     Allow info relating to a running app (e.g. icon, command line,
@@ -353,12 +353,12 @@ class DockedApp(object):
             self.get_cmdline_from_pid(new_app_info.pid)
 
         if not self.get_desktop_from_custom_launcher(os.path.expanduser("~/.local/share/applications/")):
-            if not self.get_desktop_from_app_info("/usr/share/applications/"):
-                if not self.get_desktop_from_app_info("/usr/local/share/applications/"):
-                    if not self.get_desktop_from_app_info(os.path.expanduser("~/.local/share/applications/")):
-                        if not self.brute_force_find_desktop_file("/usr/share/applications/"):
-                            if not self.brute_force_find_desktop_file("/usr/local/share/applications/"):
-                                if not self.brute_force_find_desktop_file(os.path.expanduser("~/.local/share/applications/")):
+            if not self.get_desktop_from_app_info(os.path.expanduser("~/.local/share/applications/")):
+                if not self.brute_force_find_desktop_file(os.path.expanduser("~/.local/share/applications/")):
+                    if not self.get_desktop_from_app_info("/usr/share/applications/"):
+                      if not self.get_desktop_from_app_info("/usr/local/share/applications/"):
+                            if not self.brute_force_find_desktop_file("/usr/share/applications/"):
+                                if not self.brute_force_find_desktop_file("/usr/local/share/applications/"):
                                     return False
 
         # now that we have the .desktop file, we can get the icon etc

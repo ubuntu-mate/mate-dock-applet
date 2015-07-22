@@ -21,5 +21,10 @@
        <summary>Whether to show unpinned apps from all workspaces</summary>
        <description>Whether to show running unpinned apps from all workspaces </description>
     </key>
+    <key type="b" name="first-run">
+       <default>true</default>
+       <summary>Whether this is the first time the applet has been run</summary>
+       <description>Whether this is the first time this particular instance of the applet has been run</description>
+    </key>
    </schema>
 </schemalist>

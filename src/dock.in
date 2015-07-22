@@ -1,5 +1,3 @@
-
-
 """Provide functionality relating to an application dock
 
 Manage a list of pinned and non-pinned dock apps.
@@ -58,6 +56,7 @@ import dock_prefs
 import dock_about
 import dock_custom_launcher
 import dock_win_list
+import dock_xml
 
 from log_it import log_it as log_it
 
@@ -80,7 +79,6 @@ class Dock(object):
             app_with_mouse : the DockedApp that the mouse is currently over
             active_app : the DockedApp that is currently the foreground app
             right_clicked_app: the app that was most recently right clicked
-            app_spacing : the number of pixels between apps in the dock
             settings_path : the GIO.Settings path for the applet
             settings : GIO.Settings - the settings for the applet
             indicator : the indicator type (light or dark)
@@ -120,18 +118,21 @@ class Dock(object):
         self.active_app = None          # the currently active app
         self.right_clicked_app = None     # the app that most recently had a right click
 
-        self.app_spacing = 3     # no of pixels between apps on the dock
-
         self.settings_path = self.applet.get_preferences_path()
         self.settings = Gio.Settings.new_with_path("org.mate.panel.applet.dock", \
                                                     self.settings_path)
 
+        # specify the xml file to be used as an alternative storage location for the
+        # applet settings
+        self.xml_conf=os.path.expanduser("~/.config/mate_dock_applet.conf")
+
         self.prefs_win = None
         self.about_win = None
         self.ccl_win = None
-        self.indicator = self.settings.get_int("indicator-type")
-        self.multi_ind = self.settings.get_boolean("multi-ind")
-        self.show_all_apps = self.settings.get_boolean("apps-from-all-workspaces")
+        self.indicator = 0 
+        self.multi_ind = False
+        self.show_all_apps = True
+        self.read_settings()
 
         self.dock_action_group = None
         
@@ -142,11 +143,66 @@ class Dock(object):
 
         self.setup_menu()
 
+    def read_settings(self):
+        """ Read the current dock settings from dconf
+
+            If this particular dock has not been run before and a settings xml file exists
+            offer to import the settings from the xml file ...
+
+        """
+
+
+        if (self.settings.get_boolean("first-run") == True) and \
+                (os.path.isfile(self.xml_conf)):
+
+            # this dock is being run for the first time, so if we have any saved settings
+            # from other docks, offer to import them ..
+            md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION, 
+                                   Gtk.ButtonsType.YES_NO,
+                                   None)
+            md.set_markup ('<span size="x-large"><b>Import settings?</b></span>')
+            md.format_secondary_text("Settings from a previous dock have been found. Do you want to " \
+                                     "import the other dock's pinned apps and settings?")
+            response = md.run()
+            if response == Gtk.ResponseType.YES:
+
+                xml_settings = dock_xml.read_xml(self.xml_conf)
+
+                if xml_settings[0] == True:
+                    # the settings were read correctly, so set everything up
+                    
+                    pinned_apps = []
+                    for pinned_app in xml_settings[1]:
+                        pinned_apps.append(pinned_app)
+
+                    self.indicator = xml_settings[2]
+                    self.show_all_apps = xml_settings[3]
+                    self.multi_ind = xml_settings[4]
+
+                    # now, immediately write the settings to dconf so the dock can access them
+                    self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
+                    self.settings.set_int("indicator-type", self.indicator)
+                    self.settings.set_boolean("multi-ind", self.multi_ind)
+                    self.settings.set_boolean("apps-from-all-workspaces", self.show_all_apps)
+                    self.settings.set_boolean("first-run", False)
+
+                    md.destroy()
+                    return
+            else:
+                md.destroy()
+
+        self.indicator = self.settings.get_int("indicator-type")
+        self.multi_ind = self.settings.get_boolean("multi-ind")
+        self.show_all_apps = self.settings.get_boolean("apps-from-all-workspaces")
+
     def write_settings(self):
         """Write the current dock settings.
 
         Write a list of all of the currently pinned apps .desktop files
-        Write the indicator type
+        Write the indicator type, whether to use multiple indicators,
+        and whether to show unpinned apps from all workspaces
+
+        Set the first-run indicator to False
         """
 
         pinned_apps = []
@@ -160,6 +216,10 @@ class Dock(object):
             self.settings.set_int("indicator-type", self.indicator)
             self.settings.set_boolean("multi-ind", self.multi_ind)
             self.settings.set_boolean("apps-from-all-workspaces", self.show_all_apps)
+            self.settings.set_boolean("first-run", False)
+
+        dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator, \
+                           self.show_all_apps, self.multi_ind)
 
     def set_actions_for_app(self, app):
         """Show or hide actions in the context menu so that only relevant ones are
@@ -1214,6 +1274,11 @@ class Dock(object):
 
             self.app_win_list.add_mouse_area (Gdk.Rectangle(applet_x, applet_y, applet_w, applet_h))
             
+            # get the display resolution
+            screen = self.app_win_list.get_screen()
+            screen_w = screen.get_width()
+            screen_h = screen.get_height()
+
             # work out where to place the window - adjacent to the panel and centered on the
             # highlighted dock app
 
@@ -1228,6 +1293,14 @@ class Dock(object):
                 win_x = applet_w + panel_space
                 win_y = centre_pos - (win_h/2)
 
+                # adjust win_y in case we're off the top the screen...
+                if win_y < panel_space:
+                    win_y = panel_space 
+
+                # adjust win_y if case the window list extends beyound the end of the panel ..
+                if (win_y + win_h) > screen_h:
+                    win_y = screen_h - win_h - panel_space
+
                 # setup a new mouse area covering the window (minus a border) and extending
                 # to the panel
                 self.app_win_list.add_mouse_area(Gdk.Rectangle(applet_x, 
@@ -1239,6 +1312,14 @@ class Dock(object):
                 centre_pos  = aay + app_alloc.height/2
                 win_x = applet_x - panel_space - win_w
                 win_y = centre_pos - (win_h/2)
+
+                # adjust win_y in case we're off the top the screen...
+                if win_y < panel_space:
+                    win_y = panel_space 
+
+                # adjust win_y if case the window list extends beyound the end of the panel ..
+                if (win_y + win_h) > screen_h:
+                    win_y = screen_h - win_h - panel_space
 
                 # setup a new mouse area covering the window (minus a border) and extending
                 # to the panel
@@ -1252,6 +1333,14 @@ class Dock(object):
                 win_x = centre_pos - (win_w / 2) 
                 win_y = applet_h +  panel_space
 
+                # adjust win_x in case we're off the left of the screen...
+                if win_x < panel_space:
+                    win_x = panel_space 
+
+                # adjust win_x if case the window list extends beyond the end of the panel ..
+                if (win_x + win_w) > screen_w:
+                    win_x = screen_w - win_w - panel_space
+
                 # setup a new mouse area covering the window (minus a border) and extending
                 # to the panel
                 self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border, 
@@ -1262,6 +1351,14 @@ class Dock(object):
                 centre_pos  = aax+ app_alloc.width/2
                 win_x = centre_pos - (win_w / 2) 
                 win_y = applet_y - panel_space - win_h
+
+                # adjust win_x in case we're off the left of the screen...
+                if win_x < panel_space:
+                    win_x = panel_space 
+
+                # adjust win_x if case the window list extends beyond the end of the panel ..
+                if (win_x + win_w) > screen_w:
+                    win_x = screen_w - win_w - panel_space
 
                 # setup a new mouse area covering the window (minus a border) and extending
                 # to the panel

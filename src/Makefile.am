@@ -1,7 +1,8 @@
 
 SUBDIRS =
 
-applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.py log_it.py dock_custom_launcher.py dock_win_list.py
+applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.py log_it.py dock_custom_launcher.py dock_win_list.py \
+		 dock_xml.py
 
 appletdir = $(libdir)/mate-applets/mate-dock-applet/
 
@@ -101,6 +102,10 @@ dock_win_list.py: dock_win_list.in Makefile
 	$(do_substitution) < $(srcdir)/dock_win_list.in > dock_win_list.py
 	chmod +x dock_win_list.py
 
+dock_xml.py: dock_xml.in Makefile
+	$(do_substitution) < $(srcdir)/dock_xml.in > dock_xml.py
+	chmod +x dock_xml.py
+
 applet_PYTHON = \
 		     dock_applet.py \
 		     dock_about.py \
@@ -109,7 +114,8 @@ applet_PYTHON = \
 		     docked_app.py \
 		     dock_custom_launcher.py \
 		     log_it.py \
-		     dock_win_list.py
+		     dock_win_list.py \
+		     dock_xml.py
 
 CLEANFILES = $(applet_SCRIPTS) 
 #	     $(gsettings_SCHEMAS) \
@@ -125,6 +131,7 @@ EXTRA_DIST = dock_applet.in \
 	     dock_custom_launcher.in \
 	     log_it.in \
 	     dock_win_list.in \
+	     dock_xml.in \
 	     $(gsettings_SCHEMAS) \
 	     $(applets_in_files) \
 	     $(service_in_files)
