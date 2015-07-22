@@ -62,3 +62,29 @@ V0.62	Fixed app icon drawing on non-composited displays.
 	When an app's windows are minimised by clicking on the app's dock
 	icon and then maximised by clicking it again, the app window that
 	was previously active is made active again.
+
+V0.63   Removed the tooltip that appears when the mouse hovers over a docked
+	app and replaced it with a list of the app's open windows. For
+	each window, the list displays the app icon, an indicator showing which 
+	window is currently active, the window title, and a close icon.
+	Clicking the close icon closes the window, clicking anywhere else
+	makes the window active.
+	Removed the list of app windows from the applet right click menu as
+	they are no longer required.
+	Changed the way the applet works when a running app's dock icon is
+	clicked. This no longer minimizes/maximises all windows, but simply
+	activates the app's last active window.
+	Using the mouse scroll wheel over a running app's dock icon now 
+	scrolls through each of the app's open windows, unminimizing them
+	and activating them as necessary
+	.desktop files located in the user's home directory now take
+	precedence over those located elsewhere in the filesystem. This allows
+	users to create their own .desktop files (e.g. to customize an app's icon)
+	and have them recognized by the applet
+	Changed factory service file to explicitly invoke applet with python 3
+	The applet now saves its settings in ~/.config/mate_dock_applet.conf
+	as well as in dconf. On first being added to a panel, the applet
+	checks to see if this file exists and if it does it offers to use this
+	configuration. This allows e.g. an easy way to restore the applet
+	after an accidental deletion from the panel, and also a way to move
+	applet configurations from one computer to another.
