@@ -108,7 +108,6 @@ def applet_button_release(widget, event, the_dock):
     if event.button == 1:
 
         # hide the window list window 
-
         the_dock.hide_win_list()
 
         app = the_dock.get_app_at_mouse(event.x, event.y)
@@ -164,7 +163,7 @@ def applet_button_release(widget, event, the_dock):
                 #       windows will be minimized
                 #
                 # but first, hide any app window list that is being shown and stop the 
-                # window list time
+                # window list timer
                 
                 the_dock.stop_win_list_timer()
                 the_dock.hide_win_list()
@@ -173,9 +172,14 @@ def applet_button_release(widget, event, the_dock):
 
                 restore_win = (not app.has_unminimized_windows()) or \
                                   (app.has_unminimized_windows() and (app.is_active==False))
-
                 if restore_win:
                     last_active_win = app.last_active_win
+
+                    # the last active window may be set to None (e.g. if the app's active window has been closed
+                    # and no other window has been made active afterwards). Therefore, if there is no active last window
+                    # activate the app's first window
+                    if last_active_win is None:
+                        last_active_win = win_list[0]
 
                     if last_active_win is not None:
                         wnck_screen = last_active_win.get_screen()

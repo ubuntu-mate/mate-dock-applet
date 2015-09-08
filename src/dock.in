@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """Provide functionality relating to an application dock
 
 Manage a list of pinned and non-pinned dock apps.
@@ -948,9 +950,9 @@ class Dock(object):
                         else:
                             do_redraw = True
 
-                            # was the closed window was the last active window for the app ?
-                            if app.last_active_win == wnck_window:
-                                app.last_active_win = None
+                        # was the closed window was the last active window for the app ?
+                        if app.last_active_win == wnck_window:
+                            app.last_active_win = None
 
                         if do_redraw:
                             app.queue_draw()
