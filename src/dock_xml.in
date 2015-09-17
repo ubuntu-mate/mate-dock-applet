@@ -34,7 +34,8 @@ The file will contain the following information:
 
 import xml.etree.ElementTree as ET
 
-def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind):
+def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
+               click_restore_last_active):
     """ Write the xml file using the specified information
 
     The xml file will be in the following format:
@@ -48,6 +49,7 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind)
             <light_ind>int</>
             <unpinned_from_all>True or False</>
             <multi_ind>True or False</>
+            <click_restore_last_active>True or False</>
         </root>
 
     Args: 
@@ -60,6 +62,9 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind)
                             are to be shown 
         multi_ind : Whether indicators for each of an app's open windows are to be 
                    shown
+        click_restore_last_active: whether clicking a running app's dock icon restores
+                   only the last active window or all windows
+
 
     Returns:
         Boolean - True if the file was written successfully, False otherwise
@@ -76,11 +81,14 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind)
     ind_el = ET.Element("ind_type", light = "%d" %light_ind)
     ufa_el = ET.Element("unpinned_from_all", show_all = "%s" %unpinned_from_all)
     mi_el = ET.Element("multi_ind", show_multi = "%s" %multi_ind)
+    crla_el = ET.Element("click_restore_last_active", 
+                        restore_last_active_only = "%s" %click_restore_last_active)
 
     root.append (pa_el)
     root.append (ind_el)
     root.append (ufa_el)
     root.append (mi_el)
+    root.append (crla_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
@@ -103,6 +111,7 @@ def read_xml (filename):
             an interger - the light indicator setting
             a boolean - the unpinned from all setting
             a boolean - the multiple indicators setting
+            a boolean - the restore last active settings
 
     """
 
@@ -117,25 +126,35 @@ def read_xml (filename):
         for df in pinned_apps:
             df_list.append(df.get("name"))
 
+    # note - values may be missing from the config file e.g. if a new version of the applet
+    # adds a new configuration settings. If this happens, we just assume a default option
+    # rather than reporting an error
+    #
     ind_el = root.find("ind_type")
     if ind_el is not None:
         light_ind = int(ind_el.get("light"))
     else:
-        return [False] # indicator type should always be there...
+        light_ind = True
 
     ufa_el = root.find("unpinned_from_all")
     if ufa_el is not None:
         show_all = ufa_el.get("show_all") == "True"
     else:
-        return [False]
+        show_all = True
 
     mi_el = root.find("multi_ind")
     if mi_el is not None:
         multi_ind = mi_el.get("show_multi") == "True"
     else:
-        return [False]
+        multi_ind = False
 
-    return [True, df_list, light_ind, show_all, multi_ind] 
+    crla_el = root.find("click_restore_last_active")
+    if crla_el is not None:
+        click_restore_last_active = crla_el.get("restore_last_active_only") == "True"
+    else:
+        click_restore_last_active = True 
+
+    return [True, df_list, light_ind, show_all, multi_ind, click_restore_last_active] 
 
 def main():
     """Main function.
@@ -143,7 +162,7 @@ def main():
     Debugging code can go here
     """
     
-    write_xml ("/home/robin/tmp/text.xml", ["thing.desktop","blah.desktop"], 99, False, True)
+ #   write_xml ("/home/robin/tmp/text.xml", ["thing.desktop","blah.desktop"], 99, False, True, False)
     results = read_xml ("/home/robin/tmp/text.xml")
     if results[0] == True:
         for df in results[1]:
@@ -152,6 +171,7 @@ def main():
         print ("Use light ind = %d" %results[2])
         print ("Show unpinned on all = %s" %results[3])
         print ("Multi ind = %s" %results[4])
+        print ("Click restore all = %s" %results[5])
     else:
         print ("Error reading file....")
     

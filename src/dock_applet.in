@@ -34,7 +34,6 @@ Note: Functionality for docked apps is provided in docked_app.py
 import os
 import sys
 sys.path.insert(1, '@pythondir@')
-from time import sleep
 
 import gi
 gi.require_version("Gtk", "2.0")
@@ -113,6 +112,9 @@ def applet_button_release(widget, event, the_dock):
         app = the_dock.get_app_at_mouse(event.x, event.y)
         if app is not None:
 
+            #TODO
+            # move this code into docked_app.in ...
+            
             # if the app is not running start the app
             # if the app is running and the shift key is being pressed, start another
             # instance of the app
@@ -151,86 +153,8 @@ def applet_button_release(widget, event, the_dock):
                 throbber = docked_app.PulseTimer(app)
 
             else:
-                # the action to perform (minimizing, moving workspace, activating)
-                # is decided as follows:
-                #   if (the app's windows are all minimized) or 
-                #      (the app s one or more unminimized window but is not the active app)
-                #   then     
-                #       restore the app's last active window. If the active window is on a 
-                #       different workspace then activate that workspace
-                #   else:
-                #       the app is currently the active app so all of the app 
-                #       windows will be minimized
-                #
-                # but first, hide any app window list that is being shown and stop the 
-                # window list timer
+                the_dock.minimize_or_restore_windows(app, event)
                 
-                the_dock.stop_win_list_timer()
-                the_dock.hide_win_list()
-                
-                win_list = app.get_wnck_windows()
-
-                restore_win = (not app.has_unminimized_windows()) or \
-                                  (app.has_unminimized_windows() and (app.is_active==False))
-                if restore_win:
-                    last_active_win = app.last_active_win
-
-                    # the last active window may be set to None (e.g. if the app's active window has been closed
-                    # and no other window has been made active afterwards). Therefore, if there is no active last window
-                    # activate the app's first window
-                    if last_active_win is None:
-                        last_active_win = win_list[0]
-
-                    if last_active_win is not None:
-                        wnck_screen = last_active_win.get_screen()
-                        wnck_aws = wnck_screen.get_active_workspace()
-                        wnck_ws = last_active_win.get_workspace()
-
-                        if wnck_aws != wnck_ws:
-                            wnck_ws.activate(event.time)
-                            sleep(0.01)
-
-                        # rarely, the last active win does not end up as the active window if we
-                        # activate here, so instead a workaround which seems to do the trick
-                        # is use a timer as below
-                        GObject.timeout_add(20, win_activation_timer, [last_active_win, event.time+20])
-
-                else:
-                    #minimize all windows and do the last active window last of all
-
-                    last_active_win = app.last_active_win
-
-                    for window in win_list:
-                        win_type = window.get_window_type()
-                        if ((win_type == Wnck.WindowType.NORMAL) or \
-                             (win_type == Wnck.WindowType.DIALOG)) and \
-                             (not window.is_skip_tasklist()) and \
-                             (window != last_active_win):
-                                 window.minimize()
-                                 sleep(0.01)
-
-                    app.last_active_win = last_active_win
-                    if last_active_win is not None:
-                        last_active_win.minimize()
-                        sleep(0.01)
-
-                
-def win_activation_timer(args):
-    """ Timer function to be called by GObject.timeout_add and which
-        will activate a specified wnck window
-
-    Args: 
-        args - a tuple containing two items
-               args[0] - the wnck window to activate
-               args[1] - the event time we want to specfiy
-
-    Returns:
-        False - to cancel the timer
-    """
-
-    args[0].activate(args[1])
-    sleep(0.01) 
-    return (False)
 
 def applet_enter_notify(widget, event, the_dock):
     """Enter notify event for the applet

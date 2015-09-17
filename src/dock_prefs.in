@@ -157,12 +157,37 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_unpinned_apps_align.add(self.__table_unpinned_apps)
         self.__frame_unpinned_apps.add(self.__frame_unpinned_apps_align)
 
+        self.__frame_click_action = Gtk.Frame(label="Mouse click action")
+        lbl = self.__frame_click_action.get_label_widget()
+        lbl.set_use_markup(True)
+        lbl.set_label("<b>" +"Dock click action" + "</b>")
+        self.__frame_click_action.set_shadow_type(Gtk.ShadowType.NONE)
+
+        self.__rb_restore_last_active = Gtk.RadioButton(label="Restore clicked app's last active window only")
+        self.__rb_restore_all = Gtk.RadioButton(group=self.__rb_restore_last_active, \
+                                             label="Restore all of clicked app's windows")
+        self.__table_click_action = Gtk.Table(rows=2, columns=1, homogeneous=False)
+        self.__table_click_action.attach(self.__rb_restore_last_active, 0, 1, 0, 1,
+                                          Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                          2, 2)
+        self.__table_click_action.attach(self.__rb_restore_all, 0, 1, 1, 2,
+                                          Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                          2, 2)
+
+        self.__frame_click_action_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                   xscale=1.0, yscale=1.0)
+        self.__frame_click_action_align.set_padding(0, 0, 12, 0)
+        self.__frame_click_action_align.add(self.__table_click_action)
+        self.__frame_click_action.add(self.__frame_click_action_align)
+
+
         # create ui elements for multiple indicators for open windows
         self.__cb_multi_ind = Gtk.CheckButton(label="Display an indicator for each open window")
         self.__cb_multi_ind.set_tooltip_text("Display an indicator (max 4) for each open window")
 
         self.__vbox.pack_start(self.__frame_ind_type, True, True, 4)
         self.__vbox.pack_start(self.__frame_unpinned_apps, True, True, 4)
+        self.__vbox.pack_start(self.__frame_click_action, True, True, 4)
         self.__vbox.pack_start(self.__cb_multi_ind, True, True, 4)
 
         self.__vbox.pack_start(Gtk.HSeparator(), True, True, 4)
@@ -290,6 +315,27 @@ class DockPrefsWindow(Gtk.Window):
             self.__rb_unpinned_all_ws.set_active(True)
         else:
             self.__rb_unpinned_cur_ws.set_active(True)
+
+    def get_click_restore_last_active(self):
+        """Gets whether to restore only a running app's last active window when its dock
+        icon is clicked and all windows are minimized
+
+        Returns: boolean
+        """
+        
+        return self.__rb_restore_last_active.get_active()
+
+    def set_click_restore_last_active(self, restore_last_active):
+        """Sets whether to restore only a running app's last active window when its dock
+        icon is clicked and all windows are minimized
+
+        Args: restore_last_active - boolean
+        """
+
+        if restore_last_active == True:
+            self.__rb_restore_last_active.set_active(True)
+        else:
+            self.__rb_restore_all.set_active(True)
 
 def main():
     """main function - debug code can go here"""

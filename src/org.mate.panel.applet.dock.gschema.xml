@@ -26,5 +26,10 @@
        <summary>Whether this is the first time the applet has been run</summary>
        <description>Whether this is the first time this particular instance of the applet has been run</description>
     </key>
+    <key type="b" name="click-restore-last-active">
+       <default>true</default>
+       <summary>Specifies what to do when a running app's dock icon is click</summary>
+       <description>If set to true, the app's last running window is made active again. If false all of the app's windows are restored/unminimizes and the last active window is made active again</description>
+    </key>
    </schema>
 </schemalist>
