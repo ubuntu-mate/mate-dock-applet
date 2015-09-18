@@ -53,7 +53,7 @@ gi.require_version("Wnck", "1.0")
 from gi.repository import Wnck
 
 #from gi.repository import GdkPixbuf
-#from gi.repository import Gio
+from gi.repository import Gio
 #from gi.repository import GLib
 from gi.repository import GObject
 import cairo
@@ -953,6 +953,40 @@ class DockedApp(object):
 
         rht, ght, bht = self.highlight_color = get_avg_color(pixbuf)
         self.highlight_color = ColorTup(r=rht, g=ght, b=bht)
+
+    def start_app(self):
+        """Start the app or open a new window if it's already running
+        """
+        the_de = DesktopEntry.DesktopEntry(self.desktop_file)
+        run_it = the_de.getExec()
+        if run_it is not None:
+
+            # hack for Linux Mint:
+            # Mint has several shortcuts for starting caja so that it can
+            # be started in a specific directory e.g. home, /, etc
+            # However, the main caja.desktop is responsible for starting the
+            # user's desktop and this is the .desktop file the applet finds first.
+            # When the caja icon on the applet is clicked, caja is run as a desktop
+            # window and no new file browser appears.
+            # To get around this, we can simply check the command that is going to be
+            # run and change it so that a caja window opens in the user's home directory,
+            # which is the behaviour they'll probably be expecting....
+            if run_it == "/usr/bin/startcaja":
+                run_it = "caja"
+
+            # remove any command line arguments
+            if "%" in run_it:
+                i = run_it.rfind("%")
+                run_it = run_it[0:i-1]
+
+        app_info = Gio.AppInfo.create_from_commandline(run_it,
+                                                       None,
+                                                       Gio.AppInfoCreateFlags.NONE)
+        alc = Gdk.AppLaunchContext()
+        alc.set_desktop(-1)                   # use default screen & desktop
+        app_info.launch()
+        # set the app icon pulsing
+        throbber = PulseTimer(self)
 
 def main():
     """Main function.

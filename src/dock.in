@@ -351,10 +351,13 @@ class Dock(object):
                              ("about_action", Gtk.STOCK_ABOUT, \
                              "About...", None, "About...", self.show_about_win), \
                              ("close_win_action", Gtk.STOCK_CLOSE, \
-                              "_Close", None, "Close", self.close_win) \
+                              "_Close", None, "Close", self.close_win), \
+                             ("open_new_win_action", Gtk.STOCK_NEW, \
+                              "_Open new window", None, "Open", self.open_new_win) \
                              ])
 
         menu_xml = '<menuitem name="close_win" action="close_win_action"/><separator/>'
+        menu_xml += '<menuitem name="open_new__win" action="open_new_win_action"/><separator/>'
         menu_xml += '<menuitem name="move_up" action="move_up_action"/>'
         menu_xml += '<menuitem name="move_down" action="move_down_action"/>'
         menu_xml += '<menuitem name="move_left" action="move_left_action"/>'
@@ -630,6 +633,10 @@ class Dock(object):
             wnck_win.close(0) # have to send 0 as the event time because we have
                               # no event time to send
 
+    def open_new_win(self, data=None):
+        """Open a new window for the right clicked app"""
+        self.right_clicked_app.start_app() 
+        
     def icon_theme_changed(self, icontheme):
         """ Callback for when the Gtk icon theme changes
 
