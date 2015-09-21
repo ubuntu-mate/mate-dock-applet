@@ -275,6 +275,9 @@ class Dock(object):
         move_left_action = self.dock_action_group.get_action("move_left_action")
         move_right_action = self.dock_action_group.get_action("move_right_action")
 
+        open_new_win_action = self.dock_action_group.get_action("open_new_win_action")
+        open_new_win_action.set_visible(app.is_running())
+
         close_win_action = self.dock_action_group.get_action("close_win_action")
         close_win_action.set_visible(False)
 
@@ -350,14 +353,14 @@ class Dock(object):
                              self.show_ccl_win), \
                              ("about_action", Gtk.STOCK_ABOUT, \
                              "About...", None, "About...", self.show_about_win), \
-                             ("close_win_action", Gtk.STOCK_CLOSE, \
-                              "_Close", None, "Close", self.close_win), \
                              ("open_new_win_action", Gtk.STOCK_NEW, \
-                              "_Open new window", None, "Open", self.open_new_win) \
+                              "_Open new window", None, "Open", self.open_new_win), \
+                             ("close_win_action", Gtk.STOCK_CLOSE, \
+                              "_Close", None, "Close", self.close_win) \
                              ])
 
-        menu_xml = '<menuitem name="close_win" action="close_win_action"/><separator/>'
-        menu_xml += '<menuitem name="open_new__win" action="open_new_win_action"/><separator/>'
+        menu_xml = '<menuitem name="open_new__win" action="open_new_win_action"/><separator/>'
+        menu_xml += '<menuitem name="close_win" action="close_win_action"/><separator/>'
         menu_xml += '<menuitem name="move_up" action="move_up_action"/>'
         menu_xml += '<menuitem name="move_down" action="move_down_action"/>'
         menu_xml += '<menuitem name="move_left" action="move_left_action"/>'
@@ -898,6 +901,11 @@ class Dock(object):
 
                     # set the minimize target for the new window
                     app.set_icon_geometry()
+
+                    # if the mouse pointer is over the app's dock icon, regenerate the list
+                    # of right click menu items to take acount of the new window
+                    if app.has_mouse:
+                        self.set_actions_for_app(app)
                     break
 
             if in_dock == False:
@@ -983,6 +991,8 @@ class Dock(object):
                         if do_redraw:
                             app.queue_draw()
 
+                        if app.has_mouse:
+                            self.set_actions_for_app(app)
                         break
 
                     except ValueError:

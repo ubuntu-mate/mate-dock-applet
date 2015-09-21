@@ -760,8 +760,13 @@ class DockedApp(object):
 
         if self.desktop_file:
             dfile = DesktopEntry.DesktopEntry(self.desktop_file)
-            self.icon_name = dfile.getIcon()
             self.app_name = dfile.getName()
+            self.icon_name = dfile.getIcon()
+
+            # if the desktop file does not specify an icon name, use the app name instead
+            if (self.icon_name is None) or (self.icon_name == ""):
+                self.icon_name = self.app_name.lower()
+
             if self.cmd_line == "":
                 self.cmd_line = dfile.getExec()
 
