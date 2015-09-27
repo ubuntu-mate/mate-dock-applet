@@ -264,9 +264,40 @@ class Dock(object):
            If the app does not have a desktop file, show an option allowing a 
            custom launcher to be created
 
+           Show any right click options specified in the app's desktop file
+
         Args:
             app : The DockedApp
         """
+
+        df_shortcut_1_action = self.dock_action_group.get_action("df_shortcut_1_action")
+        df_shortcut_2_action = self.dock_action_group.get_action("df_shortcut_2_action")
+        df_shortcut_3_action = self.dock_action_group.get_action("df_shortcut_3_action")
+        df_shortcut_4_action = self.dock_action_group.get_action("df_shortcut_4_action")
+
+        act_exists, act_name, act_cmd_line = app.get_rc_action(1)
+        df_shortcut_1_action.set_visible(act_exists)
+        if act_exists == True:
+            df_shortcut_1_action.set_label(act_name)
+            df_shortcut_1_action.set_icon_name(app.icon_name)
+        
+        act_exists, act_name, act_cmd_line = app.get_rc_action(2)
+        df_shortcut_2_action.set_visible(act_exists)
+        if act_exists == True:
+            df_shortcut_2_action.set_label(act_name)
+            df_shortcut_2_action.set_icon_name(app.icon_name)
+
+        act_exists, act_name, act_cmd_line = app.get_rc_action(3)
+        df_shortcut_3_action.set_visible(act_exists)
+        if act_exists == True:
+            df_shortcut_3_action.set_label(act_name)
+            df_shortcut_3_action.set_icon_name(app.icon_name)
+
+        act_exists, act_name, act_cmd_line = app.get_rc_action(4)
+        df_shortcut_4_action.set_visible(act_exists)
+        if act_exists == True:
+            df_shortcut_4_action.set_label(act_name)
+            df_shortcut_4_action.set_icon_name(app.icon_name)
 
         pin_action = self.dock_action_group.get_action("pin_action")
         unpin_action = self.dock_action_group.get_action("unpin_action")
@@ -274,9 +305,6 @@ class Dock(object):
         move_down_action = self.dock_action_group.get_action("move_down_action")
         move_left_action = self.dock_action_group.get_action("move_left_action")
         move_right_action = self.dock_action_group.get_action("move_right_action")
-
-        open_new_win_action = self.dock_action_group.get_action("open_new_win_action")
-        open_new_win_action.set_visible(app.is_running())
 
         close_win_action = self.dock_action_group.get_action("close_win_action")
         close_win_action.set_visible(False)
@@ -326,8 +354,24 @@ class Dock(object):
         """Set up the actions and right click menu for the applet
         """
 
+        # actions named df_shortcut_<x>_action are used for implementing shortcuts/actions
+        # specified in an app's .desktop file
+
         self.dock_action_group = Gtk.ActionGroup("DockActions")
-        self.dock_action_group.add_actions([("pin_action", Gtk.STOCK_ADD, \
+        self.dock_action_group.add_actions([
+                            ("df_shortcut_1_action", None,
+                             "df_shortcut_1_action", None, "df_shortcut_1_action",\
+                             self.df_shortcut_1), \
+                            ("df_shortcut_2_action", None,
+                             "df_shortcut_2_action", None, "df_shortcut_2_action",\
+                             self.df_shortcut_2), \
+                            ("df_shortcut_3_action", None,
+                             "df_shortcut_3_action", None, "df_shortcut_3_action",\
+                             self.df_shortcut_3), \
+                            ("df_shortcut_4_action", None,
+                             "df_shortcut_4_action", None, "df_shortcut_4_action",\
+                             self.df_shortcut_4), \
+                             ("pin_action", Gtk.STOCK_ADD, \
                              "_Pin app to the dock", None, "Pin app to the dock", \
                              self.pin_app), \
                              ("unpin_action", Gtk.STOCK_REMOVE, \
@@ -353,13 +397,14 @@ class Dock(object):
                              self.show_ccl_win), \
                              ("about_action", Gtk.STOCK_ABOUT, \
                              "About...", None, "About...", self.show_about_win), \
-                             ("open_new_win_action", Gtk.STOCK_NEW, \
-                              "_Open new window", None, "Open", self.open_new_win), \
                              ("close_win_action", Gtk.STOCK_CLOSE, \
                               "_Close", None, "Close", self.close_win) \
                              ])
 
-        menu_xml = '<menuitem name="open_new__win" action="open_new_win_action"/><separator/>'
+        menu_xml = '<menuitem name="df_shortcut_1_action" action="df_shortcut_1_action"/><separator/>'
+        menu_xml += '<menuitem name="df_shortcut_2_action" action="df_shortcut_2_action"/><separator/>'
+        menu_xml += '<menuitem name="df_shortcut_3_action" action="df_shortcut_3_action"/><separator/>'
+        menu_xml += '<menuitem name="df_shortcut_4_action" action="df_shortcut_4_action"/><separator/>'
         menu_xml += '<menuitem name="close_win" action="close_win_action"/><separator/>'
         menu_xml += '<menuitem name="move_up" action="move_up_action"/>'
         menu_xml += '<menuitem name="move_down" action="move_down_action"/>'
@@ -372,6 +417,34 @@ class Dock(object):
         menu_xml += '<menuitem name="About" action="about_action"/><separator/>'
 
         self.applet.setup_menu(menu_xml, self.dock_action_group)
+
+    def df_shortcut_1(self, data=None):
+        """Perform the app's 1st .desktop file specified shortcut/action
+        """
+
+        if self.right_clicked_app is not None:
+            self.right_clicked_app.run_rc_action(1)
+
+    def df_shortcut_2(self, data=None):
+        """Perform the app's 1st .desktop file specified shortcut/action
+        """
+
+        if self.right_clicked_app is not None:
+            self.right_clicked_app.run_rc_action(2)
+
+    def df_shortcut_3(self, data=None):
+        """Perform the app's 1st .desktop file specified shortcut/action
+        """
+
+        if self.right_clicked_app is not None:
+            self.right_clicked_app.run_rc_action(3)
+
+    def df_shortcut_4(self, data=None):
+        """Perform the app's 1st .desktop file specified shortcut/action
+        """
+
+        if self.right_clicked_app is not None:
+            self.right_clicked_app.run_rc_action(4)
 
     def unpin_app(self, data=None):
         """Unpin the right clicked app from the dock.
@@ -636,10 +709,6 @@ class Dock(object):
             wnck_win.close(0) # have to send 0 as the event time because we have
                               # no event time to send
 
-    def open_new_win(self, data=None):
-        """Open a new window for the right clicked app"""
-        self.right_clicked_app.start_app() 
-        
     def icon_theme_changed(self, icontheme):
         """ Callback for when the Gtk icon theme changes
 
@@ -789,6 +858,7 @@ class Dock(object):
                     if app.desktop_file == dock_app.desktop_file:
                         # copy the running app's info to the pinned dock item
                         self.copy_wnck_info_to_app(app, dock_app, wnck_window)
+                        
                         break
                 else:
                     # it's not a pinned app so add it to the app list

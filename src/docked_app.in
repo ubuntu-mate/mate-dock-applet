@@ -71,7 +71,7 @@ from log_it import log_it as log_it
 
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
 AppInfoTup = namedtuple('AppInfoTup', ['app', 'pid', 'windows'])
-
+ActionTup = namedtuple('ActionTup', ['name', 'command'])
 
 def im_get_comp_color(filename):
     """Find the complimentary colour of the average colour of an image.
@@ -226,9 +226,10 @@ class DockedApp(object):
 
     Attributes:
         app_info    : list of AppInfoTups to hold details of all running processes
-                           the app has
+                      the app has
         wnck_class  : the WnckClass object relating to the app
         app_name    : e.g. Google Chrome, used for tooltips and the applet right click menu etc
+        rc_actions  : list of ActionTups to hold details of right click actions the app supports
         cmd_line    : the command line and arguments used to start the app
         icon_name   : name of the app icon
         icon_filename : the filename of the app icon
@@ -266,6 +267,7 @@ class DockedApp(object):
         self.app_info = []
         self.wnck_class = None
         self.app_name = ""
+        self.rc_actions = []
         self.cmd_line = ""
         self.icon_name = ""
         self.icon_filename = ""
@@ -753,6 +755,7 @@ class DockedApp(object):
 
         Will try to read the icon name and app name from the desktop file
         Will also get the executeable path if we don't already have this
+        Will read the details of any right click menu options the .desktop file defines
 
         Returns:
             True if successful, False otherwise
@@ -770,6 +773,27 @@ class DockedApp(object):
             if self.cmd_line == "":
                 self.cmd_line = dfile.getExec()
 
+            # now read the right click actions the app supports. These can be specified in
+            # two ways - by a key named 'X-Ayatana-Desktop-Shortcuts' or by an Actions key
+            #
+            xads = dfile.get('X-Ayatana-Desktop-Shortcuts')
+            if (xads is not None) and (xads != ""):
+                #the shortcut ids are in the the form of a semi-colon separated string
+                for rca in xads.split(";"):
+                    rcname = dfile.get("Name", group = "%s Shortcut Group" %rca)
+                    rcexec = dfile.get("Exec", group = "%s Shortcut Group" %rca)
+                    if (rcname != "") and (rcexec !=""):
+                        new_action = ActionTup(name=rcname, command= rcexec)
+                        self.rc_actions.append(new_action)
+
+            for action in dfile.getActions():
+                rcname = dfile.get("Name", group  ="Desktop Action %s" %action)
+                rcexec = dfile.get("Exec", group = "Desktop Action %s" %action)
+                if (rcname != "") and (rcexec !=""):
+                    new_action = ActionTup(name=rcname, command= rcexec)
+                    self.rc_actions.append(new_action)
+
+            
             return True
 
         return False
@@ -984,7 +1008,18 @@ class DockedApp(object):
                 i = run_it.rfind("%")
                 run_it = run_it[0:i-1]
 
-        app_info = Gio.AppInfo.create_from_commandline(run_it,
+        # start the app
+        self.run_cmd_line (run_it)    
+
+    def run_cmd_line(self, cmd_line):
+        """Run a command line. To be used when starting an app for the first time or when running
+           an action/shortcut specfied in the app's .desktop file 
+           
+            Args:  
+                cmd_line - the command to run
+        """
+
+        app_info = Gio.AppInfo.create_from_commandline(cmd_line,
                                                        None,
                                                        Gio.AppInfoCreateFlags.NONE)
         alc = Gdk.AppLaunchContext()
@@ -992,6 +1027,34 @@ class DockedApp(object):
         app_info.launch()
         # set the app icon pulsing
         throbber = PulseTimer(self)
+
+    def run_rc_action(self, act_no):
+        """ run the right click action specified by act_no
+
+        Args:
+           act_no - integer, the action number to run
+        """
+
+        if len(self.rc_actions) >= act_no:
+            self.run_cmd_line(self.rc_actions[act_no-1].command)
+
+    def get_rc_action(self, act_no):
+        """ return a specified right click action's details
+
+        Args:
+            act_no - integer, the specified action number
+
+        Returns:
+                bool - True if the action exists, False otherwise
+                string - the name of the action (i.e. the text to appear in the right click menu)
+                string - the command line to the be run
+        """
+
+        if len(self.rc_actions) >= act_no:
+            return (True, self.rc_actions[act_no-1].name,
+                          self.rc_actions[act_no-1].command)
+        else:
+            return (False, "", "")
 
 def main():
     """Main function.
