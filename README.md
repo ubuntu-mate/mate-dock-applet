@@ -31,6 +31,8 @@ autoreconf
 make
 
 sudo make install
+
+Depending on the distro, it may be necessary to install gir1.2-wnck-1.0 and glib2 development packages first.
 ```
 
 ### Installation on Ubuntu Mate on a Pi 2
@@ -46,6 +48,8 @@ Depends on:
 Python3
 
 gir1.2-wnck-1.0
+
+libglib2-dev
 
 ### Obligatory screen shots
 
