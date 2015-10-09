@@ -32,8 +32,9 @@ make
 
 sudo make install
 
-Depending on the distro, it may be necessary to install gir1.2-wnck-1.0 and glib2 development packages first.
 ```
+
+Depending on the distro, it may be necessary to install gir1.2-wnck-1.0 and glib2 development packages first.
 
 ### Installation on Ubuntu Mate on a Pi 2
 
