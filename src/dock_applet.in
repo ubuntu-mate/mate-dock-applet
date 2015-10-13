@@ -37,6 +37,7 @@ sys.path.insert(1, '@pythondir@')
 
 import gi
 gi.require_version("Gtk", "2.0")
+gi.require_version("MatePanelApplet", "4.0")
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk

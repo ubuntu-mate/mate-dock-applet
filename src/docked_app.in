@@ -45,6 +45,7 @@
 
 import gi
 gi.require_version("Gtk", "2.0")
+gi.require_version("MatePanelApplet", "4.0")
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk
@@ -54,7 +55,7 @@ from gi.repository import Wnck
 
 #from gi.repository import GdkPixbuf
 from gi.repository import Gio
-#from gi.repository import GLib
+from gi.repository import GLib
 from gi.repository import GObject
 import cairo
 import math
@@ -62,6 +63,9 @@ import xdg.DesktopEntry as DesktopEntry
 import os
 import os.path
 import subprocess
+import re
+from urllib.parse import urljoin
+from urllib.request import pathname2url
 
 from collections import namedtuple
 
@@ -71,7 +75,7 @@ from log_it import log_it as log_it
 
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
 AppInfoTup = namedtuple('AppInfoTup', ['app', 'pid', 'windows'])
-ActionTup = namedtuple('ActionTup', ['name', 'command'])
+ActionTup = namedtuple('ActionTup', ['disp_name', 'command', 'act_name', 'is_action'])
 
 def im_get_comp_color(filename):
     """Find the complimentary colour of the average colour of an image.
@@ -364,6 +368,7 @@ class DockedApp(object):
                                     return False
 
         # now that we have the .desktop file, we can get the icon etc
+
         return self.read_info_from_desktop_file()
 
     def set_app_name(self, app_name):
@@ -497,13 +502,14 @@ class DockedApp(object):
 
         In addition to <self.wm_class_name>.desktop looks for the following variations of
         name for the desktop flie:
-            lowercase<self.wm_class_name>.desktop
-            uppercase<self.wm_class_name>.desktop
             <self.app_name>.desktop
             lowercase<self.app_name>.desktop
+            camel cased<self.app_name>.desktop
             <self.app_name> with space characters replaced by '-'.desktop
             lowercase<self.app_name> with space characters replaced by "-",desktop
             <self.wm_class_name>.desktop
+            lowercase<self.wm_class_name>.desktop
+            uppercase<self.wm_class_name>.desktop
 
         If the destop file is found, self.desktop_file is set accordingly,
         otherwise self.desktop_file is set to None
@@ -518,6 +524,33 @@ class DockedApp(object):
 
         for the_dir, dir_list, file_list in os.walk(srch_dir):
 
+            dfname = the_dir + self.app_name + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
+            dfname = the_dir + self.app_name.lower() + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
+            # camel case
+            dfname = the_dir + re.sub(r"\w+", lambda m:m.group(0).capitalize(), self.app_name) \
+                             + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
+            dfname = the_dir + self.app_name.replace(" ", "-") + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
+            dfname = the_dir + self.app_name.replace(" ", "-").lower() + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
             dfname = the_dir + self.wm_class_name + ".desktop"
             if os.path.isfile(dfname):
                 self.desktop_file = dfname
@@ -529,26 +562,6 @@ class DockedApp(object):
                 return True
 
             dfname = the_dir + self.wm_class_name.upper() + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name.lower() + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name.replace(" ", "-") + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name.replace(" ", "-").lower() + ".desktop"
             if os.path.isfile(dfname):
                 self.desktop_file = dfname
                 return True
@@ -568,6 +581,10 @@ class DockedApp(object):
         the uppercased name field of the .desktop file
         the Exec field is found within self.cmd_line
         the StartupWMClass is the same as self.wm_class_name
+
+        Note: if StartupWMClass is present in a .desktop file and it
+        does not match the app's wm_class, the .desktop file is not
+        a match, no matter what the values of the name and exec fields are
 
         If a match is found, self.desktop_file is set accordingly
 
@@ -592,6 +609,12 @@ class DockedApp(object):
         for name in name_parts:
             name = name.strip()
             
+        # split the command line into the command and various arguments
+        # note: strings that contain spaces will obviously be split into
+        # more than one part, but that's not a problem as we don't care
+        # about string aguments
+        cmd_parts=self.cmd_line.split()
+
         # search search_dir and any sub-directories it contains for .desktop files
         for the_dir, dir_list, file_list in os.walk(srch_dir):
             for the_file in file_list:
@@ -610,11 +633,19 @@ class DockedApp(object):
 
                     # remove command line args from the Exec field of the .desktop
                     de_exec = the_de.getExec()
+                    exec_found = False
                     if (de_exec is not None) and (de_exec != ""):
-                        de_exec = de_exec.split(None, 1)[0]
-                        exec_found = self.cmd_line.find(de_exec) != -1
-                    else:
-                        exec_found = False
+                        de_exec = de_exec.split()
+                        
+                        for exec_part in de_exec:
+                            try:
+                                unused_var = cmd_parts.index(exec_part)
+                                exec_found = True
+                            except ValueError:
+                                pass
+
+                            if exec_found:
+                                break
     
                     # we can now search within self.cmd_line for de_exec
                     # Note: we don't test for equality because some apps are launched via
@@ -623,10 +654,26 @@ class DockedApp(object):
                     # .desktop file the Exec field is '/usr/bin/software-center' whilst
                     # it's command line while running is 'usr/bin/python /usr/bin/software-center'
 
-                    if (name_part_found == True) or (exec_found == True) or \
-                            (the_de.getStartupWMClass() == self.wm_class_name):
-                        self.desktop_file = os.path.join(the_dir, the_file)
-                        return True
+                    # check the wm_classes
+                    wm_class_mismatch = False
+                    de_wm_class = the_de.getStartupWMClass()
+                    if ((de_wm_class is not None) and (de_wm_class != "")):
+                        if ((self.wm_class_name is not None) and (self.wm_class_name != "")) and \
+                           (de_wm_class.lower() == self.wm_class_name.lower()):
+
+                            # this is all we need to match, so....
+                            self.desktop_file = os.path.join(the_dir, the_file)
+                            return True
+                        else:
+                            wm_class_mismatch = True
+
+                    # we now check the name and executable, as long as there was no
+                    # mismatch between wm_classes
+                    if wm_class_mismatch == False:
+                        if (name_part_found == True) or \
+                           (exec_found == True):
+                            self.desktop_file = os.path.join(the_dir, the_file)
+                            return True
 
         self.desktop_file = None
         return False
@@ -775,7 +822,9 @@ class DockedApp(object):
 
             # now read the right click actions the app supports. These can be specified in
             # two ways - by a key named 'X-Ayatana-Desktop-Shortcuts' or by an Actions key
-            #
+            # 
+            # Note: we differentiate between actions and shortcuts, because actions can
+            # be run via Gio.DesktopAppInfo whereas shortcuts we need to run ourselves
             xads = dfile.get('X-Ayatana-Desktop-Shortcuts')
             if (xads is not None) and (xads != ""):
                 #the shortcut ids are in the the form of a semi-colon separated string
@@ -783,16 +832,17 @@ class DockedApp(object):
                     rcname = dfile.get("Name", group = "%s Shortcut Group" %rca)
                     rcexec = dfile.get("Exec", group = "%s Shortcut Group" %rca)
                     if (rcname != "") and (rcexec !=""):
-                        new_action = ActionTup(name=rcname, command= rcexec)
+                        new_action = ActionTup(disp_name = rcname, command = rcexec, 
+                                               act_name = rca, is_action = False)
                         self.rc_actions.append(new_action)
 
             for action in dfile.getActions():
                 rcname = dfile.get("Name", group  ="Desktop Action %s" %action)
                 rcexec = dfile.get("Exec", group = "Desktop Action %s" %action)
                 if (rcname != "") and (rcexec !=""):
-                    new_action = ActionTup(name=rcname, command= rcexec)
+                    new_action = ActionTup(disp_name = rcname, command = rcexec, 
+                                           act_name = action, is_action = True)
                     self.rc_actions.append(new_action)
-
             
             return True
 
@@ -1003,13 +1053,21 @@ class DockedApp(object):
             if run_it == "/usr/bin/startcaja":
                 run_it = "caja"
 
-            # remove any command line arguments
-            if "%" in run_it:
-                i = run_it.rfind("%")
-                run_it = run_it[0:i-1]
+                # remove any command line arguments
+                if "%" in run_it:
+                    i = run_it.rfind("%")
+                    run_it = run_it[0:i-1]
 
-        # start the app
-        self.run_cmd_line (run_it)    
+                # start the app
+                self.run_cmd_line (run_it)    
+            else:
+
+                the_dae = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
+                alc = Gdk.AppLaunchContext()
+                alc.set_desktop(-1)                   # use default screen & desktop
+                the_dae.launch(None, alc)
+                # set the app icon pulsing
+                throbber = PulseTimer(self)
 
     def run_cmd_line(self, cmd_line):
         """Run a command line. To be used when starting an app for the first time or when running
@@ -1018,6 +1076,10 @@ class DockedApp(object):
             Args:  
                 cmd_line - the command to run
         """
+
+        # the command line may contain escape sequences, so unescape them....
+        cmd_line =bytearray(cmd_line, "UTF-8")
+        cmd_line = cmd_line.decode("unicode-escape")
 
         app_info = Gio.AppInfo.create_from_commandline(cmd_line,
                                                        None,
@@ -1036,7 +1098,19 @@ class DockedApp(object):
         """
 
         if len(self.rc_actions) >= act_no:
-            self.run_cmd_line(self.rc_actions[act_no-1].command)
+            act = self.rc_actions[act_no-1]
+            if act.is_action == True:
+                # Gio.DesktopAppInfo give a more convenient and complete way to
+                # run actions
+                the_dae = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
+                alc = Gdk.AppLaunchContext()
+                alc.set_desktop(-1)                   # use default screen & desktop
+                the_dae.launch_action(act.act_name,alc)
+            else:
+                self.run_cmd_line(self.rc_actions[act_no-1].command)
+                
+            # set the app icon pulsing
+            throbber = PulseTimer(self)
 
     def get_rc_action(self, act_no):
         """ return a specified right click action's details
@@ -1051,8 +1125,9 @@ class DockedApp(object):
         """
 
         if len(self.rc_actions) >= act_no:
-            return (True, self.rc_actions[act_no-1].name,
+            return (True, self.rc_actions[act_no-1].disp_name,
                           self.rc_actions[act_no-1].command)
+
         else:
             return (False, "", "")
 

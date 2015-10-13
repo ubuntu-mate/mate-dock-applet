@@ -132,13 +132,21 @@ class DockCLWindow(Gtk.Window):
         self.__lbl_cmd.set_use_markup(True)
         self.__lbl_cmd.set_label("<b>" +"Command:" + "</b>")
         self.__lbl_cmd.set_alignment(1, 0.5)
-        
+       
         self.__entry_cmd = Gtk.Entry()
         self.__entry_cmd.set_width_chars(40)
         self.__btn_cmd = Gtk.Button(label = "Browse...")
         self.__btn_cmd.connect("button-press-event", self.cmd_button_press)
         self.__hbox_cmd.pack_start(self.__entry_cmd, True, True, 0)
         self.__hbox_cmd.pack_end(self.__btn_cmd, False, False, 0)
+
+        self.__lbl_term = Gtk.Label()
+        self.__lbl_term.set_use_markup(True)
+        self.__lbl_term.set_label("<b>" + "Run in terminal:" + "</b>")
+        self.__lbl_term.set_alignment(1, 0.5)
+
+        self.__cbtn_term = Gtk.CheckButton()
+        self.__cbtn_term.set_alignment(1, 0.5)
 
         self.__lbl_comment = Gtk.Label()
         self.__lbl_comment.set_use_markup(True)
@@ -165,6 +173,16 @@ class DockCLWindow(Gtk.Window):
         self.__table_layout.attach(self.__hbox_cmd, 1, 2, 1, 2,
                                    Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
                                    2, 2)
+
+        # Code below can be uncommented if adding terminal apps to the dock ever
+        # becomes a needed thing
+        #self.__table_layout.attach(self.__lbl_term, 0, 1, 2, 3,
+        #                           Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
+        #                           2, 2)
+        #
+        #self.__table_layout.attach(self.__cbtn_term, 1, 2, 2, 3,
+        #                           Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
+        #                           2, 2)
 
         self.__table_layout.attach(self.__lbl_comment, 0, 1, 2, 3,
                                    Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
@@ -382,6 +400,25 @@ class DockCLWindow(Gtk.Window):
 
     wm_class = property(get_wm_class, set_wm_class)
 
+    def get_is_term(self):
+        """ Gets whether or not the app is meant to be run in a terminal
+
+        Returns: True if the app is to be run in a terminal, False otherwise
+        """
+
+        return self.__cbtn_term.get_active()
+
+    def set_is_term(self, is_term):
+        """ Sets whether or not the app is to be run in a terminal
+
+        Args:
+            is_term: boolean
+        """
+
+        self.__cbtn_term.set_active(is_term)
+
+    is_terminal_app = property(get_is_term, set_is_term)
+
     def help_btn_press(self, widget, event):
         """ Event handler for the Help button press event
 
@@ -413,6 +450,7 @@ def main():
     dclw.icon_filename = "/usr/share/pixmaps/ericWeb.png"
     dclw.command = "/usr/bin/gvim"
     dclw.wm_class = "Dock_custom_launcher.py"
+    dclw.is_terminal_app = False
     Gtk.main()
 
 if __name__ == "__main__":

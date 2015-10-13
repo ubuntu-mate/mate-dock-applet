@@ -39,6 +39,7 @@ respond to selections made in the applet right click menu, specifically
 
 import gi
 gi.require_version("Gtk", "2.0")
+gi.require_version("MatePanelApplet", "4.0")
 from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import MatePanelApplet
@@ -661,14 +662,31 @@ class Dock(object):
 
         else:
             self.ccl_win.hide()
-            dfname = os.path.expanduser("~/.local/share/applications/mda_%s.desktop" %self.ccl_win.name)
+
+            # the gnome developer docs at 
+            # https://developer.gnome.org/integration-guide/stable/desktop-files.html.en
+            # state that .desktop filenames should not contain spaces, so....
+            dfname = self.ccl_win.name.replace(" ", "-")
+
+            dfname = os.path.expanduser("~/.local/share/applications/mda-%s.desktop" %dfname)
+
             dfile = open(dfname, "w")
             dfile.write("[Desktop Entry]\n")
             dfile.write("Name=%s\n" %self.ccl_win.name)
+            dfile.write("Type=Application\n")
             dfile.write("Comment=%s\n" %self.ccl_win.comment)
             dfile.write("Exec=%s\n" %self.ccl_win.command)
             dfile.write("Icon=%s\n" %self.ccl_win.icon_filename)
             dfile.write("StartupWMClass=%s\n" %self.ccl_win.wm_class)
+
+            # Code below can be uncommented if adding terminal apps to the dock ever
+            # becomes a needed thing
+            #term_app = "%s" %self.ccl_win.is_terminal_app
+            #dfile.write("Terminal=%s\n" %term_app.lower())
+    
+            # we don't want this launcher displayed in the MATe menu 
+            dfile.write("NoDisplay=true\n")
+
             dfile.close()            
 
             # create a docked app from the .desktop we just created and add it to the dock
@@ -912,13 +930,13 @@ class Dock(object):
             new_wm_class_name = new_cg.get_res_class()
             new_app = new_win.get_application()
             for app in self.app_list:
-#                if app.wm_class_name == new_wm_class_name:
-                 for aai in app.app_info:
-                    if new_app == aai.app:
-                        app.is_active = True
-                        app.last_active_win = new_win
-                        app.queue_draw()
-                        break
+                 if app.wm_class_name == new_wm_class_name:
+                     for aai in app.app_info:
+                        if new_app == aai.app:
+                            app.is_active = True
+                            app.last_active_win = new_win
+                            app.queue_draw()
+                            break
 
     def window_opened(self, wnck_screen, wnck_window):
         """Event handler for the window_opened event
