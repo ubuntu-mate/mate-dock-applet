@@ -1180,6 +1180,9 @@ class Dock(object):
             #                        or ...
             #                        look in /usr/share/pixmaps for an icon of any type with
             #                        the same name as the app
+            #                        then ...
+            #                        look in ~/.local/share/icons for an icon with the same name
+            #                        and extension as the icon   
             #
             # 2 .. sloooow         - iterate through each installed icon theme and try to
             #                        find the app - not implement for now
@@ -1200,12 +1203,15 @@ class Dock(object):
                 elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.lower()):
                     icon_file = icon_name.lower() + ".png"
 
-
                 if icon_file != "":
                     pixbuf = GdkPixbuf.Pixbuf.new_from_file("/usr/share/pixmaps/%s"%icon_file)
                 else:
-                    pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size, None)
-                    dock_app.icon_filename = "STOCK_EXECUTE"
+                    icon_file = os.path.expanduser("~/.local/share/icons/%s" %dock_app.icon_name)
+                    if os.path.isfile(icon_file):
+                        pixbuf= GdkPixbuf.Pixbuf.new_from_file(icon_file)
+                    else:
+                        pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size, None)
+                        dock_app.icon_filename = "STOCK_EXECUTE"
 
         # scale the icon to the size that is available
         # Note - we're allowing for a 3 pixel border all around the icon, hence using size-6
