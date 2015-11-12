@@ -330,7 +330,7 @@ def applet_fill(applet):
                        | Gdk.EventMask.KEY_RELEASE_MASK \
                        | Gdk.EventMask.SCROLL_MASK \
                        | Gdk.EventMask.STRUCTURE_MASK)
-    
+   
     the_dock = dock.Dock(applet)
     the_dock.setup_dock()
 

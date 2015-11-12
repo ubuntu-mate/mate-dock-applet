@@ -45,7 +45,6 @@
 
 import gi
 gi.require_version("Gtk", "2.0")
-gi.require_version("MatePanelApplet", "4.0")
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk
@@ -55,7 +54,7 @@ from gi.repository import Wnck
 
 #from gi.repository import GdkPixbuf
 from gi.repository import Gio
-from gi.repository import GLib
+#from gi.repository import GLib
 from gi.repository import GObject
 import cairo
 import math
@@ -63,9 +62,6 @@ import xdg.DesktopEntry as DesktopEntry
 import os
 import os.path
 import subprocess
-import re
-from urllib.parse import urljoin
-from urllib.request import pathname2url
 
 from collections import namedtuple
 
@@ -75,7 +71,7 @@ from log_it import log_it as log_it
 
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
 AppInfoTup = namedtuple('AppInfoTup', ['app', 'pid', 'windows'])
-ActionTup = namedtuple('ActionTup', ['disp_name', 'command', 'act_name', 'is_action'])
+ActionTup = namedtuple('ActionTup', ['name', 'command'])
 
 def im_get_comp_color(filename):
     """Find the complimentary colour of the average colour of an image.
@@ -225,6 +221,56 @@ class PulseTimer(object):
 
         return True
 
+CONST_FLASH_DELAY = 330
+
+class FlashTimer(object):
+    """Class to help provide visual feedback when an app requries user attention.
+
+    Instantiates a timer which periodically causes the app's dock icon to flash
+    on and off until the app no longer needs attention
+
+    Attributes:
+        app = the DockedApp object which we want to flashh 
+        timer_id = the id of the timer that is instantiated
+
+    """
+
+    def __init__(self, app):
+        """Init for the FlashTimer class.
+
+        Sets everything up by creating the timer, setting a reference to the DockedApp and
+        setting the inital flash state to off
+
+        Arguments:
+            app : the DockedApp object
+        """
+
+        self.app = app
+        self.app.is_flashing = True
+        self.app.flash_on = False
+        self.timer_id = GObject.timeout_add(CONST_FLASH_DELAY, self.do_timer)
+
+        # make the app redraw itself
+        app.queue_draw()
+
+    def do_timer(self):
+        """The timer function.
+
+        If the app no longer needs attention, stop it flashing and delete
+        the timer. Otherwise, invert the flash.
+
+        Finally,Redraw the app's icon
+        """
+
+        if self.app.is_flashing == True:
+            self.app.flash_on = not self.app.flash_on
+        else:
+            GObject.source_remove(self.timer_id)
+
+        self.app.queue_draw()
+
+        return True
+
 class DockedApp(object):
     """Provide a docked app class
 
@@ -244,7 +290,7 @@ class DockedApp(object):
         applet_win  : the Gdk.Window of the panel applet
         applet_orient : the applet orientation
 
-        drawing_area: Gtk.Label- provides a surface on which the app icon can bre drawn
+        drawing_area: Gtk.Label- provides a surface on which the app icon can be drawn
         drawing_area_size : the size in pixels (height AND width) that we have to draw in
         is_pulsing  : boolean - True if the app is pulsing
         pulse_step  : a count of how far we are through the pulse animation
@@ -287,12 +333,14 @@ class DockedApp(object):
         # this class and instead have to be done by the applet itself
 
         self.drawing_area = Gtk.Label()
-
         self.drawing_area.set_app_paintable(True)
         self.drawing_area_size = 0
 
         self.is_pulsing = False
         self.pulse_step = 0
+
+        self.is_flashing = False
+        self.flash_on = False
 
         self.app_pb = None
 
@@ -345,6 +393,7 @@ class DockedApp(object):
 
         # get the currently open windows
         for win in wnck_app.get_windows():
+            win.connect("state-changed", self.win_state_changed)
             win_class = win.get_class_group()
             win_class_name = win_class.get_res_class()
 
@@ -368,7 +417,6 @@ class DockedApp(object):
                                     return False
 
         # now that we have the .desktop file, we can get the icon etc
-
         return self.read_info_from_desktop_file()
 
     def set_app_name(self, app_name):
@@ -502,14 +550,13 @@ class DockedApp(object):
 
         In addition to <self.wm_class_name>.desktop looks for the following variations of
         name for the desktop flie:
+            lowercase<self.wm_class_name>.desktop
+            uppercase<self.wm_class_name>.desktop
             <self.app_name>.desktop
             lowercase<self.app_name>.desktop
-            camel cased<self.app_name>.desktop
             <self.app_name> with space characters replaced by '-'.desktop
             lowercase<self.app_name> with space characters replaced by "-",desktop
             <self.wm_class_name>.desktop
-            lowercase<self.wm_class_name>.desktop
-            uppercase<self.wm_class_name>.desktop
 
         If the destop file is found, self.desktop_file is set accordingly,
         otherwise self.desktop_file is set to None
@@ -524,33 +571,6 @@ class DockedApp(object):
 
         for the_dir, dir_list, file_list in os.walk(srch_dir):
 
-            dfname = the_dir + self.app_name + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name.lower() + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            # camel case
-            dfname = the_dir + re.sub(r"\w+", lambda m:m.group(0).capitalize(), self.app_name) \
-                             + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name.replace(" ", "-") + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name.replace(" ", "-").lower() + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
             dfname = the_dir + self.wm_class_name + ".desktop"
             if os.path.isfile(dfname):
                 self.desktop_file = dfname
@@ -562,6 +582,26 @@ class DockedApp(object):
                 return True
 
             dfname = the_dir + self.wm_class_name.upper() + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
+            dfname = the_dir + self.app_name + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
+            dfname = the_dir + self.app_name.lower() + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
+            dfname = the_dir + self.app_name.replace(" ", "-") + ".desktop"
+            if os.path.isfile(dfname):
+                self.desktop_file = dfname
+                return True
+
+            dfname = the_dir + self.app_name.replace(" ", "-").lower() + ".desktop"
             if os.path.isfile(dfname):
                 self.desktop_file = dfname
                 return True
@@ -581,10 +621,6 @@ class DockedApp(object):
         the uppercased name field of the .desktop file
         the Exec field is found within self.cmd_line
         the StartupWMClass is the same as self.wm_class_name
-
-        Note: if StartupWMClass is present in a .desktop file and it
-        does not match the app's wm_class, the .desktop file is not
-        a match, no matter what the values of the name and exec fields are
 
         If a match is found, self.desktop_file is set accordingly
 
@@ -654,26 +690,21 @@ class DockedApp(object):
                     # .desktop file the Exec field is '/usr/bin/software-center' whilst
                     # it's command line while running is 'usr/bin/python /usr/bin/software-center'
 
-                    # check the wm_classes
-                    wm_class_mismatch = False
+                    # check that the wm_classes
+                    wm_class_found = False
                     de_wm_class = the_de.getStartupWMClass()
-                    if ((de_wm_class is not None) and (de_wm_class != "")):
-                        if ((self.wm_class_name is not None) and (self.wm_class_name != "")) and \
-                           (de_wm_class.lower() == self.wm_class_name.lower()):
+                    if ((de_wm_class is not None) and (de_wm_class != "")) and \
+                       ((self.wm_class_name is not None) and (self.wm_class_name != "")) and \
+                       (de_wm_class.lower() == self.wm_class_name.lower()):
+                        wm_class_found = True
 
-                            # this is all we need to match, so....
-                            self.desktop_file = os.path.join(the_dir, the_file)
-                            return True
-                        else:
-                            wm_class_mismatch = True
-
-                    # we now check the name and executable, as long as there was no
-                    # mismatch between wm_classes
-                    if wm_class_mismatch == False:
-                        if (name_part_found == True) or \
-                           (exec_found == True):
-                            self.desktop_file = os.path.join(the_dir, the_file)
-                            return True
+                    
+                    # Note: the app name is not a guaranteed match since wnck is 
+                    if (name_part_found == True) or \
+                       (exec_found == True) or \
+                       (wm_class_found == True):
+                        self.desktop_file = os.path.join(the_dir, the_file)
+                        return True
 
         self.desktop_file = None
         return False
@@ -822,9 +853,7 @@ class DockedApp(object):
 
             # now read the right click actions the app supports. These can be specified in
             # two ways - by a key named 'X-Ayatana-Desktop-Shortcuts' or by an Actions key
-            # 
-            # Note: we differentiate between actions and shortcuts, because actions can
-            # be run via Gio.DesktopAppInfo whereas shortcuts we need to run ourselves
+            #
             xads = dfile.get('X-Ayatana-Desktop-Shortcuts')
             if (xads is not None) and (xads != ""):
                 #the shortcut ids are in the the form of a semi-colon separated string
@@ -832,17 +861,16 @@ class DockedApp(object):
                     rcname = dfile.get("Name", group = "%s Shortcut Group" %rca)
                     rcexec = dfile.get("Exec", group = "%s Shortcut Group" %rca)
                     if (rcname != "") and (rcexec !=""):
-                        new_action = ActionTup(disp_name = rcname, command = rcexec, 
-                                               act_name = rca, is_action = False)
+                        new_action = ActionTup(name=rcname, command= rcexec)
                         self.rc_actions.append(new_action)
 
             for action in dfile.getActions():
                 rcname = dfile.get("Name", group  ="Desktop Action %s" %action)
                 rcexec = dfile.get("Exec", group = "Desktop Action %s" %action)
                 if (rcname != "") and (rcexec !=""):
-                    new_action = ActionTup(disp_name = rcname, command = rcexec, 
-                                           act_name = action, is_action = True)
+                    new_action = ActionTup(name=rcname, command= rcexec)
                     self.rc_actions.append(new_action)
+
             
             return True
 
@@ -860,6 +888,39 @@ class DockedApp(object):
         cl_start = os.path.expanduser("~/.local/share/applications/mda_")
         return os.path.expanduser(self.desktop_file).beginswith(cl_start)
 
+    def win_state_changed(self, wnck_win, changed_mask, new_state):
+        """Handler for the wnck_window state-changed event
+
+        If the app needs attention and we're not already flashing the icon
+        start it flashing. If the app icon is not visible, make it visible
+
+        If the app doesn't need attention and its icon is flashing, stop
+        it flashing
+
+        """
+
+        if ((new_state & Wnck.WindowState.DEMANDS_ATTENTION) != 0) or\
+           ((new_state & Wnck.WindowState.URGENT) != 0):
+
+            if not self.is_flashing:
+                self.is_flashing = True
+                self.flash_on = False  # initial flash state = off
+                Flasher  = FlashTimer(self)
+
+                if not self.is_visible():
+                    self.show_icon()
+                    self.set_icon_geometry
+
+        else:
+            if self.is_flashing == True:
+                # we need to turn flashing off
+                self.is_flashing = False
+                self.queue_draw()
+
+                # the timer will handle the rest ....
+                # hiding the icon (if necessary) will be taken care of next time the user
+                # changes workspace
+
     def do_expose_event(self, drawing_area, event):
         """The main drawing event for the docked app.
 
@@ -870,6 +931,8 @@ class DockedApp(object):
             if the app is the foreground app, highlight the background with a gradient fill
             if the app is pulsing, draw the icon with a variable level of transparency according to
             the pulse count
+            if the app is flashing, draw the icon either fully opaque or completely transparent 
+            according to its flash state
 
         Additionally, if necessary, calculate and set the app's on screen minimise location
         (this is done here as it can only be done after the drawing area has been created, set to
@@ -942,8 +1005,12 @@ class DockedApp(object):
 
             ctx.paint_with_alpha(alpha)
 
+        elif self.is_flashing:
+            if self.flash_on:
+                ctx.paint() # draw normally if in the flash on state
         else:
             ctx.paint()
+
 
         if self.has_mouse:
             # lighten the icon
@@ -1053,21 +1120,13 @@ class DockedApp(object):
             if run_it == "/usr/bin/startcaja":
                 run_it = "caja"
 
-                # remove any command line arguments
-                if "%" in run_it:
-                    i = run_it.rfind("%")
-                    run_it = run_it[0:i-1]
+            # remove any command line arguments
+            if "%" in run_it:
+                i = run_it.rfind("%")
+                run_it = run_it[0:i-1]
 
-                # start the app
-                self.run_cmd_line (run_it)    
-            else:
-
-                the_dae = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
-                alc = Gdk.AppLaunchContext()
-                alc.set_desktop(-1)                   # use default screen & desktop
-                the_dae.launch(None, alc)
-                # set the app icon pulsing
-                throbber = PulseTimer(self)
+        # start the app
+        self.run_cmd_line (run_it)    
 
     def run_cmd_line(self, cmd_line):
         """Run a command line. To be used when starting an app for the first time or when running
@@ -1098,19 +1157,7 @@ class DockedApp(object):
         """
 
         if len(self.rc_actions) >= act_no:
-            act = self.rc_actions[act_no-1]
-            if act.is_action == True:
-                # Gio.DesktopAppInfo give a more convenient and complete way to
-                # run actions
-                the_dae = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
-                alc = Gdk.AppLaunchContext()
-                alc.set_desktop(-1)                   # use default screen & desktop
-                the_dae.launch_action(act.act_name,alc)
-            else:
-                self.run_cmd_line(self.rc_actions[act_no-1].command)
-                
-            # set the app icon pulsing
-            throbber = PulseTimer(self)
+            self.run_cmd_line(self.rc_actions[act_no-1].command)
 
     def get_rc_action(self, act_no):
         """ return a specified right click action's details
@@ -1125,9 +1172,8 @@ class DockedApp(object):
         """
 
         if len(self.rc_actions) >= act_no:
-            return (True, self.rc_actions[act_no-1].disp_name,
+            return (True, self.rc_actions[act_no-1].name,
                           self.rc_actions[act_no-1].command)
-
         else:
             return (False, "", "")
 
