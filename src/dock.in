@@ -1529,6 +1529,14 @@ class Dock(object):
         but first, hide any app window list that is being shown and stop the 
         window list timer
 
+        Note: As of MATE 1.12 wnck_window.activate does not seem to work properly
+              if we specify our own event time. However, if an event time of
+              0 (i.e. now) is specfied all works as expected. However, when the
+              applet is run from the command line, lots of these messages
+              'Wnck-WARNING **: Received a timestamp of 0; window activation 
+               may not function properly' appear, so another solution may need 
+              to be found in the future
+
         Args:
             app: the docked app whose windows are to be minimized or restored
             event : the mouse click event
@@ -1559,7 +1567,7 @@ class Dock(object):
                             (win_type == Wnck.WindowType.DIALOG)) and \
                             (not window.is_skip_tasklist()) and \
                             (window != last_active_win):
-                        window.activate(event.time)
+                        window.activate(0) 
                         sleep(0.01)   # allow the window manager time to activate
                                       # the window
                                 
@@ -1571,13 +1579,13 @@ class Dock(object):
                 wnck_ws = last_active_win.get_workspace()
 
                 if wnck_aws != wnck_ws:
-                    wnck_ws.activate(event.time)
+                    wnck_ws.activate(0)
                     sleep(0.01)
 
                 # rarely, the last active win does not end up as the active window if we
                 # activate here, so instead a workaround which seems to do the trick
                 # is use a timer as below
-                GObject.timeout_add(20, win_activation_timer, [last_active_win, event.time+20])
+                GObject.timeout_add(20, win_activation_timer, [last_active_win, event.time]) 
 
         else:
             #minimize all windows and do the last active window last of all
@@ -1603,14 +1611,16 @@ def win_activation_timer(args):
         will activate a specified wnck window
 
     Args: 
-        args - a tuple containing two items
+        args - a tuple containing these items
                args[0] - the wnck window to activate
-               args[1] - the event time we want to specfiy
+               args[1] - the event time at which the timer was activated
 
     Returns:
         False - to cancel the timer
     """
 
-    args[0].activate(args[1])
+    # as of MATE 1.12 it seems we need to use an event time of 0 (i.e. now) to the window to 
+    # activate properly
+    args[0].activate(0)
     sleep(0.01) 
     return (False)

@@ -104,3 +104,6 @@ V0.64   Fixed bug that would sometimes prevent a window from being focused
 	App icons can now be sourced from ~/.local/share/icons (e.g
 	popcorn-time puts its icon here)
 	
+V0.65	Dock icons now blink when an app needs attention
+	Change to window activation code so that the applet works
+	with MATE 1.12

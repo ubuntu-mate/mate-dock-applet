@@ -312,7 +312,7 @@ class DockWinList(Gtk.Window):
                 return True
 
         self.hide()
-        win.activate(event.time)
+        win.activate(0)
         return True
 
     def do_timer(self):
