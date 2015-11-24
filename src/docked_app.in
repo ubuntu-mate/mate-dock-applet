@@ -673,33 +673,43 @@ class DockedApp(object):
                     if (de_exec is not None) and (de_exec != ""):
                         de_exec = de_exec.split()
                         
-                        for exec_part in de_exec:
-                            try:
-                                unused_var = cmd_parts.index(exec_part)
-                                exec_found = True
-                            except ValueError:
-                                pass
+                        # if the exec field of the .desktop does not specify a path for the
+                        # the executeable we can simply check that the app command line ends
+                        # with the same command as the .desktop file contains. So...
+                        exec_found = cmd_parts[0].endswith(de_exec[0])
 
-                            if exec_found:
-                                break
-    
-                    # we can now search within self.cmd_line for de_exec
-                    # Note: we don't test for equality because some apps are launched via
-                    # another (e.g. python apps) and therefore will be one of the command
-                    # line args. An example of this is Ubuntu Software Center - in the
-                    # .desktop file the Exec field is '/usr/bin/software-center' whilst
-                    # it's command line while running is 'usr/bin/python /usr/bin/software-center'
+                        # we can now search within self.cmd_line for de_exec
+                        # Note: we don't test for equality because some apps are launched via
+                        # another (e.g. python apps) and therefore will be one of the command
+                        # line args. An example of this is Ubuntu Software Center - in the
+                        # .desktop file the Exec field is '/usr/bin/software-center' whilst
+                        # it's command line while running is 'usr/bin/python /usr/bin/software-center'
+                        if not exec_found:
+                            for exec_part in de_exec:
+                                try:
+                                    unused_var = cmd_parts.index(exec_part)
+                                    exec_found = True
+                                except ValueError:
+                                    pass
 
-                    # check that the wm_classes
+                                if exec_found:
+                                    break
+
+                    # check that the wm_classes match
                     wm_class_found = False
                     de_wm_class = the_de.getStartupWMClass()
                     if ((de_wm_class is not None) and (de_wm_class != "")) and \
-                       ((self.wm_class_name is not None) and (self.wm_class_name != "")) and \
-                       (de_wm_class.lower() == self.wm_class_name.lower()):
-                        wm_class_found = True
+                        ((self.wm_class_name is not None) and (self.wm_class_name != "")):
+                        # if both the .desktop and the app have a wm_class then they
+                        # MUST match for the app to be found, and nm_part_found and
+                        # exec_found become irrelevant
+                               
+                        if (de_wm_class.lower() == self.wm_class_name.lower()):
+                            wm_class_found = True
 
+                        exec_found = wm_class_found
+                        name_part_found = wm_class_found
                     
-                    # Note: the app name is not a guaranteed match since wnck is 
                     if (name_part_found == True) or \
                        (exec_found == True) or \
                        (wm_class_found == True):
