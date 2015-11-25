@@ -994,6 +994,10 @@ class Dock(object):
                     # of right click menu items to take acount of the new window
                     if app.has_mouse:
                         self.set_actions_for_app(app)
+
+                    # start the dock icon pulsing to let the user know something has happened
+                    if not app.is_pulsing:
+                        app.start_pulsing()
                     break
 
             if in_dock == False:

@@ -709,7 +709,7 @@ class DockedApp(object):
 
                         exec_found = wm_class_found
                         name_part_found = wm_class_found
-                    
+
                     if (name_part_found == True) or \
                        (exec_found == True) or \
                        (wm_class_found == True):
@@ -1186,6 +1186,12 @@ class DockedApp(object):
                           self.rc_actions[act_no-1].command)
         else:
             return (False, "", "")
+    
+    def start_pulsing(self):
+        """ start the dock icon pulsing
+        """
+
+        throbber = PulseTimer(self)
 
 def main():
     """Main function.
