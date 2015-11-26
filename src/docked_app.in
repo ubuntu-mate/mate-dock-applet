@@ -676,24 +676,25 @@ class DockedApp(object):
                         # if the exec field of the .desktop does not specify a path for the
                         # the executeable we can simply check that the app command line ends
                         # with the same command as the .desktop file contains. So...
-                        exec_found = cmd_parts[0].endswith(de_exec[0])
+                        if len(cmd_parts) > 0:
+                            exec_found = cmd_parts[0].endswith(de_exec[0])
 
-                        # we can now search within self.cmd_line for de_exec
-                        # Note: we don't test for equality because some apps are launched via
-                        # another (e.g. python apps) and therefore will be one of the command
-                        # line args. An example of this is Ubuntu Software Center - in the
-                        # .desktop file the Exec field is '/usr/bin/software-center' whilst
-                        # it's command line while running is 'usr/bin/python /usr/bin/software-center'
-                        if not exec_found:
-                            for exec_part in de_exec:
-                                try:
-                                    unused_var = cmd_parts.index(exec_part)
-                                    exec_found = True
-                                except ValueError:
-                                    pass
-
-                                if exec_found:
-                                    break
+                            # we can now search within self.cmd_line for de_exec
+                            # Note: we don't test for equality because some apps are launched via
+                            # another (e.g. python apps) and therefore will be one of the command
+                            # line args. An example of this is Ubuntu Software Center - in the
+                            # .desktop file the Exec field is '/usr/bin/software-center' whilst
+                            # it's command line while running is 'usr/bin/python /usr/bin/software-center'
+                            if not exec_found:
+                                for exec_part in de_exec:
+                                    try:
+                                        unused_var = cmd_parts.index(exec_part)
+                                        exec_found = True
+                                    except ValueError:
+                                        pass
+    
+                                    if exec_found:
+                                        break
 
                     # check that the wm_classes match
                     wm_class_found = False
