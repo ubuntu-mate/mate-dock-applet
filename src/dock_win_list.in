@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 """
     Provide a window showing a list of an app's open windows
     and also allow the user to select a window from the list and
@@ -50,6 +50,7 @@ from gi.repository import GObject
 import os
 import cairo
 import tempfile
+from time import sleep
 
 import docked_app
 
@@ -77,14 +78,18 @@ class DockWinList(Gtk.Window):
 
     """
 
-    def __init__(self):
+    def __init__(self, wnck_screen):
 
         """
         create the window and its contents
+
+        Args: 
+            wnck_screen: the wnck_screen of the applet
         """
 
         super().__init__(title="", type=Gtk.WindowType.POPUP)
 
+        self.wnck_screen = wnck_screen
         self.set_name("gtk-tooltips")  # allows the window to inherit tooltip colours
         self.set_decorated(False)  # we don't want a titlebar..
         self.set_skip_taskbar_hint(True) # we don't want to be in the taskbar
@@ -312,6 +317,14 @@ class DockWinList(Gtk.Window):
                 return True
 
         self.hide()
+
+        # if the window to be activated is not on the current workspace, switch to that workspace
+
+        wnck_aws = self.wnck_screen.get_active_workspace()
+        wnck_ws = win.get_workspace()
+        if wnck_aws is not None and (wnck_aws != wnck_ws):
+                wnck_ws.activate(0)
+                sleep(0.01)
         win.activate(0)
         return True
 
