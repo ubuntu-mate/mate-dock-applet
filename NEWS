@@ -3,4 +3,23 @@
 		allows custom launchers to be added to the dock, and fixes a bug
 		when minimising and then maximising an app's windows. Full details
 		are in the ChangeLog
+
 15 Oct 2015 - V0.64 uploaded to github
+
+8 Jan 2016  - V0.66 uploaded to github
+               This new version adds a feature shamlessly copied from the Unity
+               Desktop - the ability of the applet to change the color of MATE
+               panels to (hopefully) match the current desktop wallpaper. The 
+               change can be applied to all panels or just the panel containing 
+               the dock.
+               As a result of this new feature, the applet has two new 
+               dependencies, the Python Imaging Library and SciPy. On Arch Linux
+               they can be installed with:
+                    sudo pacman -S python-pillow python-scipy
+               Whereas on Ubuntu 15.10 they can be installed with:
+                    sudo apt-get install python3-pil python3-scipy
+               For other distributions the commands and package names will obviously
+               vary. 
+               The new version also contains a couple of minor new features and a few
+               bugfixes. Full details are in the Changelog.
+                

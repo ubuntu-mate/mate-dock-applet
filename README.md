@@ -11,7 +11,8 @@ The applet allows you to:
 	accordingly
 * Use an indicator by each app to show when it is running
 * Optionally, use multiple indicators for each window an app has open	
-* Use either a light or dark indicator that it can always be seen no matter what colour the panel is
+* Use either a light or dark indicator that it can always be seen no matter what colour the panel is, or turn indicators off altogether
+* Change the colour of MATE panels to the dominant colour (i.e. the most common colour) of the desktop wallpaper. The colour can be applied to all panels or just the panel contaning the dock.
 
 ### Installation
 
@@ -36,12 +37,6 @@ sudo make install
 
 Depending on the distro, it may be necessary to install gir1.2-wnck-1.0 and glib2 development packages first.
 
-### Installation on Ubuntu Mate on a Pi 2
-
-This is a little more involved. First download gir1.2-wnck-1.0 for arm architechure from [here](http://launchpadlibrarian.net/160438738/gir1.2-wnck-1.0_2.30.7-0ubuntu4_armhf.deb) and install it with sudo dpkg -i. Then install other dependencies - sudo apt-get install git autoreconf libglib2.0-dev
-
-From this point the instructions above for compiling from source should be followed.
-
 ### Dependencies
 
 Depends on: 
@@ -51,6 +46,17 @@ Python3
 gir1.2-wnck-1.0
 
 libglib2-dev
+
+Python Imaging Library 
+
+SciPy
+
+### Installation on Ubuntu Mate on a Pi 2
+
+This is a little more involved. First download gir1.2-wnck-1.0 for arm architechure from [here](http://launchpadlibrarian.net/160438738/gir1.2-wnck-1.0_2.30.7-0ubuntu4_armhf.deb) and install it with sudo dpkg -i. Then install other dependencies - sudo apt-get install git autoreconf libglib2.0-dev
+
+From this point the instructions above for compiling from source should be followed.
+
 
 ### Obligatory screen shots
 

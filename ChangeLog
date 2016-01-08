@@ -107,3 +107,27 @@ V0.64   Fixed bug that would sometimes prevent a window from being focused
 V0.65	Dock icons now blink when an app needs attention
 	Change to window activation code so that the applet works
 	with MATE 1.12
+
+V0.66	Improved matching of apps with their .desktop files, in particular
+	Opera and Chrome
+	Dock icons now pulse when a new window is opened for a running app
+	Minimize targets are now recalculated when the applet is moved or
+	changes panel, so that windows always minimize to the correct place
+	on the dock
+	Added option to change MATE panel colour according to the current
+	desktop wallpaper. (Note: this works for images only, not slideshows,
+	gradients, or solid colour backgrounds). The colour can be applied to 
+	all panels or just the panel containing the dock. The applet now depends
+	on the Python Imaging Library and SciPy packages because of this
+	change
+	Added new preferences to options to both activate panel colour changing 
+	and to limit it to the dock panel panel only
+	Added option to not display indicators under running apps
+	Added option to not display in the dock running pinned apps which are 
+	not on the current workspace
+	Using the mouse wheel on a dock icon to scroll through an app's
+	windows will now change workspace if the new window is not on the 
+	current workspace
+	Selecting an app's window from the pop-up window list will now change
+	workspace if the window is not on the current workspace
+	Prefs dialog reworked because of new options added in this version
