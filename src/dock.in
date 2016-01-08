@@ -7,7 +7,7 @@ Manage a list of pinned and non-pinned dock apps.
 Handle all mouse ui events for docked apps
 Respond to window opening and closing events from libwnck
 Respond to changes to the Gtk icon theme and update all docked apps
-Load and save dock settings (pinned apps and indicator type)
+Load and save dock settings (e.g. pinned apps and indicator type)
 
 respond to selections made in the applet right click menu, specifically
     : allow apps to be pinned to the dock
@@ -61,6 +61,7 @@ import dock_about
 import dock_custom_launcher
 import dock_win_list
 import dock_xml
+import dock_color_changer
 
 from log_it import log_it as log_it
 
@@ -71,7 +72,7 @@ class Dock(object):
             applet : the MATE panel applet
             wnck_screen : the currently active wnck_screen. Assumed to be the default
                           wnck_screen on applet start up
-            window : 
+            window :
             app_list : the list of DockedApp objects. Will contain running/non-running
                        pinned apps and running unpinned apps
             box    : A Gtk HBox or VBox (depending on the applet orientation) containing
@@ -85,15 +86,27 @@ class Dock(object):
             right_clicked_app: the app that was most recently right clicked
             settings_path : the GIO.Settings path for the applet
             settings : GIO.Settings - the settings for the applet
-            indicator : the indicator type (light or dark)
+            indicator : the indicator type (light or dark, or None)
+            multi_ind : whether or not multiple indicators are to be used
+            show_all_unpinned_apps : whether or not unpinned apps from all workspaces
+                                     are displayed in the dock
+            show_all_pinned_apps : whether or not pinned apps from all workspaces are
+                                   displayed in the dock
+            change_panel_color : whether or not the color of MATE panels are to be
+                                 changed to the dominant colour of the desktop wallpaper
+            change_dock_color_only : whether or not all MATE panels are to have their colour
+                                     changed or just the panel containing the dock
+            panel_id : the toplevel id of the panel the applet is on
             dock_action_group : Gtk Action group containing all of the actions
                                 for the applet right click menu
             app_win_list : a replacement for the default tooltip - a window which lists
-                           the currently highlighted  app's open windows and allows the 
+                           the currently highlighted  app's open windows and allows the
                            user to select one
             win_list_delay : the amount of time (in milliseconds) after which the app's
                              window list will pop up when the mouse hovers over the app
             win_list_timer : timer object used to cound win_list_delay
+            panel_cc : used to changed to the colour of the MATE panel(s) to the dominant
+                      color of the desktop wallpaper (if enabled in the applet settings)
 
     """
 
@@ -126,6 +139,10 @@ class Dock(object):
         self.settings = Gio.Settings.new_with_path("org.mate.panel.applet.dock", \
                                                     self.settings_path)
 
+        # instantiate these - will be set up later
+        self.object_settings = ""
+        self.panel_id = ""
+        
         # specify the xml file to be used as an alternative storage location for the
         # applet settings
         self.xml_conf=os.path.expanduser("~/.config/mate_dock_applet.conf")
@@ -133,20 +150,91 @@ class Dock(object):
         self.prefs_win = None
         self.about_win = None
         self.ccl_win = None
-        self.indicator = 0 
+        self.indicator = 0
         self.multi_ind = False
-        self.show_all_apps = True
+        self.show_all_unpinned_apps = True
+        self.show_all_pinned_apps = True
         self.click_restore_last_active = True
+        self.change_panel_color = False
+        self.change_dock_color_only = False
         self.read_settings()
 
         self.dock_action_group = None
-        
-        self.app_win_list  = dock_win_list.DockWinList()
+
+        self.app_win_list  = dock_win_list.DockWinList(self.wnck_screen)
         self.app_win_list.icontheme = self.icontheme
         self.win_list_delay = 500
         self.win_list_timer = None
 
+        # create an event handler so that we can react to changes e.g 
+        # the panel the applet is on, or it's position on the panel
+        applet_spath = self.settings_path[0: len(self.settings_path)-6] # remove "prefs/" suffix
+        self.object_settings = Gio.Settings.new_with_path("org.mate.panel.object", applet_spath)
+        self.object_settings.connect("changed", self.panel_settings_changed)
+
         self.setup_menu()
+
+        self.panel_cc = dock_color_changer.PanelColorChanger()
+
+        # instantiate a timer to perform further setup once the applet has been fully
+        # created
+        GObject.timeout_add(1000, self.do_delayed_setup)
+
+    def do_delayed_setup(self):
+        """ Perform setup operations that we couldn't do until the dock was fully
+            instantiated
+
+            Get the id of the panel the applet is on
+            Do the initial panel colour change (if necessary)
+        """
+
+        self.get_panel_id()
+
+        # now that we have our panel id, we can set use it to set to panel colour changer
+        # if necessary
+        if self.change_dock_color_only:
+            self.panel_cc.set_single_panel(self.panel_id)
+        else:
+            self.panel_cc.set_single_panel("")
+
+        # enable panel colour changing? 
+        if self.change_panel_color:
+            self.panel_cc.enable_color_change()
+            self.panel_cc.do_change_panel_color() # we're starting up so need to do an initial panel
+                                                  # colour change
+
+        return False        # cancel the timer
+
+    def get_panel_id(self):
+        """ Get the toplevel id of the panel the applet is on
+        """
+
+        # get the info from dconf settings
+        self.panel_id = self.object_settings.get_string("toplevel-id")
+
+
+    def panel_settings_changed(self, settings, key):
+        """ Callback for when the the applet settings with regards to it's panel are
+            changed
+
+            If the panel the applet is on is changed, update our panel id and
+            recalculate all docked apps minimize positions accordingly
+
+            If the appllet's position on its panel is changed, the minimize
+            positions of all docked apps also need to be minimized
+        """
+
+        if key == "toplevel-id":
+            self.get_panel_id()
+            if self.change_dock_color_only:
+                self.panel_cc.set_single_panel(self.panel_id)
+            self.set_app_minimise_targets()
+            pass
+
+        if key == "position":
+            self.set_app_minimise_targets()
+            pass
+
 
     def read_settings(self):
         """ Read the current dock settings from dconf
@@ -156,13 +244,12 @@ class Dock(object):
 
         """
 
-
         if (self.settings.get_boolean("first-run") == True) and \
                 (os.path.isfile(self.xml_conf)):
 
             # this dock is being run for the first time, so if we have any saved settings
             # from other docks, offer to import them ..
-            md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION, 
+            md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION,
                                    Gtk.ButtonsType.YES_NO,
                                    None)
             md.set_markup ('<span size="x-large"><b>Import settings?</b></span>')
@@ -175,27 +262,35 @@ class Dock(object):
 
                 if xml_settings[0] == True:
                     # the settings were read correctly, so set everything up
-                
+
                     pinned_apps = []
                     for pinned_app in xml_settings[1]:
                         pinned_apps.append(pinned_app)
 
                     self.indicator = xml_settings[2]
-                    self.show_all_apps = xml_settings[3]
+                    self.show_all_unpinned_apps = xml_settings[3]
                     self.multi_ind = xml_settings[4]
                     self.click_restore_last_active = xml_settings[5]
+                    self.show_all_pinned_apps = xml_settings[6]
+                    self.change_panel_color = xml_settings[7]
+                    self.change_dock_color_only = xml_settings[8]
 
-                    # now, immediately write the settings to dconf and back to the config file 
+                    # now, immediately write the settings to dconf and back to the config file
                     # so the dock can access them
-                    
+
                     self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
                     self.settings.set_int("indicator-type", self.indicator)
                     self.settings.set_boolean("multi-ind", self.multi_ind)
-                    self.settings.set_boolean("apps-from-all-workspaces", self.show_all_apps)
+                    self.settings.set_boolean("apps-from-all-workspaces", self.show_all_unpinned_apps)
                     self.settings.set_boolean("first-run", False)
                     self.settings.set_boolean("click-restore-last-active", self.click_restore_last_active)
+                    self.settings.set_boolean("pinned-apps-from-all-workspaces", self.show_all_pinned_apps)
+                    self.settings.set_boolean("change-panel-color", self.change_panel_color)
+                    self.settings.set_boolean("change-panel-color-dock-only", self.change_dock_color_only)
+
                     dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator, \
-                           self.show_all_apps, self.multi_ind, self.click_restore_last_active)
+                           self.show_all_unpinned_apps, self.multi_ind, self.click_restore_last_active, \
+                           self.show_all_pinned_apps, self.change_panel_color, self.change_dock_color_only)
 
                     md.destroy()
                     return
@@ -207,11 +302,13 @@ class Dock(object):
                     # the dialog and assume a default set of options
                     md.destroy()
 
-
         self.indicator = self.settings.get_int("indicator-type")
         self.multi_ind = self.settings.get_boolean("multi-ind")
-        self.show_all_apps = self.settings.get_boolean("apps-from-all-workspaces")
+        self.show_all_unpinned_apps = self.settings.get_boolean("apps-from-all-workspaces")
         self.click_restore_last_active = self.settings.get_boolean("click-restore-last-active")
+        self.show_all_pinned_apps = self.settings.get_boolean("pinned-apps-from-all-workspaces")
+        self.change_panel_color = self.settings.get_boolean("change-panel-color")
+        self.change_dock_color_only = self.settings.get_boolean("change-panel-color-dock-only")
 
     def write_settings(self):
         """Write the current dock settings.
@@ -233,12 +330,17 @@ class Dock(object):
             self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
             self.settings.set_int("indicator-type", self.indicator)
             self.settings.set_boolean("multi-ind", self.multi_ind)
-            self.settings.set_boolean("apps-from-all-workspaces", self.show_all_apps)
+            self.settings.set_boolean("apps-from-all-workspaces", self.show_all_unpinned_apps)
             self.settings.set_boolean("click-restore-last-active", self.click_restore_last_active)
+            self.settings.set_boolean("pinned-apps-from-all-workspaces", self.show_all_pinned_apps)
+            self.settings.set_boolean("change-panel-color", self.change_panel_color)
+            self.settings.set_boolean("change-panel-color-dock-only", self.change_dock_color_only)
             self.settings.set_boolean("first-run", False)
 
         dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator, \
-                           self.show_all_apps, self.multi_ind, self.click_restore_last_active)
+                           self.show_all_unpinned_apps, self.multi_ind, self.click_restore_last_active,
+                           self.show_all_pinned_apps, self.change_panel_color,
+                           self.change_dock_color_only)
 
     def set_actions_for_app(self, app):
         """Show or hide actions in the context menu so that only relevant ones are
@@ -262,7 +364,7 @@ class Dock(object):
            If the app is running and has one or more windows on screen, show
            an option allowing them to be closed
 
-           If the app does not have a desktop file, show an option allowing a 
+           If the app does not have a desktop file, show an option allowing a
            custom launcher to be created
 
            Show any right click options specified in the app's desktop file
@@ -281,7 +383,7 @@ class Dock(object):
         if act_exists == True:
             df_shortcut_1_action.set_label(act_name)
             df_shortcut_1_action.set_icon_name(app.icon_name)
-        
+
         act_exists, act_name, act_cmd_line = app.get_rc_action(2)
         df_shortcut_2_action.set_visible(act_exists)
         if act_exists == True:
@@ -554,8 +656,11 @@ class Dock(object):
             self.prefs_win = dock_prefs.DockPrefsWindow(self.prefs_win_ok_cb)
             self.prefs_win.set_indicator(self.indicator)
             self.prefs_win.set_multi_ind(self.multi_ind)
-            self.prefs_win.set_show_unpinned_apps_on_all_ws(self.show_all_apps)
+            self.prefs_win.set_show_unpinned_apps_on_all_ws(self.show_all_unpinned_apps)
+            self.prefs_win.set_show_pinned_apps_on_all_ws(self.show_all_pinned_apps)
             self.prefs_win.set_click_restore_last_active(self.click_restore_last_active)
+            self.prefs_win.set_change_panel_color(self.change_panel_color)
+            self.prefs_win.set_change_dock_color_only(self.change_dock_color_only)
         else:
             self.prefs_win.show_all()
 
@@ -585,14 +690,29 @@ class Dock(object):
 
         if (self.indicator != self.prefs_win.get_indicator_type()) or \
            (self.multi_ind != self.prefs_win.get_multi_ind()) or \
-           (self.show_all_apps != self.prefs_win.get_show_unpinned_apps_on_all_ws()) or \
-           (self.click_restore_last_active != self.prefs_win.get_click_restore_last_active()):
+           (self.show_all_unpinned_apps != self.prefs_win.get_show_unpinned_apps_on_all_ws()) or \
+           (self.show_all_pinned_apps != self.prefs_win.get_show_pinned_apps_on_all_ws()) or \
+           (self.click_restore_last_active != self.prefs_win.get_click_restore_last_active()) or \
+           (self.change_panel_color != self.prefs_win.get_change_panel_color()) or \
+           (self.change_dock_color_only != self.prefs_win.get_change_dock_color_only()):
 
             self.indicator = self.prefs_win.get_indicator_type()
             self.multi_ind = self.prefs_win.get_multi_ind()
-            self.show_all_apps = self.prefs_win.get_show_unpinned_apps_on_all_ws()
+            self.show_all_unpinned_apps = self.prefs_win.get_show_unpinned_apps_on_all_ws()
+            self.show_all_pinned_apps = self.prefs_win.get_show_pinned_apps_on_all_ws()
             self.click_restore_last_active = self.prefs_win.get_click_restore_last_active()
+
+            new_panel_color_setting = self.change_panel_color != self.prefs_win.get_change_panel_color()
+            self.change_panel_color = self.prefs_win.get_change_panel_color()
+
+            self.change_dock_color_only = self.prefs_win.get_change_dock_color_only()
+            if self.change_dock_color_only:
+                self.panel_cc.set_single_panel(self.panel_id)
+            else:
+                self.panel_cc.set_single_panel("")
+
             self.write_settings()
+
             # redraw everything here
             for app in self.app_list:
                 app.set_indicator(self.indicator)
@@ -600,7 +720,16 @@ class Dock(object):
                 if app.is_running():
                     app.queue_draw()
             self.show_or_hide_app_icons()
-
+    
+            if new_panel_color_setting:
+                # panel colour changing setting has been changed so we need to 
+                # enable or disable colour changing
+                if self.change_panel_color:
+                    self.panel_cc.enable_color_change()
+                    self.panel_cc.do_change_panel_color()
+                else:
+                    self.panel_cc.disable_color_change()
+            
         self.prefs_win.hide()
 
     def show_ccl_win(self, data=None):
@@ -625,10 +754,10 @@ class Dock(object):
     def ccl_win_ok_cb(self, widget, event):
         """ Callback for the 'ok' button on the create custom launcher window.
 
-        Check to ensure that all required fields (icon, launcher name and command) have been 
+        Check to ensure that all required fields (icon, launcher name and command) have been
         entered and display an error dialog if not.
 
-        If all required fields have been entered, use the info from the window to create a 
+        If all required fields have been entered, use the info from the window to create a
         .desktop file in ~/.local/share/applications
 
         The .desktop file will be named mda_<launcher name>.desktop - the initial
@@ -651,7 +780,7 @@ class Dock(object):
             valid_launcher = True
 
         if valid_launcher == False:
-            md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.ERROR, 
+            md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.ERROR,
                                    Gtk.ButtonsType.OK,
                                    None)
             md.set_markup ('<span size="x-large"><b>Cannot create launcher</b></span>')
@@ -663,7 +792,7 @@ class Dock(object):
         else:
             self.ccl_win.hide()
 
-            # the gnome developer docs at 
+            # the gnome developer docs at
             # https://developer.gnome.org/integration-guide/stable/desktop-files.html.en
             # state that .desktop filenames should not contain spaces, so....
             dfname = self.ccl_win.name.replace(" ", "-")
@@ -683,11 +812,11 @@ class Dock(object):
             # becomes a needed thing
             #term_app = "%s" %self.ccl_win.is_terminal_app
             #dfile.write("Terminal=%s\n" %term_app.lower())
-    
-            # we don't want this launcher displayed in the MATe menu 
+
+            # we don't want this launcher displayed in the MATe menu
             dfile.write("NoDisplay=true\n")
 
-            dfile.close()            
+            dfile.close()
 
             # create a docked app from the .desktop we just created and add it to the dock
             dock_app = docked_app.DockedApp()
@@ -705,7 +834,7 @@ class Dock(object):
             self.add_app(dock_app)
             self.show_or_hide_app_icons()
             self.write_settings()
-       
+
     def show_win(self, win_no):
         """
         Bring the specified window number of the right clicked app to the front
@@ -794,7 +923,7 @@ class Dock(object):
             /usr/local/share/applications
             ~/.local/share/applications
 
-        Args : 
+        Args :
             df_name : the name of the .desktop file e.g. pluma.desktop. The
                       .desktop extension must be included
 
@@ -876,7 +1005,7 @@ class Dock(object):
                     if app.desktop_file == dock_app.desktop_file:
                         # copy the running app's info to the pinned dock item
                         self.copy_wnck_info_to_app(app, dock_app, wnck_window)
-                        
+
                         break
                 else:
                     # it's not a pinned app so add it to the app list
@@ -894,14 +1023,14 @@ class Dock(object):
         hide all unpinned apps which do not have windows open on the new
         screen/workspace
 
-        Arguments : 
+        Arguments :
             wnck_screen : the screen that emitted the event. Will be the same as
                           self.wnck_screen
             previously_active_space : the workspace that was previously active
-            
+
         """
 
-        if not self.show_all_apps:
+        if not self.show_all_unpinned_apps:
             self.show_or_hide_app_icons()
 
     def active_win_changed(self, wnck_screen, prev_active_window):
@@ -1051,9 +1180,9 @@ class Dock(object):
 
                         # we've found the app so remove the window from it's list
                         aai.windows.remove(xid)
-                        
+
                         do_redraw = False
-                        
+
                         # if the app has no more open windows, mark it as closed
                         if len(aai.windows) == 0:
                             # there no more open windows for this process. Does the app
@@ -1091,8 +1220,11 @@ class Dock(object):
                         pass
 
     def show_or_hide_app_icons(self):
-        """ If we're only showing unpinned apps from the current workspace then
+        """ If we're only showing unpinned and/or pinned apps from the current workspace then
             then show/hide as appropriate
+
+            If we're showing pinned apps from all workspaces then show them
+            all
 
             If we're showing unpinned apps from all workspaces then show them
             all
@@ -1100,9 +1232,10 @@ class Dock(object):
             Finally, recalculate all app minimization targets
         """
 
-        if self.show_all_apps:
+        # do unpinned apps first
+        if self.show_all_unpinned_apps:
             for app in self.app_list:
-                if not app.is_visible():
+                if (not app.is_pinned) and (not app.is_visible()):
                     app.show_icon()
         else:
             cur_ws = self.wnck_screen.get_active_workspace()
@@ -1112,7 +1245,28 @@ class Dock(object):
                         app.show_icon()
                     else:
                         app.hide_icon()
-   
+
+        # now do pinned apps
+        if self.show_all_pinned_apps: 
+            for app in self.app_list:
+                if (app.is_pinned) and (not app.is_visible()):
+                    app.show_icon()
+        else:
+            cur_ws = self.wnck_screen.get_active_workspace()
+            for app in self.app_list:
+                if app.is_pinned:
+                    # if the app is not running, then always show the icon regardless of the 
+                    # current workspace.
+                    # This has to be done, since hiding none running pinned apps will not
+                    # give the user any way to start them....
+                    if not app.is_running():
+                        app.show_icon()
+                    else:
+                        if app.has_windows_on_workspace(cur_ws):
+                            app.show_icon()
+                        else:
+                            app.hide_icon()
+
         # recalculate all apps icon geometry
         for app in self.app_list:
             app.set_icon_geometry()
@@ -1186,7 +1340,7 @@ class Dock(object):
             #                        the same name as the app
             #                        then ...
             #                        look in ~/.local/share/icons for an icon with the same name
-            #                        and extension as the icon   
+            #                        and extension as the icon
             #
             # 2 .. sloooow         - iterate through each installed icon theme and try to
             #                        find the app - not implement for now
@@ -1346,14 +1500,14 @@ class Dock(object):
         """ Reset win_list timer
 
         If the timer is already instantiated, delete it.
-        
+
         Start a new timer with the appropriate delay
 
         """
 
         if self.win_list_timer is not None:
             GObject.source_remove(self.win_list_timer)
-        
+
         self.win_list_timer = GObject.timeout_add(self.win_list_delay, self.show_win_list)
 
     def stop_win_list_timer(self):
@@ -1367,7 +1521,7 @@ class Dock(object):
     def show_win_list(self):
         """ Show the the list of open windows for the currently highlighted app
 
-        Get the currently highlighted app. If the highlighted app is not running 
+        Get the currently highlighted app. If the highlighted app is not running
         or a window list is already being displayed for it, or a user interaction
         has already dismissed the window list, then do nothing
 
@@ -1382,10 +1536,10 @@ class Dock(object):
                         # the mouse must remain, outside of which the window list wil;
                         # hide
 
-        highlighted_app = self.app_with_mouse 
+        highlighted_app = self.app_with_mouse
         if (highlighted_app is None) or (highlighted_app.is_running == False):
             return
-        
+
         if highlighted_app is not None:
 
             # we need to show to window list
@@ -1409,7 +1563,7 @@ class Dock(object):
                 applet_y = 0
 
             self.app_win_list.add_mouse_area (Gdk.Rectangle(applet_x, applet_y, applet_w, applet_h))
-            
+
             # get the display resolution
             screen = self.app_win_list.get_screen()
             screen_w = screen.get_width()
@@ -1431,7 +1585,7 @@ class Dock(object):
 
                 # adjust win_y in case we're off the top the screen...
                 if win_y < panel_space:
-                    win_y = panel_space 
+                    win_y = panel_space
 
                 # adjust win_y if case the window list extends beyound the end of the panel ..
                 if (win_y + win_h) > screen_h:
@@ -1439,11 +1593,11 @@ class Dock(object):
 
                 # setup a new mouse area covering the window (minus a border) and extending
                 # to the panel
-                self.app_win_list.add_mouse_area(Gdk.Rectangle(applet_x, 
+                self.app_win_list.add_mouse_area(Gdk.Rectangle(applet_x,
                                                                win_y - win_border ,
-                                                               win_x +win_w + win_border, 
+                                                               win_x +win_w + win_border,
                                                                win_h + (2*win_border)))
-                
+
             elif orientation == MatePanelApplet.AppletOrient.LEFT:
                 centre_pos  = aay + app_alloc.height/2
                 win_x = applet_x - panel_space - win_w
@@ -1451,7 +1605,7 @@ class Dock(object):
 
                 # adjust win_y in case we're off the top the screen...
                 if win_y < panel_space:
-                    win_y = panel_space 
+                    win_y = panel_space
 
                 # adjust win_y if case the window list extends beyound the end of the panel ..
                 if (win_y + win_h) > screen_h:
@@ -1459,19 +1613,19 @@ class Dock(object):
 
                 # setup a new mouse area covering the window (minus a border) and extending
                 # to the panel
-                self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border, 
+                self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border,
                                                                win_y - win_border,
-                                                               applet_x + applet_w, 
+                                                               applet_x + applet_w,
                                                                win_h + (2*win_border)))
-               
+
             elif orientation == MatePanelApplet.AppletOrient.DOWN:
                 centre_pos  = aax+ app_alloc.width/2
-                win_x = centre_pos - (win_w / 2) 
+                win_x = centre_pos - (win_w / 2)
                 win_y = applet_h +  panel_space
 
                 # adjust win_x in case we're off the left of the screen...
                 if win_x < panel_space:
-                    win_x = panel_space 
+                    win_x = panel_space
 
                 # adjust win_x if case the window list extends beyond the end of the panel ..
                 if (win_x + win_w) > screen_w:
@@ -1479,18 +1633,18 @@ class Dock(object):
 
                 # setup a new mouse area covering the window (minus a border) and extending
                 # to the panel
-                self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border, 
+                self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border,
                                                                applet_y,
-                                                               win_w + (2*win_border), 
+                                                               win_w + (2*win_border),
                                                                win_y + win_h + win_border))
             else:
                 centre_pos  = aax+ app_alloc.width/2
-                win_x = centre_pos - (win_w / 2) 
+                win_x = centre_pos - (win_w / 2)
                 win_y = applet_y - panel_space - win_h
 
                 # adjust win_x in case we're off the left of the screen...
                 if win_x < panel_space:
-                    win_x = panel_space 
+                    win_x = panel_space
 
                 # adjust win_x if case the window list extends beyond the end of the panel ..
                 if (win_x + win_w) > screen_w:
@@ -1498,13 +1652,13 @@ class Dock(object):
 
                 # setup a new mouse area covering the window (minus a border) and extending
                 # to the panel
-                self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border, 
+                self.app_win_list.add_mouse_area(Gdk.Rectangle(win_x - win_border,
                                                                win_y - win_border,
-                                                               win_w + (2*win_border), 
+                                                               win_w + (2*win_border),
                                                                applet_y  + applet_h))
             self.app_win_list.move (win_x, win_y)
             self.app_win_list.show_all()
-            
+
             self.win_list_timer = None
             return False
 
@@ -1520,25 +1674,25 @@ class Dock(object):
 
         the action to perform (minimizing, moving workspace, activating)
         is decided as follows:
-           if (the app's windows are all minimized) or 
+           if (the app's windows are all minimized) or
                (the app s one or more unminimized window but is not the active app)
-           then     
+           then
                restore the app's last active window or all windows (based on the
-               user's settings). If the active window is on a  different workspace 
+               user's settings). If the active window is on a  different workspace
                then activate that workspace
            else:
-               the app is currently the active app so all of the app 
+               the app is currently the active app so all of the app
                windows will be minimized
-        
-        but first, hide any app window list that is being shown and stop the 
+
+        but first, hide any app window list that is being shown and stop the
         window list timer
 
         Note: As of MATE 1.12 wnck_window.activate does not seem to work properly
               if we specify our own event time. However, if an event time of
               0 (i.e. now) is specfied all works as expected. However, when the
               applet is run from the command line, lots of these messages
-              'Wnck-WARNING **: Received a timestamp of 0; window activation 
-               may not function properly' appear, so another solution may need 
+              'Wnck-WARNING **: Received a timestamp of 0; window activation
+               may not function properly' appear, so another solution may need
               to be found in the future
 
         Args:
@@ -1549,7 +1703,7 @@ class Dock(object):
 
         self.stop_win_list_timer()
         self.hide_win_list()
-        
+
         win_list = app.get_wnck_windows()
 
         restore_win = (not app.has_unminimized_windows()) or \
@@ -1571,25 +1725,24 @@ class Dock(object):
                             (win_type == Wnck.WindowType.DIALOG)) and \
                             (not window.is_skip_tasklist()) and \
                             (window != last_active_win):
-                        window.activate(0) 
+                        window.activate(0)
                         sleep(0.01)   # allow the window manager time to activate
                                       # the window
-                                
+
                 app.last_active_win = last_active_win
-                        
-            if last_active_win is not None:
-                wnck_screen = last_active_win.get_screen()
-                wnck_aws = wnck_screen.get_active_workspace()
-                wnck_ws = last_active_win.get_workspace()
 
-                if wnck_aws != wnck_ws:
-                    wnck_ws.activate(0)
-                    sleep(0.01)
+            wnck_screen = last_active_win.get_screen()
+            wnck_aws = self.wnck_screen.get_active_workspace()
+            wnck_ws = last_active_win.get_workspace()
 
-                # rarely, the last active win does not end up as the active window if we
-                # activate here, so instead a workaround which seems to do the trick
-                # is use a timer as below
-                GObject.timeout_add(20, win_activation_timer, [last_active_win, event.time]) 
+            if wnck_aws is not None and (wnck_aws != wnck_ws):
+                wnck_ws.activate(0)
+                sleep(0.01)
+
+            # rarely, the last active win does not end up as the active window if we
+            # activate here, so instead a workaround which seems to do the trick
+            # is use a timer as below
+            GObject.timeout_add(20, win_activation_timer, [last_active_win, event.time])
 
         else:
             #minimize all windows and do the last active window last of all
@@ -1610,11 +1763,87 @@ class Dock(object):
                 last_active_win.minimize()
                 sleep(0.01)
 
+    
+    def do_window_scroll(self, scroll_dir, event_time):
+        """ Scroll to the next/previous window of the currently active app
+        
+        This function is called in response to the mouse scroll event on the
+        panel applet
+
+        Depending on the scroll direction, make the next or previous window of 
+        the current app active. Scrolling will wrap around in both directions
+
+        If the app only has one window or we don't know which window was last active
+        (e.g. because the applet has only just started) then make the first window
+        active
+
+        If the new window is not on the current workspace, change to the relevant
+        workspace
+        
+        Also, hide the app window list and stop any timer that might be running
+
+        Args:
+            scroll_dir : A GDK.ScrollDirection which indicates whether to go
+                         forwards or backwards through the window list
+            event_time : the time scroll event occurred
+        """
+
+        # we're only interested in scroll up and down events....
+        if (scroll_dir != Gdk.ScrollDirection.UP) and \
+           (scroll_dir != Gdk.ScrollDirection.DOWN):
+            return
+
+        if self.app_with_mouse is not None:
+            app = self.app_with_mouse
+        else:
+            return
+
+        # if the app isn't running, there's nothing to do...
+        if app.is_running() == False:
+            return
+        
+        windows = app.get_wnck_windows()
+        if (app.last_active_win is None) or (len(windows) == 1):
+            new_index = 0
+        else:
+            # work out which window we want to activate
+            try:
+                index = windows.index (app.last_active_win)
+            except ValueError:
+                index = 0  # in case of error activate the first window
+
+            if scroll_dir== Gdk.ScrollDirection.UP:
+                if index == 0:
+                    new_index = len(windows)-1
+                else:
+                    new_index = index - 1
+            else:
+                if index == len(windows)-1:
+                    new_index = 0
+                else:
+                    new_index = index +1
+    
+        # hide the window list and stop any timer
+        self.hide_win_list()
+        self.stop_win_list_timer()
+
+        # if the new window is on a different workspace, we need to switch workspace
+#            wnck_screen = app.last_active_win.get_screen()
+        wnck_aws = self.wnck_screen.get_active_workspace()
+        wnck_ws = windows[new_index].get_workspace()
+
+        if wnck_aws is not None and (wnck_aws != wnck_ws):
+            wnck_ws.activate(0)
+            sleep(0.01)
+
+        #activate the new window
+        windows[new_index].activate(0)
+
 def win_activation_timer(args):
     """ Timer function to be called by GObject.timeout_add and which
         will activate a specified wnck window
 
-    Args: 
+    Args:
         args - a tuple containing these items
                args[0] - the wnck window to activate
                args[1] - the event time at which the timer was activated
@@ -1623,8 +1852,9 @@ def win_activation_timer(args):
         False - to cancel the timer
     """
 
-    # as of MATE 1.12 it seems we need to use an event time of 0 (i.e. now) to the window to 
+    # as of MATE 1.12 it seems we need to use an event time of 0 (i.e. now) to the window to
     # activate properly
     args[0].activate(0)
-    sleep(0.01) 
+    sleep(0.01)
     return (False)
+
