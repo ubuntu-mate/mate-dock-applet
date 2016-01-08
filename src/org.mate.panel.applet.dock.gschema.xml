@@ -8,8 +8,8 @@
     </key>
     <key type="i" name="indicator-type">
       <default>0</default>
-      <summary>The type of indicator (light or dark)</summary>
-      <description>The type of indicator (light or dark) which is displayed next to running apps.</description>
+      <summary>The type of indicator (light, dark or none)</summary>
+      <description>The type of indicator (light or dark, or no indicator) which is displayed next to running apps.</description>
     </key>
     <key type="b" name="multi-ind">
        <default>false</default>
@@ -21,6 +21,11 @@
        <summary>Whether to show unpinned apps from all workspaces</summary>
        <description>Whether to show running unpinned apps from all workspaces </description>
     </key>
+    <key type="b" name="pinned-apps-from-all-workspaces">
+       <default>true</default>
+       <summary>Whether to show pinned apps from all workspaces</summary>
+       <description>Whether to show pinned apps from all workspaces </description>
+    </key>
     <key type="b" name="first-run">
        <default>true</default>
        <summary>Whether this is the first time the applet has been run</summary>
@@ -30,6 +35,16 @@
        <default>true</default>
        <summary>Specifies what to do when a running app's dock icon is click</summary>
        <description>If set to true, the app's last running window is made active again. If false all of the app's windows are restored/unminimizes and the last active window is made active again</description>
+    </key>
+    <key type="b" name="change-panel-color">
+       <default>false</default>
+       <summary>Specifies whether MATE panels are to change colour according to the desktop wallpaper</summary>
+       <description>If set to true, the colour of the MATE panel will change whenever the desktop wallpaper is changed, and will be set to the dominant colour of the wallpaper image</description>
+    </key>
+    <key type="b" name="change-panel-color-dock-only">
+       <default>false</default>
+       <summary>When changing MATE panel colours, specfies whether or not all panels are to changed</summary>
+       <description>If set to false, the colour of all MATE panels are changed. If set to true only the color of the panel containing the dock will be changed will be set to the dominant colour of the wallpaper image</description>
     </key>
    </schema>
 </schemalist>
