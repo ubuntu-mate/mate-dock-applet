@@ -35,7 +35,8 @@ The file will contain the following information:
 import xml.etree.ElementTree as ET
 
 def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
-               click_restore_last_active):
+               click_restore_last_active, pinned_from_all, panel_change_color,
+               dock_panel_change_only):
     """ Write the xml file using the specified information
 
     The xml file will be in the following format:
@@ -50,6 +51,9 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
             <unpinned_from_all>True or False</>
             <multi_ind>True or False</>
             <click_restore_last_active>True or False</>
+            <pinned_from_all>True or False</>
+            <panel_change_color>True or False</>
+            <dock_panel_change_only>True or False</>
         </root>
 
     Args: 
@@ -64,7 +68,12 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
                    shown
         click_restore_last_active: whether clicking a running app's dock icon restores
                    only the last active window or all windows
-
+        pinned_from_all : boolean - whether or not pinned apps from all workspaces are to 
+                          be shown (new with V0.66)
+        panel_change_color : boolean - Whether or not MATE panels are to change color according
+                             to the desktop wallpaper (new with V0.66)
+        dock_panel_change_only : boolean - whether panel colour changes are to limited to
+                                 only the panel containing the dock applet (new with V0.66)
 
     Returns:
         Boolean - True if the file was written successfully, False otherwise
@@ -83,12 +92,18 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
     mi_el = ET.Element("multi_ind", show_multi = "%s" %multi_ind)
     crla_el = ET.Element("click_restore_last_active", 
                         restore_last_active_only = "%s" %click_restore_last_active)
-
+    pfa_el = ET.Element("pinned_from_all", pfa = "%s" %pinned_from_all)
+    pcc_el = ET.Element("panel_change_color", pcc = "%s" %panel_change_color)
+    dcc_el = ET.Element("dock_panel_change_only", dcc = "%s" %dock_panel_change_only)
+                        
     root.append (pa_el)
     root.append (ind_el)
     root.append (ufa_el)
     root.append (mi_el)
     root.append (crla_el)
+    root.append (pfa_el)
+    root.append (pcc_el)
+    root.append (dcc_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
@@ -108,11 +123,13 @@ def read_xml (filename):
 
         A tuple containing the following:
             a list of the .desktop files in the file (i.e. the pinned apps)
-            an interger - the light indicator setting
+            an integer - the indicator setting
             a boolean - the unpinned from all setting
             a boolean - the multiple indicators setting
             a boolean - the restore last active settings
-
+            a boolean - the pinned from all setting
+            a boolean - the change panel colour setting
+            a boolean - the change dock panel color only setting 
     """
 
     try:
@@ -134,7 +151,7 @@ def read_xml (filename):
     if ind_el is not None:
         light_ind = int(ind_el.get("light"))
     else:
-        light_ind = True
+        light_ind = 0
 
     ufa_el = root.find("unpinned_from_all")
     if ufa_el is not None:
@@ -154,7 +171,26 @@ def read_xml (filename):
     else:
         click_restore_last_active = True 
 
-    return [True, df_list, light_ind, show_all, multi_ind, click_restore_last_active] 
+    crla_el = root.find("pinned_from_all")
+    if crla_el is not None:
+        pinned_from_all = crla_el.get("pfa") == "True"
+    else:
+        pinned_from_all = True 
+
+    crla_el = root.find("panel_change_color")
+    if crla_el is not None:
+        panel_change_color = crla_el.get("pcc") == "True"
+    else:
+        panel_change_color = False
+
+    crla_el = root.find("dock_panel_change_only")
+    if crla_el is not None:
+        dock_panel_change_only = crla_el.get("dcc") == "True"
+    else:
+        dock_panel_change_only = False
+
+    return [True, df_list, light_ind, show_all, multi_ind, click_restore_last_active, \
+            pinned_from_all, panel_change_color, dock_panel_change_only] 
 
 def main():
     """Main function.
@@ -162,7 +198,7 @@ def main():
     Debugging code can go here
     """
     
- #   write_xml ("/home/robin/tmp/text.xml", ["thing.desktop","blah.desktop"], 99, False, True, False)
+#    write_xml ("/home/robin/tmp/text.xml", ["thing.desktop","blah.desktop"], 99, False, True, False, False, True, False)
     results = read_xml ("/home/robin/tmp/text.xml")
     if results[0] == True:
         for df in results[1]:
@@ -172,6 +208,9 @@ def main():
         print ("Show unpinned on all = %s" %results[3])
         print ("Multi ind = %s" %results[4])
         print ("Click restore all = %s" %results[5])
+        print ("pinned on all = %s" %results[6])
+        print ("panel change color = %s" %results[7])
+        print ("dock panel only = %s" %results[8])
     else:
         print ("Error reading file....")
     
