@@ -1019,9 +1019,7 @@ class Dock(object):
     def active_workspace_changed(self, wnck_screen, previously_active_space):
         """ Event handler for the active workspace change even
 
-        If we're only showing unpinned apps from the current workspace then
-        hide all unpinned apps which do not have windows open on the new
-        screen/workspace
+        Show or hide pinned and unpinned dock apps as appropriate
 
         Arguments :
             wnck_screen : the screen that emitted the event. Will be the same as
@@ -1030,8 +1028,7 @@ class Dock(object):
 
         """
 
-        if not self.show_all_unpinned_apps:
-            self.show_or_hide_app_icons()
+        self.show_or_hide_app_icons()
 
     def active_win_changed(self, wnck_screen, prev_active_window):
         """Event handler for the window change event
