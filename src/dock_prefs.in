@@ -37,14 +37,19 @@ class IndicatorType:
     """Class to define the indicator types"""
     LIGHT = 0
     DARK = 1
+    NONE = 2
 
 class DockPrefsWindow(Gtk.Window):
     """Class to provide the preferences window functionality
 
     Create and display the preferences window
 
-    Provide methods to get and set the type of indicator to be
-    used by the dock applet
+    Provide methods to get and set:
+        the type of indicator to be used by the dock applet
+        whether pinned/unpinned apps are to be displayed from all workspaces or
+        just the current workspace
+        whether the colour of the MATE panels is to be set to the dominant colour of
+        the current wallpaper image
 
     """
 
@@ -87,19 +92,18 @@ class DockPrefsWindow(Gtk.Window):
 
         self.__hbbx.pack_start(self.__ok_btn, False, False, 4)
         self.__hbbx.pack_start(self.__cancel_btn, False, False, 4)
+        self.__notebook = Gtk.Notebook()
 
-        self.__frame_ind_type = Gtk.Frame(label="Indicator type")
-        lbl = self.__frame_ind_type.get_label_widget()
-        lbl.set_use_markup(True)
-        lbl.set_label("<b>" +"Indicator type" + "</b>")
-        self.__frame_ind_type.set_shadow_type(Gtk.ShadowType.NONE)
-
+        self.__frame_ind_type = self.create_frame("Indicator Type")
         self.__rb_light_ind = Gtk.RadioButton(label="Light (for dark panels)")
         self.__rb_dark_ind = Gtk.RadioButton(group=self.__rb_light_ind, \
                                              label="Dark (for light panels)")
+        self.__rb_no_ind = Gtk.RadioButton(group=self.__rb_light_ind, \
+                                           label="None - don't use indicators")
+        self.__rb_no_ind.connect("toggled", self.rb_no_ind_toggled)
         self.__da_light_ind = Gtk.DrawingArea()
         self.__da_light_ind.set_size_request(self.DA_SIZE, self.DA_SIZE)
-        self.__table_ind_type = Gtk.Table(rows=2, columns=2, homogeneous=False)
+        self.__table_ind_type = Gtk.Table(rows=3, columns=2, homogeneous=False)
 
         # connect an event handler to draw the light indicator
         self.__da_light_ind.connect("expose-event", self.draw_light_ind)
@@ -110,39 +114,51 @@ class DockPrefsWindow(Gtk.Window):
         # connect an event handler to draw the dark indicator
         self.__da_dark_ind.connect("expose-event", self.draw_dark_ind)
 
-        # add the indicator ui elements to a table
+        # create ui elements for multiple indicators for open windows
+        self.__cb_multi_ind = Gtk.CheckButton(label="Display an indicator for each open window")
+        self.__cb_multi_ind.set_tooltip_text("Display an indicator (max 4) for each open window")
+
+        # add the indicator type ui elements to a table
         self.__table_ind_type.attach(self.__rb_light_ind, 0, 1, 0, 1,
-                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                    2, 2)
-        
+                                     Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                     2, 2)
+
         self.__table_ind_type.attach(self.__da_light_ind, 1, 2, 0, 1,
-                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                    2, 2)
-        
+                                     Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                     2, 2)
+
         self.__table_ind_type.attach(self.__rb_dark_ind, 0, 1, 1, 2,
-                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                    2, 2)
-        
+                                     Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                     2, 2)
+
         self.__table_ind_type.attach(self.__da_dark_ind, 1, 2, 1, 2,
-                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                    2, 2)
+                                     Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                     2, 2)
+        self.__table_ind_type.attach(self.__rb_no_ind, 0, 1, 2, 3,
+                                     Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                     2, 2)
+
+#        self.__table_ind_type.attach(self.__cb_multi_ind, 0, 2, 2, 3,
+#                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+#                                    2, 4)
 
         # make sure the indicator type ui elements are aligned properly
         self.__frame_ind_type_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                   xscale=1.0, yscale=1.0)
+                                                    xscale=1.0, yscale=1.0)
         self.__frame_ind_type_align.set_padding(0, 0, 12, 0)
         self.__frame_ind_type_align.add(self.__table_ind_type)
         self.__frame_ind_type.add(self.__frame_ind_type_align)
 
-        self.__frame_unpinned_apps= Gtk.Frame(label="Unpinned applications")
-        lbl = self.__frame_unpinned_apps.get_label_widget()
-        lbl.set_use_markup(True)
-        lbl.set_label("<b>" +"Unpinned applications" + "</b>")
-        self.__frame_unpinned_apps.set_shadow_type(Gtk.ShadowType.NONE)
+        self.__ind_vbox = Gtk.VBox()
+        self.__ind_vbox.set_spacing(2)
+        self.__ind_vbox.pack_start(self.__frame_ind_type, False, False, 4)
+        self.__ind_vbox.pack_start(self.__cb_multi_ind, False, False, 4)
 
-        self.__rb_unpinned_all_ws = Gtk.RadioButton(label="Display unpinned apps from all workspaces")
+        self.__frame_unpinned_apps = self.create_frame("Unpinned applications")
+        self.__rb_unpinned_all_ws = Gtk.RadioButton\
+                                    (label="Display unpinned apps from all workspaces")
         self.__rb_unpinned_cur_ws = Gtk.RadioButton(group=self.__rb_unpinned_all_ws, \
-                                             label="Display unpinned apps only from current workspace")
+                                    label="Display unpinned apps only from current workspace")
         self.__table_unpinned_apps = Gtk.Table(rows=2, columns=1, homogeneous=False)
         self.__table_unpinned_apps.attach(self.__rb_unpinned_all_ws, 0, 1, 0, 1,
                                           Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
@@ -152,48 +168,114 @@ class DockPrefsWindow(Gtk.Window):
                                           2, 2)
 
         self.__frame_unpinned_apps_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                   xscale=1.0, yscale=1.0)
+                                                         xscale=1.0, yscale=1.0)
         self.__frame_unpinned_apps_align.set_padding(0, 0, 12, 0)
         self.__frame_unpinned_apps_align.add(self.__table_unpinned_apps)
         self.__frame_unpinned_apps.add(self.__frame_unpinned_apps_align)
 
-        self.__frame_click_action = Gtk.Frame(label="Mouse click action")
-        lbl = self.__frame_click_action.get_label_widget()
+        self.__frame_pinned_apps = self.create_frame("Pinned applications")
+        lbl = self.__frame_pinned_apps.get_label_widget()
         lbl.set_use_markup(True)
-        lbl.set_label("<b>" +"Dock click action" + "</b>")
-        self.__frame_click_action.set_shadow_type(Gtk.ShadowType.NONE)
+        lbl.set_label("<b>" +"Pinned applications" + "</b>")
+        self.__frame_pinned_apps.set_shadow_type(Gtk.ShadowType.NONE)
 
-        self.__rb_restore_last_active = Gtk.RadioButton(label="Restore clicked app's last active window only")
+        self.__rb_pinned_all_ws = Gtk.RadioButton(label="Display pinned apps from all workspaces")
+        self.__rb_pinned_cur_ws = Gtk.RadioButton(group=self.__rb_pinned_all_ws, \
+                                  label="Display pinned apps only from current workspace")
+        self.__table_pinned_apps = Gtk.Table(rows=2, columns=1, homogeneous=False)
+        self.__table_pinned_apps.attach(self.__rb_pinned_all_ws, 0, 1, 0, 1,
+                                        Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                        2, 2)
+        self.__table_pinned_apps.attach(self.__rb_pinned_cur_ws, 0, 1, 1, 2,
+                                        Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                        2, 2)
+
+        self.__frame_pinned_apps_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                       xscale=1.0, yscale=1.0)
+        self.__frame_pinned_apps_align.set_padding(0, 0, 12, 0)
+        self.__frame_pinned_apps_align.add(self.__table_pinned_apps)
+        self.__frame_pinned_apps.add(self.__frame_pinned_apps_align)
+
+        self.__ws_vbox = Gtk.VBox()
+        self.__ws_vbox.set_spacing(2)
+        self.__ws_vbox.pack_start(self.__frame_unpinned_apps, True, True, 4)
+        self.__ws_vbox.pack_start(self.__frame_pinned_apps, True, True, 4)
+
+        self.__frame_click_action = self.create_frame("Click restoring windows")
+        self.__rb_restore_last_active = Gtk.RadioButton \
+                                        (label="Restore clicked app's last active window only")
         self.__rb_restore_all = Gtk.RadioButton(group=self.__rb_restore_last_active, \
                                              label="Restore all of clicked app's windows")
         self.__table_click_action = Gtk.Table(rows=2, columns=1, homogeneous=False)
         self.__table_click_action.attach(self.__rb_restore_last_active, 0, 1, 0, 1,
-                                          Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                          2, 2)
+                                         Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                         2, 2)
         self.__table_click_action.attach(self.__rb_restore_all, 0, 1, 1, 2,
-                                          Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                          2, 2)
+                                         Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                         2, 2)
 
         self.__frame_click_action_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                   xscale=1.0, yscale=1.0)
+                                                        xscale=1.0, yscale=1.0)
         self.__frame_click_action_align.set_padding(0, 0, 12, 0)
         self.__frame_click_action_align.add(self.__table_click_action)
         self.__frame_click_action.add(self.__frame_click_action_align)
+        self.__click_vbox = Gtk.VBox()
+        self.__click_vbox.set_spacing(2)
+        self.__click_vbox.pack_start(self.__frame_click_action, False, False, 4)
 
+        self.__frame_color_change = self.create_frame("Change panel colour to match wallpaper")
+        self.__cb_panel_color_change = Gtk.CheckButton(label="Change panel colour")
+        self.__cb_panel_color_change.connect("toggled", self.color_change_toggled)
+        self.__cb_dock_panel_only = Gtk.CheckButton(label="Change colour of dock's panel only")
 
-        # create ui elements for multiple indicators for open windows
-        self.__cb_multi_ind = Gtk.CheckButton(label="Display an indicator for each open window")
-        self.__cb_multi_ind.set_tooltip_text("Display an indicator (max 4) for each open window")
+        self.__table_color_change = Gtk.Table(rows=2, columns=1, homogeneous=False)
+        self.__table_color_change.attach(self.__cb_panel_color_change, 0, 1, 0, 1,
+                                         Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                         2, 2)
+        self.__table_color_change.attach(self.__cb_dock_panel_only, 0, 1, 1, 2,
+                                         Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                         2, 2)
 
-        self.__vbox.pack_start(self.__frame_ind_type, True, True, 4)
-        self.__vbox.pack_start(self.__frame_unpinned_apps, True, True, 4)
-        self.__vbox.pack_start(self.__frame_click_action, True, True, 4)
-        self.__vbox.pack_start(self.__cb_multi_ind, True, True, 4)
+        self.__frame_color_change_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                        xscale=1.0, yscale=1.0)
+        self.__frame_color_change_align.set_padding(0, 0, 12, 0)
+        self.__frame_color_change_align.add(self.__table_color_change)
+        self.__frame_color_change.add(self.__frame_color_change_align)
+
+        self.__color_vbox = Gtk.VBox()
+        self.__color_vbox.set_spacing(2)
+        self.__color_vbox.pack_start(self.__frame_color_change, False, False, 4)
+
+#        self.__vbox.pack_start(self.__frame_ind_type, True, True, 4)
+#        self.__vbox.pack_start(self.__frame_unpinned_apps, True, True, 4)
+#        self.__vbox.pack_start(self.__frame_click_action, True, True, 4)
+#        self.__vbox.pack_start(self.__cb_multi_ind, True, True, 4)
+
+        self.__vbox.pack_start(self.__notebook, True, True, 4)
+        self.__notebook.append_page(self.__ind_vbox, Gtk.Label("Indicators"))
+        self.__notebook.append_page(self.__ws_vbox, Gtk.Label("Workspaces"))
+        self.__notebook.append_page(self.__click_vbox, Gtk.Label("Windows"))
+        self.__notebook.append_page(self.__color_vbox, Gtk.Label("Panel Colour"))
 
         self.__vbox.pack_start(Gtk.HSeparator(), True, True, 4)
         self.__vbox.pack_start(self.__hbbx, False, False, 0)
         self.add(self.__vbox)
         self.show_all()
+
+    def create_frame(self, caption):
+        """ Convenience function to create a Gtk.Frame with a desired caption in bold text
+
+        Returns:
+            frame - the Gtk.Frame we created
+
+        """
+
+        frame = Gtk.Frame(label="aaaa")
+        lbl = frame.get_label_widget()
+        lbl.set_use_markup(True)
+        lbl.set_label("<b>%s</b>" %caption)
+        frame.set_shadow_type(Gtk.ShadowType.NONE)
+        return frame
 
     def win_delete_event(self, widget, event, data=None):
         """Callback for the preferences window delete event
@@ -258,16 +340,37 @@ class DockPrefsWindow(Gtk.Window):
         ctx.arc(ind_x, ind_y, 6, 0, 2*math.pi)
         ctx.fill()
 
+    def color_change_toggled(self, widget):
+        """Handler for the panel color change checkbox toggled event
+
+        If the panel colour change option is selected, enable the checkbox that specifies
+        whether or not all panels are to change colour
+
+        """
+
+        self.__cb_dock_panel_only.set_sensitive(self.__cb_panel_color_change.get_active())
+
+    def rb_no_ind_toggled(self, widget):
+        """ Handler for the no indicator radio button toggled event
+
+        If the no indicator option is selected, disable the multiple indicator
+        checkbox
+        """
+
+        self.__cb_multi_ind.set_sensitive(self.__rb_no_ind.get_active() != True)
+
     def get_indicator_type(self):
         """Get the indicator type specified in the preferences window.
 
         Returns : IndicatorType
         """
 
-        if self.__rb_light_ind.get_active() == True:
+        if self.__rb_light_ind.get_active():
             return IndicatorType.LIGHT
-        else:
+        elif self.__rb_dark_ind.get_active():
             return IndicatorType.DARK
+        else:
+            return IndicatorType.NONE
 
     def set_indicator(self, indicator):
         """Set the indicator type
@@ -277,8 +380,10 @@ class DockPrefsWindow(Gtk.Window):
 
         if indicator == IndicatorType.LIGHT:
             self.__rb_light_ind.set_active(True)
-        else:
+        elif indicator == IndicatorType.DARK:
             self.__rb_dark_ind.set_active(True)
+        else:
+            self.__rb_no_ind.set_active(True)
 
     def get_multi_ind(self):
         """Gets whether or not to use display an indicator for each open
@@ -286,7 +391,7 @@ class DockPrefsWindow(Gtk.Window):
 
         Returns: boolean
         """
-        
+
         return self.__cb_multi_ind.get_active()
 
     def set_multi_ind(self, use_multi_ind):
@@ -302,7 +407,7 @@ class DockPrefsWindow(Gtk.Window):
 
         Returns: boolean
         """
-        
+
         return self.__rb_unpinned_all_ws.get_active()
 
     def set_show_unpinned_apps_on_all_ws(self, show_on_all):
@@ -310,11 +415,30 @@ class DockPrefsWindow(Gtk.Window):
 
         Args: show_on_all - boolean
         """
-        
-        if show_on_all == True:
+
+        if show_on_all:
             self.__rb_unpinned_all_ws.set_active(True)
         else:
             self.__rb_unpinned_cur_ws.set_active(True)
+
+    def get_show_pinned_apps_on_all_ws(self):
+        """Gets whether pinned apps are displayed in the dock on all workspaces
+
+        Returns: boolean
+        """
+
+        return self.__rb_pinned_all_ws.get_active()
+
+    def set_show_pinned_apps_on_all_ws(self, show_on_all):
+        """Sets whether pinned apps are displayed in the dock on all workspaces
+
+        Args: show_on_all - boolean
+        """
+
+        if show_on_all:
+            self.__rb_pinned_all_ws.set_active(True)
+        else:
+            self.__rb_pinned_cur_ws.set_active(True)
 
     def get_click_restore_last_active(self):
         """Gets whether to restore only a running app's last active window when its dock
@@ -322,7 +446,7 @@ class DockPrefsWindow(Gtk.Window):
 
         Returns: boolean
         """
-        
+
         return self.__rb_restore_last_active.get_active()
 
     def set_click_restore_last_active(self, restore_last_active):
@@ -332,10 +456,44 @@ class DockPrefsWindow(Gtk.Window):
         Args: restore_last_active - boolean
         """
 
-        if restore_last_active == True:
+        if restore_last_active:
             self.__rb_restore_last_active.set_active(True)
         else:
             self.__rb_restore_all.set_active(True)
+
+    def get_change_panel_color(self):
+        """ Get whether the panel colour is to be changed according to the current wallpaper
+
+        Returns: boolean
+        """
+
+        return self.__cb_panel_color_change.get_active()
+
+    def set_change_panel_color(self, change_color):
+        """ Sets whether the panel color is to be changed according to the current wallpaper
+
+        Args: change_color - boolean
+        """
+
+        self.__cb_panel_color_change.set_active(change_color)
+
+    def get_change_dock_color_only(self):
+        """ Get whether only the panel contaning the dock is to be changed when settung
+            the panel colour according to the current wallpaper
+
+        Returns: boolean
+        """
+
+        return self.__cb_dock_panel_only.get_active()
+
+    def set_change_dock_color_only(self, dock_only):
+        """ Sets whether only the panel contaning the dock is to be changed when settings
+            the panel colour according to the current wallpaper
+
+        Args: dock_only - boolean
+        """
+
+        self.__cb_dock_panel_only.set_active(dock_only)
 
 def main():
     """main function - debug code can go here"""
