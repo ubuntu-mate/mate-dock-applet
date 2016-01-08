@@ -1030,7 +1030,7 @@ class DockedApp(object):
             ctx.set_operator(cairo.OPERATOR_OVER)
 
         # draw the app running indicators
-        if self.is_running():
+        if (self.is_running()) and (self.indicator != dock_prefs.IndicatorType.NONE) :
 
             # work out how many indicators to draw - either a single one or 
             # one for each open window up to a maximum of 4
