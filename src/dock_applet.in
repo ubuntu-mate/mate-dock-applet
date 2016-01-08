@@ -257,56 +257,12 @@ def applet_change_size(applet, size, the_dock):
 def applet_scroll_event (applet, event, the_dock):
     """ Handler for the scroll event
 
-    Depending on the scroll direction, make the next or previous window of 
-    the current app active. Scrolling will wrap around in both directions
+    Call the dock's  function to move forward/backward through the active app's
+    windows
 
-    If the app only has one window or we don't know which window was last active
-    (e.g. because the applet has only just started) then make the first window
-    active
-
-    Also, hide the app window list and stop any timer that might be running
     """
 
-    # we're only interested in scroll up and down events....
-    if (event.direction != Gdk.ScrollDirection.UP) and \
-       (event.direction != Gdk.ScrollDirection.DOWN):
-           return
-
-    if the_dock.app_with_mouse is not None:
-        app = the_dock.app_with_mouse
-
-        # if the app isn't running, there's nothing to do...
-        if app.is_running() == False:
-            return
-
-        windows = app.get_wnck_windows()
-        if (app.last_active_win is None) or (len(windows) == 1):
-            new_index = 0
-        else:
-
-            # work out which window we want to activate
-            try:
-                index = windows.index (app.last_active_win)
-            except ValueError:
-                index = 0  # in case of error activate the first window
-
-            if event.direction == Gdk.ScrollDirection.UP:
-                if index == 0:
-                    new_index = len(windows)-1
-                else:
-                    new_index = index - 1
-            else:
-                if index == len(windows)-1:
-                    new_index = 0
-                else:
-                    new_index = index +1
-    
-        # hide the window list and stop any timer
-        the_dock.hide_win_list()
-        the_dock.stop_win_list_timer()
-
-        #activate the new window
-        windows[new_index].activate(event.time)
+    the_dock.do_window_scroll(event.direction, event.time)
 
 def applet_fill(applet):
     """
