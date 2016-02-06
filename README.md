@@ -20,7 +20,15 @@ Ubuntu and Mint users can install from the PPA kindly provided by [webupd8](http
 
 For Arch users, there's a [package](http://aur.archlinux.org/packages/mate-applet-dock-git) in the AUR. 
 
-Users of other distros will need to install from source, so cd to the directory containing all of the development files and run:
+Users of other distros will need to install from source, so first install the required dependencies:
+
+* Python3
+* gir1.2-wnck-1.0
+* libglib2-dev
+* Python Imaging Library 
+* SciPy
+
+then cd to the directory containing all of the development files and run:
 
 ```
 automake --add-missing
@@ -32,24 +40,7 @@ autoreconf
 make
 
 sudo make install
-
 ```
-
-Depending on the distro, it may be necessary to install gir1.2-wnck-1.0 and glib2 development packages first.
-
-### Dependencies
-
-Depends on: 
-
-Python3
-
-gir1.2-wnck-1.0
-
-libglib2-dev
-
-Python Imaging Library 
-
-SciPy
 
 ### Installation on Ubuntu Mate on a Pi 2
 
