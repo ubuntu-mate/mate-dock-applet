@@ -1,68 +1,50 @@
-V0.59 - initial commit to git. 
+V0.67   Panel colour changing now occurs smoothly over over 0.5s rather than
+	abruptly.
+	Big cleanup of git repository!
 
-	Honour panel transparency and background settings
-	Pin and unpin apps to the dock
-	Rearrange application icons on the dock
-	Works when panel is aligned to any side of the screen
-	Launch apps by clicking on their icons in the dock
-	Minimize/unminimize running app windows by clicking the app's dock
-	icon
-	Detect changes in the current icon theme and update the dock
-	accordinly
-	Use an indicator by each app to show when it is running
-	Allow the user to specify whether a light or dark indicator is used so
-	that it can always be seen no matter what colour the panel is
-	Provide an About dialog
+V0.66	Improved matching of apps with their .desktop files, in particular
+	Opera and Chrome
+	Dock icons now pulse when a new window is opened for a running app
+	Minimize targets are now recalculated when the applet is moved or
+	changes panel, so that windows always minimize to the correct place
+	on the dock
+	Added option to change MATE panel colour according to the current
+	desktop wallpaper. (Note: this works for images only, not slideshows,
+	gradients, or solid colour backgrounds). The colour can be applied to 
+	all panels or just the panel containing the dock. The applet now depends
+	on the Python Imaging Library and SciPy packages because of this
+	change
+	Added new preferences to options to both activate panel colour changing 
+	and to limit it to the dock panel panel only
+	Added option to not display indicators under running apps
+	Added option to not display in the dock running pinned apps which are 
+	not on the current workspace
+	Using the mouse wheel on a dock icon to scroll through an app's
+	windows will now change workspace if the new window is not on the 
+	current workspace
+	Selecting an app's window from the pop-up window list will now change
+	workspace if the window is not on the current workspace
+	Prefs dialog reworked because of new options added in this version
 
-V0.60 - various bugfixes and minor additions including:
+V0.65	Dock icons now blink when an app needs attention
+	Change to window activation code so that the applet works
+	with MATE 1.12
 
-	Added an option in the preferences dialog to display multiple
-	indicators for each open window an app has. The maximum number
-	of indicators has been limited to 4 because on small panels
-	(<32 pixels) there just isn't room for any more
-	changed the app icon drawing code so that most drawing is
-	done off screen and only copied to the panel at the very
-	end
-	Improved detection of app icons and app windows. In general
-	this is a good thing, and in particular it means that the
-	applet now works correctly with guvcview on Ubuntu Mate 
-	15.04
-	Fixed a bug on Ubuntu Mate 15.04 where terminals started
-	from the applet would have their working directory set
-	as / instead of the home directory
-	Updated the readme with instructions on how to compile the
-	applet from source
-
-V0.61   improved the way in which the windows owned by apps are
-	detected
-	Fixed the function that calculates the average colour of
-	icons (for use when drawing highligts on the dock). It 
-	works now....
-	Fixed launching of Caja on linux mint
-	Fixed docked_app.setup_from_wnck so that it passes '/' terminated
-	versions of all directories to be searched for .desktop file
-	to get_desktop_from_app_info
-	Shift-clicking the icon of running applications now opens a new
-	window of the app
-	Added an option for the dock to only display unpinned apps from the
-	current workspace.Pinned apps are always displayed no matter what
-	workspace is active so that the user always has quick access to them)
-
-V0.62	Fixed app icon drawing on non-composited displays.
-	For apps which the applet does not recognise (their names or icons
-	are incorrect) added a new right click menu option on the dock
-	to create a custom launcher for the app. This displays a dialog
-	(like the one for the MATE panel) allowing the app's command line,
-	name, and icon to be specified. For user convenience, the applet will 
-	automatically fill in as many of these details as it can. Once 
-	the new launcher has been created, the app needs to be closed and
-	reopened for it to be recognised by the dock. Typically, this 
-	option will only be needed for apps which have not been installed
-	into the usual locations within the Linux filesystem. 
-	When an app's windows are minimised by clicking on the app's dock
-	icon and then maximised by clicking it again, the app window that
-	was previously active is made active again.
-
+V0.64   Fixed bug that would sometimes prevent a window from being focused
+	when a dock icon was clicked
+	Many changes to Improve detection of .desktop files from running apps
+	and linking to dock icons
+	Right click options (e.g. 'Open new Window' and Open new incognito
+	window with Chrome) are now read from .desktop files and appear on
+	the dock icon right click menu
+	Custom launchers now set the Type field of the .desktop files they 
+	create to 'Application' and also set the NoDisplay field to 'true' 
+	so that the launcher is not displayed in the MATE menu
+	Customer launchers now write .desktop files that do not contain spaces
+	in the filename, as per the GNOME developer docs
+	App icons can now be sourced from ~/.local/share/icons (e.g
+	popcorn-time puts its icon here)
+	
 V0.63   Removed the tooltip that appears when the mouse hovers over a docked
 	app and replaced it with a list of the app's open windows. For
 	each window, the list displays the app icon, an indicator showing which 
@@ -89,45 +71,66 @@ V0.63   Removed the tooltip that appears when the mouse hovers over a docked
 	after an accidental deletion from the panel, and also a way to move
 	applet configurations from one computer to another.
 
-V0.64   Fixed bug that would sometimes prevent a window from being focused
-	when a dock icon was clicked
-	Many changes to Improve detection of .desktop files from running apps
-	and linking to dock icons
-	Right click options (e.g. 'Open new Window' and Open new incognito
-	window with Chrome) are now read from .desktop files and appear on
-	the dock icon right click menu
-	Custom launchers now set the Type field of the .desktop files they 
-	create to 'Application' and also set the NoDisplay field to 'true' 
-	so that the launcher is not displayed in the MATE menu
-	Customer launchers now write .desktop files that do not contain spaces
-	in the filename, as per the GNOME developer docs
-	App icons can now be sourced from ~/.local/share/icons (e.g
-	popcorn-time puts its icon here)
-	
-V0.65	Dock icons now blink when an app needs attention
-	Change to window activation code so that the applet works
-	with MATE 1.12
+V0.62	Fixed app icon drawing on non-composited displays.
+	For apps which the applet does not recognise (their names or icons
+	are incorrect) added a new right click menu option on the dock
+	to create a custom launcher for the app. This displays a dialog
+	(like the one for the MATE panel) allowing the app's command line,
+	name, and icon to be specified. For user convenience, the applet will 
+	automatically fill in as many of these details as it can. Once 
+	the new launcher has been created, the app needs to be closed and
+	reopened for it to be recognised by the dock. Typically, this 
+	option will only be needed for apps which have not been installed
+	into the usual locations within the Linux filesystem. 
+	When an app's windows are minimised by clicking on the app's dock
+	icon and then maximised by clicking it again, the app window that
+	was previously active is made active again.
 
-V0.66	Improved matching of apps with their .desktop files, in particular
-	Opera and Chrome
-	Dock icons now pulse when a new window is opened for a running app
-	Minimize targets are now recalculated when the applet is moved or
-	changes panel, so that windows always minimize to the correct place
-	on the dock
-	Added option to change MATE panel colour according to the current
-	desktop wallpaper. (Note: this works for images only, not slideshows,
-	gradients, or solid colour backgrounds). The colour can be applied to 
-	all panels or just the panel containing the dock. The applet now depends
-	on the Python Imaging Library and SciPy packages because of this
-	change
-	Added new preferences to options to both activate panel colour changing 
-	and to limit it to the dock panel panel only
-	Added option to not display indicators under running apps
-	Added option to not display in the dock running pinned apps which are 
-	not on the current workspace
-	Using the mouse wheel on a dock icon to scroll through an app's
-	windows will now change workspace if the new window is not on the 
-	current workspace
-	Selecting an app's window from the pop-up window list will now change
-	workspace if the window is not on the current workspace
-	Prefs dialog reworked because of new options added in this version
+V0.61   improved the way in which the windows owned by apps are
+	detected
+	Fixed the function that calculates the average colour of
+	icons (for use when drawing highligts on the dock). It 
+	works now....
+	Fixed launching of Caja on linux mint
+	Fixed docked_app.setup_from_wnck so that it passes '/' terminated
+	versions of all directories to be searched for .desktop file
+	to get_desktop_from_app_info
+	Shift-clicking the icon of running applications now opens a new
+	window of the app
+	Added an option for the dock to only display unpinned apps from the
+	current workspace.Pinned apps are always displayed no matter what
+	workspace is active so that the user always has quick access to them)
+
+V0.60 - various bugfixes and minor additions including:
+	Added an option in the preferences dialog to display multiple
+	indicators for each open window an app has. The maximum number
+	of indicators has been limited to 4 because on small panels
+	(<32 pixels) there just isn't room for any more
+	changed the app icon drawing code so that most drawing is
+	done off screen and only copied to the panel at the very
+	end
+	Improved detection of app icons and app windows. In general
+	this is a good thing, and in particular it means that the
+	applet now works correctly with guvcview on Ubuntu Mate 
+	15.04
+	Fixed a bug on Ubuntu Mate 15.04 where terminals started
+	from the applet would have their working directory set
+	as / instead of the home directory
+	Updated the readme with instructions on how to compile the
+	applet from source
+
+V0.59 - initial commit to git. 
+	Honour panel transparency and background settings
+	Pin and unpin apps to the dock
+	Rearrange application icons on the dock
+	Works when panel is aligned to any side of the screen
+	Launch apps by clicking on their icons in the dock
+	Minimize/unminimize running app windows by clicking the app's dock
+	icon
+	Detect changes in the current icon theme and update the dock
+	accordinly
+	Use an indicator by each app to show when it is running
+	Allow the user to specify whether a light or dark indicator is used so
+	that it can always be seen no matter what colour the panel is
+	Provide an About dialog
+
