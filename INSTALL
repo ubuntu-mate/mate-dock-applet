@@ -9,6 +9,8 @@ First install the required dependencies:
 
 then cd to the directory containing all of the development files and run:
 
+aclocal
+
 automake --add-missing
 
 autoreconf

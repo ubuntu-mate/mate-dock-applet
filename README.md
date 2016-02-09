@@ -31,6 +31,8 @@ Users of other distros will need to install from source, so first install the re
 then cd to the directory containing all of the development files and run:
 
 ```
+aclocal
+
 automake --add-missing
 
 autoreconf
