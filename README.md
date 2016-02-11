@@ -7,8 +7,7 @@ The applet allows you to:
 * Rearrange application icons on the dock
 * Launch apps by clicking on their icons in the dock
 * Minimize/unminimize running app windows by clicking the app's dock icon
-* Detect changes in the current icon theme and update the dock
-	accordingly
+* Detect changes in the current icon theme and update the dock accordingly
 * Use an indicator by each app to show when it is running
 * Optionally, use multiple indicators for each window an app has open	
 * Use either a light or dark indicator that it can always be seen no matter what colour the panel is, or turn indicators off altogether
@@ -27,6 +26,7 @@ Users of other distros will need to install from source, so first install the re
 * libglib2-dev
 * Python Imaging Library 
 * SciPy
+* Python 3 Cairo bindings
 
 then cd to the directory containing all of the development files and run:
 

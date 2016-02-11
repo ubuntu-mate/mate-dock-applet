@@ -7,3 +7,12 @@
 __pycache__
 *.valid
 autom4te.cache
+configure
+configure.ac
+INSTALL
+install.sh
+Makefile
+Makefile.in
+missing
+py-compile
+
