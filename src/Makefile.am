@@ -127,12 +127,10 @@ applet_PYTHON = \
 		     dock_color_changer.py \
 		     dom_color.py
 
-CLEANFILES = $(applet_SCRIPTS) 
-#	     $(gsettings_SCHEMAS) \
-#	     org.mate.panel.applet.DockAppletFactory.service 
+CLEANFILES = $(applet_SCRIPTS) \
+	     org.mate.panel.applet.DockAppletFactory.service \
+	     org.mate.panel.DockApplet.mate-panel-applet
 
-#	     $(gsettings_SCHEMAS).in 
-	
 EXTRA_DIST = dock_applet.in \
 	     dock_about.in \
 	     dock_prefs.in \
