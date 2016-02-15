@@ -21,10 +21,10 @@
        <summary>Whether to show unpinned apps from all workspaces</summary>
        <description>Whether to show running unpinned apps from all workspaces </description>
     </key>
-    <key type="b" name="pinned-apps-from-all-workspaces">
-       <default>true</default>
-       <summary>Whether to show pinned apps from all workspaces</summary>
-       <description>Whether to show pinned apps from all workspaces </description>
+    <key type="b" name="win-from-cur-workspace-only">
+        <default>false</default>
+        <summary>Whether to show indicators and window list items for the current workspace only</summary>
+        <description>Whether to show indicators and window list items only for apps which have windows open on the current workspace</description>
     </key>
     <key type="b" name="first-run">
        <default>true</default>

@@ -34,8 +34,8 @@ The file will contain the following information:
 
 import xml.etree.ElementTree as ET
 
-def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
-               click_restore_last_active, pinned_from_all, panel_change_color,
+def write_xml (filename, desktop_files, light_ind, show_all_apps, multi_ind,
+               click_restore_last_active, win_from_cur_ws_only, panel_change_color,
                dock_panel_change_only):
     """ Write the xml file using the specified information
 
@@ -48,10 +48,10 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
                 etc...
             </pinned_apps>
             <light_ind>int</>
-            <unpinned_from_all>True or False</>
+            <show_all_apps>True or False</>
             <multi_ind>True or False</>
             <click_restore_last_active>True or False</>
-            <pinned_from_all>True or False</>
+            <win_from_cur_ws_only>True or False</>
             <panel_change_color>True or False</>
             <dock_panel_change_only>True or False</>
         </root>
@@ -62,14 +62,14 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
         desktop_files: a list containing the names of the applet's pinned app's
                        .desktop files e.g. ['pluma.desktop']
         light_ind : boolean - Whether or not a light indicator is to be used
-        unpinned_from_all : boolean - Whethr or not unpinned apps from all workspaces
-                            are to be shown 
+        show_all_apps : boolean - Whether or not unpinned apps from all workspaces
+                       are to be shown 
         multi_ind : Whether indicators for each of an app's open windows are to be 
                    shown
         click_restore_last_active: whether clicking a running app's dock icon restores
                    only the last active window or all windows
-        pinned_from_all : boolean - whether or not pinned apps from all workspaces are to 
-                          be shown (new with V0.66)
+        win_from_cur_ws_only: boolean - If True, indicators and window list items will only
+                              be shown for windows on the current workspace (new with V0.67)
         panel_change_color : boolean - Whether or not MATE panels are to change color according
                              to the desktop wallpaper (new with V0.66)
         dock_panel_change_only : boolean - whether panel colour changes are to limited to
@@ -88,20 +88,20 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
         pa_el.append(df_el)
 
     ind_el = ET.Element("ind_type", light = "%d" %light_ind)
-    ufa_el = ET.Element("unpinned_from_all", show_all = "%s" %unpinned_from_all)
+    sa_el = ET.Element("show_all", show_all = "%s" %show_all_apps)
     mi_el = ET.Element("multi_ind", show_multi = "%s" %multi_ind)
     crla_el = ET.Element("click_restore_last_active", 
                         restore_last_active_only = "%s" %click_restore_last_active)
-    pfa_el = ET.Element("pinned_from_all", pfa = "%s" %pinned_from_all)
+    wcw_el = ET.Element("win_from_cur_ws_only", wcw = "%s" %win_from_cur_ws_only)
     pcc_el = ET.Element("panel_change_color", pcc = "%s" %panel_change_color)
     dcc_el = ET.Element("dock_panel_change_only", dcc = "%s" %dock_panel_change_only)
                         
     root.append (pa_el)
     root.append (ind_el)
-    root.append (ufa_el)
+    root.append (sa_el)
     root.append (mi_el)
     root.append (crla_el)
-    root.append (pfa_el)
+    root.append (wcw_el)
     root.append (pcc_el)
     root.append (dcc_el)
 
@@ -124,10 +124,11 @@ def read_xml (filename):
         A tuple containing the following:
             a list of the .desktop files in the file (i.e. the pinned apps)
             an integer - the indicator setting
-            a boolean - the unpinned from all setting
+            a boolean - the how_all_apps setting
             a boolean - the multiple indicators setting
             a boolean - the restore last active settings
-            a boolean - the pinned from all setting
+            a boolean - the show indicators and win list items from the current
+                        workspace only setting
             a boolean - the change panel colour setting
             a boolean - the change dock panel color only setting 
     """
@@ -153,7 +154,7 @@ def read_xml (filename):
     else:
         light_ind = 0
 
-    ufa_el = root.find("unpinned_from_all")
+    ufa_el = root.find("show_all")
     if ufa_el is not None:
         show_all = ufa_el.get("show_all") == "True"
     else:
@@ -171,11 +172,11 @@ def read_xml (filename):
     else:
         click_restore_last_active = True 
 
-    crla_el = root.find("pinned_from_all")
+    crla_el = root.find("win_from_cur_ws_only")
     if crla_el is not None:
-        pinned_from_all = crla_el.get("pfa") == "True"
+        win_from_cur_ws_only = crla_el.get("wcw") == "True"
     else:
-        pinned_from_all = True 
+        win_from_cur_ws_only = True 
 
     crla_el = root.find("panel_change_color")
     if crla_el is not None:
@@ -190,7 +191,7 @@ def read_xml (filename):
         dock_panel_change_only = False
 
     return [True, df_list, light_ind, show_all, multi_ind, click_restore_last_active, \
-            pinned_from_all, panel_change_color, dock_panel_change_only] 
+            win_from_cur_ws_only, panel_change_color, dock_panel_change_only] 
 
 def main():
     """Main function.

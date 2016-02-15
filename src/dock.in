@@ -88,10 +88,10 @@ class Dock(object):
             settings : GIO.Settings - the settings for the applet
             indicator : the indicator type (light or dark, or None)
             multi_ind : whether or not multiple indicators are to be used
-            show_all_unpinned_apps : whether or not unpinned apps from all workspaces
+            show_all_apps : whether or not unpinned apps from all workspaces
                                      are displayed in the dock
-            show_all_pinned_apps : whether or not pinned apps from all workspaces are
-                                   displayed in the dock
+            win_from_cur_ws_only : whether or indicators and window list items are to be shown
+                                   for the current workspace only
             change_panel_color : whether or not the color of MATE panels are to be
                                  changed to the dominant colour of the desktop wallpaper
             change_dock_color_only : whether or not all MATE panels are to have their colour
@@ -152,8 +152,8 @@ class Dock(object):
         self.ccl_win = None
         self.indicator = 0
         self.multi_ind = False
-        self.show_all_unpinned_apps = True
-        self.show_all_pinned_apps = True
+        self.show_all_apps = True
+        self.win_from_cur_ws_only = False
         self.click_restore_last_active = True
         self.change_panel_color = False
         self.change_dock_color_only = False
@@ -268,10 +268,10 @@ class Dock(object):
                         pinned_apps.append(pinned_app)
 
                     self.indicator = xml_settings[2]
-                    self.show_all_unpinned_apps = xml_settings[3]
+                    self.show_all_apps = xml_settings[3]
                     self.multi_ind = xml_settings[4]
                     self.click_restore_last_active = xml_settings[5]
-                    self.show_all_pinned_apps = xml_settings[6]
+                    self.win_from_cur_ws_only = xml_settings[6]
                     self.change_panel_color = xml_settings[7]
                     self.change_dock_color_only = xml_settings[8]
 
@@ -281,16 +281,17 @@ class Dock(object):
                     self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
                     self.settings.set_int("indicator-type", self.indicator)
                     self.settings.set_boolean("multi-ind", self.multi_ind)
-                    self.settings.set_boolean("apps-from-all-workspaces", self.show_all_unpinned_apps)
+                    self.settings.set_boolean("apps-from-all-workspaces", self.show_all_apps)
                     self.settings.set_boolean("first-run", False)
                     self.settings.set_boolean("click-restore-last-active", self.click_restore_last_active)
-                    self.settings.set_boolean("pinned-apps-from-all-workspaces", self.show_all_pinned_apps)
+                    self.settings.set_boolean("win-from-cur-workspace-only", self.win_from_cur_ws_only)
                     self.settings.set_boolean("change-panel-color", self.change_panel_color)
                     self.settings.set_boolean("change-panel-color-dock-only", self.change_dock_color_only)
 
                     dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator, \
-                           self.show_all_unpinned_apps, self.multi_ind, self.click_restore_last_active, \
-                           self.show_all_pinned_apps, self.change_panel_color, self.change_dock_color_only)
+                           self.show_all_apps, self.multi_ind, self.click_restore_last_active, \
+                           self.win_from_cur_ws_only, \
+                           self.change_panel_color, self.change_dock_color_only)
 
                     md.destroy()
                     return
@@ -304,9 +305,9 @@ class Dock(object):
 
         self.indicator = self.settings.get_int("indicator-type")
         self.multi_ind = self.settings.get_boolean("multi-ind")
-        self.show_all_unpinned_apps = self.settings.get_boolean("apps-from-all-workspaces")
+        self.show_all_apps = self.settings.get_boolean("apps-from-all-workspaces")
+        self.win_from_cur_ws_only = self.settings.get_boolean("win-from-cur-workspace-only")
         self.click_restore_last_active = self.settings.get_boolean("click-restore-last-active")
-        self.show_all_pinned_apps = self.settings.get_boolean("pinned-apps-from-all-workspaces")
         self.change_panel_color = self.settings.get_boolean("change-panel-color")
         self.change_dock_color_only = self.settings.get_boolean("change-panel-color-dock-only")
 
@@ -330,16 +331,17 @@ class Dock(object):
             self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
             self.settings.set_int("indicator-type", self.indicator)
             self.settings.set_boolean("multi-ind", self.multi_ind)
-            self.settings.set_boolean("apps-from-all-workspaces", self.show_all_unpinned_apps)
+            self.settings.set_boolean("apps-from-all-workspaces", self.show_all_apps)
+            self.settings.set_boolean("win-from-cur-workspace-only", self.win_from_cur_ws_only)
             self.settings.set_boolean("click-restore-last-active", self.click_restore_last_active)
-            self.settings.set_boolean("pinned-apps-from-all-workspaces", self.show_all_pinned_apps)
             self.settings.set_boolean("change-panel-color", self.change_panel_color)
             self.settings.set_boolean("change-panel-color-dock-only", self.change_dock_color_only)
             self.settings.set_boolean("first-run", False)
 
         dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator, \
-                           self.show_all_unpinned_apps, self.multi_ind, self.click_restore_last_active,
-                           self.show_all_pinned_apps, self.change_panel_color,
+                           self.show_all_apps, self.multi_ind, self.click_restore_last_active,
+                           self.win_from_cur_ws_only, 
+                           self.change_panel_color,
                            self.change_dock_color_only)
 
     def set_actions_for_app(self, app):
@@ -656,8 +658,8 @@ class Dock(object):
             self.prefs_win = dock_prefs.DockPrefsWindow(self.prefs_win_ok_cb)
             self.prefs_win.set_indicator(self.indicator)
             self.prefs_win.set_multi_ind(self.multi_ind)
-            self.prefs_win.set_show_unpinned_apps_on_all_ws(self.show_all_unpinned_apps)
-            self.prefs_win.set_show_pinned_apps_on_all_ws(self.show_all_pinned_apps)
+            self.prefs_win.set_show_unpinned_apps_on_all_ws(self.show_all_apps)
+            self.prefs_win.set_win_cur_ws_only(self.win_from_cur_ws_only)
             self.prefs_win.set_click_restore_last_active(self.click_restore_last_active)
             self.prefs_win.set_change_panel_color(self.change_panel_color)
             self.prefs_win.set_change_dock_color_only(self.change_dock_color_only)
@@ -687,19 +689,18 @@ class Dock(object):
             widget - the button the caused the event
             event - the event args
         """
-
         if (self.indicator != self.prefs_win.get_indicator_type()) or \
            (self.multi_ind != self.prefs_win.get_multi_ind()) or \
-           (self.show_all_unpinned_apps != self.prefs_win.get_show_unpinned_apps_on_all_ws()) or \
-           (self.show_all_pinned_apps != self.prefs_win.get_show_pinned_apps_on_all_ws()) or \
+           (self.show_all_apps != self.prefs_win.get_show_unpinned_apps_on_all_ws()) or \
+           (self.win_from_cur_ws_only != self.prefs_win.get_win_cur_ws_only()) or \
            (self.click_restore_last_active != self.prefs_win.get_click_restore_last_active()) or \
            (self.change_panel_color != self.prefs_win.get_change_panel_color()) or \
            (self.change_dock_color_only != self.prefs_win.get_change_dock_color_only()):
 
             self.indicator = self.prefs_win.get_indicator_type()
             self.multi_ind = self.prefs_win.get_multi_ind()
-            self.show_all_unpinned_apps = self.prefs_win.get_show_unpinned_apps_on_all_ws()
-            self.show_all_pinned_apps = self.prefs_win.get_show_pinned_apps_on_all_ws()
+            self.show_all_apps = self.prefs_win.get_show_unpinned_apps_on_all_ws()
+            self.win_from_cur_ws_only = self.prefs_win.get_win_cur_ws_only()
             self.click_restore_last_active = self.prefs_win.get_click_restore_last_active()
 
             new_panel_color_setting = self.change_panel_color != self.prefs_win.get_change_panel_color()
@@ -720,6 +721,7 @@ class Dock(object):
                 if app.is_running():
                     app.queue_draw()
             self.show_or_hide_app_icons()
+            self.show_or_hide_indicators()
     
             if new_panel_color_setting:
                 # panel colour changing setting has been changed so we need to 
@@ -833,6 +835,7 @@ class Dock(object):
             self.app_list.append(dock_app)
             self.add_app(dock_app)
             self.show_or_hide_app_icons()
+            self.show_or_hide_indicators()
             self.write_settings()
 
     def show_win(self, win_no):
@@ -1029,6 +1032,7 @@ class Dock(object):
         """
 
         self.show_or_hide_app_icons()
+        self.show_or_hide_indicators()
 
     def active_win_changed(self, wnck_screen, prev_active_window):
         """Event handler for the window change event
@@ -1134,6 +1138,7 @@ class Dock(object):
                 self.app_list.append(dock_app)
                 self.add_app(dock_app)
                 self.show_or_hide_app_icons()
+                self.show_or_hide_indicators()
 
     def window_closed(self, wnck_screen, wnck_window):
         """Event handler for the window_closed event
@@ -1217,22 +1222,15 @@ class Dock(object):
                         pass
 
     def show_or_hide_app_icons(self):
-        """ If we're only showing unpinned and/or pinned apps from the current workspace then
-            then show/hide as appropriate
-
-            If we're showing pinned apps from all workspaces then show them
-            all
-
-            If we're showing unpinned apps from all workspaces then show them
-            all
+        """ If we're only showing unpinned apps from the current workspace then
+            then show/hide as appropriate. 
 
             Finally, recalculate all app minimization targets
         """
 
-        # do unpinned apps first
-        if self.show_all_unpinned_apps:
+        if self.show_all_apps:
             for app in self.app_list:
-                if (not app.is_pinned) and (not app.is_visible()):
+                if not app.is_visible():
                     app.show_icon()
         else:
             cur_ws = self.wnck_screen.get_active_workspace()
@@ -1243,31 +1241,25 @@ class Dock(object):
                     else:
                         app.hide_icon()
 
-        # now do pinned apps
-        if self.show_all_pinned_apps: 
-            for app in self.app_list:
-                if (app.is_pinned) and (not app.is_visible()):
-                    app.show_icon()
-        else:
-            cur_ws = self.wnck_screen.get_active_workspace()
-            for app in self.app_list:
-                if app.is_pinned:
-                    # if the app is not running, then always show the icon regardless of the 
-                    # current workspace.
-                    # This has to be done, since hiding none running pinned apps will not
-                    # give the user any way to start them....
-                    if not app.is_running():
-                        app.show_icon()
-                    else:
-                        if app.has_windows_on_workspace(cur_ws):
-                            app.show_icon()
-                        else:
-                            app.hide_icon()
-
         # recalculate all apps icon geometry
         for app in self.app_list:
             app.set_icon_geometry()
 
+    def show_or_hide_indicators(self):
+        """ Show or hide app indicators as appropriate
+
+        If we're only showing indicators for apps which have windows on the current workspace
+        then set the apps hide_indicators setting as appropriate. Otherwise, set the
+        hide_indicators setting to False.
+        """
+    
+        cur_ws = self.wnck_screen.get_active_workspace()
+        for app in self.app_list:
+            if self.win_from_cur_ws_only:
+                app.ind_ws = cur_ws
+            else:
+                app.ind_ws = None
+        
     def remove_app_from_dock(self, app):
         """Remove an app from the dock.
 
@@ -1433,6 +1425,7 @@ class Dock(object):
             self.add_app(dock_app)
 
         self.show_or_hide_app_icons()
+        self.show_or_hide_indicators()
 
     def set_new_orientation(self, new_orient):
         """Change the dock applet to a new applet orientation
@@ -1547,7 +1540,7 @@ class Dock(object):
             self.app_win_list.clear_win_list()
 
             self.app_win_list.the_app = highlighted_app
-            self.app_win_list.setup_list()
+            self.app_win_list.setup_list(self.win_from_cur_ws_only)
             self.app_win_list.clear_mouse_areas()
 
             # add the applet to the mouse areas
