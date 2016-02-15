@@ -11,7 +11,7 @@ The applet allows you to:
 * Use an indicator by each app to show when it is running
 * Optionally, use multiple indicators for each window an app has open	
 * Use either a light or dark indicator that it can always be seen no matter what colour the panel is, or turn indicators off altogether
-* Change the colour of MATE panels to the dominant colour (i.e. the most common colour) of the desktop wallpaper. The colour can be applied to all panels or just the panel contaning the dock.
+* Change the colour of MATE panels to the dominant colour (i.e. the most common colour) of the desktop wallpaper. The colour can be applied to all panels or just the panel containing the dock.
 
 ### Installation
 

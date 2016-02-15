@@ -478,7 +478,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__cb_panel_color_change.set_active(change_color)
 
     def get_change_dock_color_only(self):
-        """ Get whether only the panel contaning the dock is to be changed when settung
+        """ Get whether only the panel containing the dock is to be changed when settung
             the panel colour according to the current wallpaper
 
         Returns: boolean
@@ -487,7 +487,7 @@ class DockPrefsWindow(Gtk.Window):
         return self.__cb_dock_panel_only.get_active()
 
     def set_change_dock_color_only(self, dock_only):
-        """ Sets whether only the panel contaning the dock is to be changed when settings
+        """ Sets whether only the panel containing the dock is to be changed when settings
             the panel colour according to the current wallpaper
 
         Args: dock_only - boolean
