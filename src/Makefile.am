@@ -2,7 +2,7 @@
 SUBDIRS =
 
 applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.py log_it.py dock_custom_launcher.py dock_win_list.py \
-		 dock_xml.py dock_color_changer.py dom_color.py
+		 dock_xml.py dock_color_changer.py dom_color.py dock_info.py
 
 appletdir = $(libdir)/mate-applets/mate-dock-applet/
 
@@ -114,6 +114,10 @@ dom_color.py: dom_color.in Makefile
 	$(do_substitution) < $(srcdir)/dom_color.in > dom_color.py
 	chmod +x dom_color.py
 
+dock_info.py: dock_info.in Makefile
+	$(do_substitution) < $(srcdir)/dock_info.in > dock_info.py
+	chmod +x dock_info.py
+
 applet_PYTHON = \
 		     dock_applet.py \
 		     dock_about.py \
@@ -125,7 +129,8 @@ applet_PYTHON = \
 		     dock_win_list.py \
 		     dock_xml.py \
 		     dock_color_changer.py \
-		     dom_color.py
+		     dom_color.py \
+		     dock_info.in
 
 CLEANFILES = $(applet_SCRIPTS) \
 	     org.mate.panel.applet.DockAppletFactory.service \
@@ -142,6 +147,7 @@ EXTRA_DIST = dock_applet.in \
 	     dock_xml.in \
 	     dock_color_changer.in \
 	     dom_color.in \
+	     dock_info.in \
 	     $(gsettings_SCHEMAS) \
 	     $(applets_in_files) \
 	     $(service_in_files)
