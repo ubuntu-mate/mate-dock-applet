@@ -163,9 +163,15 @@ def get_avg_color(pixbuf):
             blue += data[pixels][2]
             num_counted += 1
 
-    ravg = int(red/num_counted)
-    gavg = int(green/num_counted)
-    bavg = int(blue/num_counted)
+    if num_counted > 0:
+        ravg = int(red/num_counted)
+        gavg = int(green/num_counted)
+        bavg = int(blue/num_counted)
+    else:
+        # in case of a bad icon assume a grey average colour
+        # this should fix a division by zero error that occurred at this point in the
+        # code, but which I've only seen once and never been able to duplicate
+        ravg = gavg = bavg = 128
 
     return ravg, gavg, bavg
 
