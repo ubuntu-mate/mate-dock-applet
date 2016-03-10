@@ -1052,17 +1052,20 @@ class Dock(object):
         new_win = self.wnck_screen.get_active_window()
 
         if new_win is not None:
-            new_cg = new_win.get_class_group()
-            new_wm_class_name = new_cg.get_res_class()
-            new_app = new_win.get_application()
-            for app in self.app_list:
-                 if app.wm_class_name == new_wm_class_name:
-                     for aai in app.app_info:
-                        if new_app == aai.app:
-                            app.is_active = True
-                            app.last_active_win = new_win
-                            app.queue_draw()
-                            break
+            # the desktop itself can be the new active window. we need to ignore it if so....
+            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392
+            if new_win.get_name().lower()!="x-caja-desktop":
+                new_cg = new_win.get_class_group()
+                new_wm_class_name = new_cg.get_res_class()
+                new_app = new_win.get_application()
+                for app in self.app_list:
+                     if app.wm_class_name == new_wm_class_name:
+                         for aai in app.app_info:
+                            if new_app == aai.app:
+                                app.is_active = True
+                                app.last_active_win = new_win
+                                app.queue_draw()
+                                break
 
     def window_opened(self, wnck_screen, wnck_window):
         """Event handler for the window_opened event
@@ -1710,9 +1713,16 @@ class Dock(object):
 
             # the last active window may be set to None (e.g. if the app's active window has been closed
             # and no other window has been made active afterwards). Therefore, if there is no active last window
-            # activate the app's first window
+            # activate the app's first normal window
+            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392
             if last_active_win is None:
-                last_active_win = win_list[0]
+                for window in win_list:
+                    win_type = window.get_window_type()
+                    if ((win_type == Wnck.WindowType.NORMAL) or \
+                            (win_type == Wnck.WindowType.DIALOG)) and \
+                            (not window.is_skip_tasklist()):
+                        last_active_win = window
+                        break
 
             # if we're restoring all windows, do this now before we finally activate the last active window
             if self.click_restore_last_active == False:
@@ -1732,7 +1742,10 @@ class Dock(object):
             wnck_aws = self.wnck_screen.get_active_workspace()
             wnck_ws = last_active_win.get_workspace()
 
-            if wnck_aws is not None and (wnck_aws != wnck_ws):
+            # the window's active workspace can be null if it is visible on all workspaces
+            # or if it is not on any workspace (I'm looking at you caja-desktop!!!!!)
+            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392
+            if wnck_aws is not None and wnck_ws is not None and (wnck_aws != wnck_ws):
                 wnck_ws.activate(0)
                 sleep(0.01)
 
