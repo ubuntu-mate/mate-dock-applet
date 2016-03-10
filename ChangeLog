@@ -1,3 +1,6 @@
+V0.68	Fix for Launchpad bug 1550392 
+	(https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392)
+
 V0.67   Panel colour changing now occurs smoothly over over 0.5s rather than
 	abruptly.
 	Big cleanup of git repository!
