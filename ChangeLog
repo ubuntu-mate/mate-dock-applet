@@ -1,3 +1,12 @@
+V0.69   Added code to allow new instances of apps to be started by middle
+	clicking their dock icon (see https://bugs.launchpad.net/ubuntu-mate/+bug/1554128)
+	Fixed bug that would prevent apps from launching if they were in a
+	directory structure which contained a space character e.g. 
+	~/Downloads/PopCorn Time/
+	Fixed bug which associated newly opened windows with incorrect apps
+	and which occurred when the wm_class_name of the window was not set.
+	Fix for https://bugs.launchpad.net/ubuntu-mate/+bug/1555324
+	
 V0.68	Fix for Launchpad bug 1550392 
 	(https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392)
 
