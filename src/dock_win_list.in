@@ -325,7 +325,8 @@ class DockWinList(Gtk.Window):
         
         # the windows's current workspace can be None if it is pinned to all workspaces
         # or it is not on any at all...
-        # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392
+        # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392 and
+        # https://bugs.launchpad.net/ubuntu-mate/+bug/1555336 (regarding software updater))
         if (wnck_aws is not None) and (wnck_ws is not None) and (wnck_aws != wnck_ws):
                 wnck_ws.activate(0)
                 sleep(0.01)
