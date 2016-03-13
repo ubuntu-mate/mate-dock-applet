@@ -126,6 +126,12 @@ def applet_button_release(widget, event, the_dock):
             else:
                 the_dock.minimize_or_restore_windows(app, event)
                 
+    # See https://bugs.launchpad.net/ubuntu-mate/+bug/1554128
+    if event.button == 2:
+        app = the_dock.get_app_at_mouse(event.x, event.y)
+        if app is not None:
+            the_dock.hide_win_list()
+            app.start_app()
 
 def applet_enter_notify(widget, event, the_dock):
     """Enter notify event for the applet
