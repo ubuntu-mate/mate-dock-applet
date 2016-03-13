@@ -1108,8 +1108,10 @@ class Dock(object):
                 # if we don't have the .desktop file then things get a little more
                 # complicated
                 elif app.has_wnck_app(wnck_app) or \
-                     app.wnck_class == dock_app.wnck_class or \
-                     app.wm_class_name.upper() == dock_app.wm_class_name.upper():
+                     ((app.wnck_class == dock_app.wnck_class or \
+                     app.wm_class_name.upper() == dock_app.wm_class_name.upper() and \
+                     # test below is fix for https://bugs.launchpad.net/ubuntu-mate/+bug/1555324
+                     app.wm_class_name.strip() != "")):   #  
                          in_dock = True
 
                 if in_dock == True:
@@ -1714,7 +1716,7 @@ class Dock(object):
             # the last active window may be set to None (e.g. if the app's active window has been closed
             # and no other window has been made active afterwards). Therefore, if there is no active last window
             # activate the app's first normal window
-            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392
+            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392)
             if last_active_win is None:
                 for window in win_list:
                     win_type = window.get_window_type()
@@ -1744,7 +1746,8 @@ class Dock(object):
 
             # the window's active workspace can be null if it is visible on all workspaces
             # or if it is not on any workspace (I'm looking at you caja-desktop!!!!!)
-            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392
+            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392 and
+            # https://bugs.launchpad.net/ubuntu-mate/+bug/1555336 (regarding software updater))
             if wnck_aws is not None and wnck_ws is not None and (wnck_aws != wnck_ws):
                 wnck_ws.activate(0)
                 sleep(0.01)
