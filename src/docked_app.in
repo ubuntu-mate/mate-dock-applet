@@ -1157,6 +1157,12 @@ class DockedApp(object):
         cmd_line =bytearray(cmd_line, "UTF-8")
         cmd_line = cmd_line.decode("unicode-escape")
 
+        # if any of the directories in cmd_line contain a " ", they need to be escaped
+        head,tail = os.path.split(cmd_line)
+        if " " in head:
+            head = head.replace(" ", "\ ")
+            cmd_line = head + "/" + tail
+            
         app_info = Gio.AppInfo.create_from_commandline(cmd_line,
                                                        None,
                                                        Gio.AppInfoCreateFlags.NONE)
