@@ -248,60 +248,52 @@ class Dock(object):
                 (os.path.isfile(self.xml_conf)):
 
             # this dock is being run for the first time, so if we have any saved settings
-            # from other docks, offer to import them ..
-            md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION,
-                                   Gtk.ButtonsType.YES_NO,
-                                   None)
-            md.set_markup ('<span size="x-large"><b>Import settings?</b></span>')
-            md.format_secondary_text("Settings from a previous dock have been found. Do you want to " \
-                                     "import the other dock's pinned apps and settings?")
-            response = md.run()
-            if response == Gtk.ResponseType.YES:
+            # from other docks, import them. Note: prior to V0.70 the applet presented a
+            # dialog asking the user whether or not to import the previous settings.
+            # The is dialog has been removed and the previous settings are now silently 
+            # imported to prevent problems when swtiching to the Mutiny layout in Ubuntu 
+            # Mate 16.04
 
-                xml_settings = dock_xml.read_xml(self.xml_conf)
+            xml_settings = dock_xml.read_xml(self.xml_conf)
 
-                if xml_settings[0] == True:
-                    # the settings were read correctly, so set everything up
+            if xml_settings[0] == True:
+                # the settings were read correctly, so set everything up
 
-                    pinned_apps = []
-                    for pinned_app in xml_settings[1]:
-                        pinned_apps.append(pinned_app)
+                pinned_apps = []
+                for pinned_app in xml_settings[1]:
+                    pinned_apps.append(pinned_app)
 
-                    self.indicator = xml_settings[2]
-                    self.show_all_unpinned_apps = xml_settings[3]
-                    self.multi_ind = xml_settings[4]
-                    self.click_restore_last_active = xml_settings[5]
-                    self.show_all_pinned_apps = xml_settings[6]
-                    self.change_panel_color = xml_settings[7]
-                    self.change_dock_color_only = xml_settings[8]
+                self.indicator = xml_settings[2]
+                self.show_all_unpinned_apps = xml_settings[3]
+                self.multi_ind = xml_settings[4]
+                self.click_restore_last_active = xml_settings[5]
+                self.show_all_pinned_apps = xml_settings[6]
+                self.change_panel_color = xml_settings[7]
+                self.change_dock_color_only = xml_settings[8]
 
-                    # now, immediately write the settings to dconf and back to the config file
-                    # so the dock can access them
+                # now, immediately write the settings to dconf and back to the config file
+                # so the dock can access them
 
-                    self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
-                    self.settings.set_int("indicator-type", self.indicator)
-                    self.settings.set_boolean("multi-ind", self.multi_ind)
-                    self.settings.set_boolean("apps-from-all-workspaces", self.show_all_unpinned_apps)
-                    self.settings.set_boolean("first-run", False)
-                    self.settings.set_boolean("click-restore-last-active", self.click_restore_last_active)
-                    self.settings.set_boolean("pinned-apps-from-all-workspaces", self.show_all_pinned_apps)
-                    self.settings.set_boolean("change-panel-color", self.change_panel_color)
-                    self.settings.set_boolean("change-panel-color-dock-only", self.change_dock_color_only)
+                self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
+                self.settings.set_int("indicator-type", self.indicator)
+                self.settings.set_boolean("multi-ind", self.multi_ind)
+                self.settings.set_boolean("apps-from-all-workspaces", self.show_all_unpinned_apps)
+                self.settings.set_boolean("first-run", False)
+                self.settings.set_boolean("click-restore-last-active", self.click_restore_last_active)
+                self.settings.set_boolean("pinned-apps-from-all-workspaces", self.show_all_pinned_apps)
+                self.settings.set_boolean("change-panel-color", self.change_panel_color)
+                self.settings.set_boolean("change-panel-color-dock-only", self.change_dock_color_only)
 
-                    dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator, \
-                           self.show_all_unpinned_apps, self.multi_ind, self.click_restore_last_active, \
-                           self.show_all_pinned_apps, self.change_panel_color, self.change_dock_color_only)
+                dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator, \
+                       self.show_all_unpinned_apps, self.multi_ind, self.click_restore_last_active, \
+                       self.show_all_pinned_apps, self.change_panel_color, self.change_dock_color_only)
 
-                    md.destroy()
-                    return
-                else:
+                return
 
-                    # the xml was not read
-                    # this could be due to an error or because new versions of the applets have added
-                    # configuration options not yet in the user's xml file. To recover, simply close
-                    # the dialog and assume a default set of options
-                    md.destroy()
-
+        # we get here if there was no previous configuration, or the configuration couldn't be read.
+        # Where the configuration cou;n't be read this could be due to an error or because new versions
+        # of the applet have added configuration options not yet in the user's xml file. To recover, 
+        # simply  assume a default set of options
         self.indicator = self.settings.get_int("indicator-type")
         self.multi_ind = self.settings.get_boolean("multi-ind")
         self.show_all_unpinned_apps = self.settings.get_boolean("apps-from-all-workspaces")
@@ -797,7 +789,11 @@ class Dock(object):
             # state that .desktop filenames should not contain spaces, so....
             dfname = self.ccl_win.name.replace(" ", "-")
 
-            dfname = os.path.expanduser("~/.local/share/applications/mda-%s.desktop" %dfname)
+            local_apps = os.path.expanduser("~/.local/share/appplications")
+            if not os.path.exists(local_apps):
+                # ~/.local/share/applications doesn't exist, so create it
+                os.mkdir(local_apps)
+            dfname = os.path.expanduser("%s/mda-%s.desktop" %(local_apps,dfname))
 
             dfile = open(dfname, "w")
             dfile.write("[Desktop Entry]\n")
