@@ -1,4 +1,12 @@
-V0.69   Added code to allow new instances of apps to be started by middle
+V0.70   Settings from previous instances of the applet are now imported
+	silently (previously the user was presented with a dialog asking the
+	user if they wanted to import the settings). The change is to prevent
+	problems when switching to the Mutiny desktop layout via Mate Tweak in
+	Ubuntu Mate 16.04
+	When saving custom launchers the ~/.local/share/applications directory
+	will be created if it doesn't already exist
+	
+v0.69   Added code to allow new instances of apps to be started by middle
 	clicking their dock icon (see https://bugs.launchpad.net/ubuntu-mate/+bug/1554128)
 	Fixed bug that would prevent apps from launching if they were in a
 	directory structure which contained a space character e.g. 
