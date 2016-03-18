@@ -13,11 +13,29 @@ The applet allows you to:
 * Use either a light or dark indicator that it can always be seen no matter what colour the panel is, or turn indicators off altogether
 * Change the colour of MATE panels to the dominant colour (i.e. the most common colour) of the desktop wallpaper. The colour can be applied to all panels or just the panel containing the dock.
 
-### Installation
+## Installation
 
-Ubuntu and Mint users can install from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
+### Debian
 
-For Arch users, there's a [package](http://aur.archlinux.org/packages/mate-applet-dock-git) in the AUR. 
+The applet is available in Debian testing:
+
+`apt-get install mate-dock-applet`
+
+### Ubuntu MATE 16.04
+
+The applet is included by default in Ubuntu MATE 16.04. It can be used by selecting the 'Mutiny' desktop layout in the MATE Tweak application, or by simply adding it to any pane'.
+
+Note: when upgrading from Ubuntu Mate 15.10 to 16.04 any previously installed version of the applet will be replaced with the one from the distribution's respositories.
+
+### Ubuntu MATE 15.10
+
+Users of Ubuntu MATE 15.10 and earlier, or of Linux Mint can install the applet from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
+
+### Arch Linux
+
+For Arch users there's a [package](http://aur.archlinux.org/packages/mate-applet-dock-git) available in the AUR. 
+
+### Other distributions
 
 Users of other distros will need to install from source, so first install the required dependencies:
 
@@ -44,7 +62,7 @@ make
 sudo make install
 ```
 
-### Installation on Ubuntu Mate on a Pi 2
+### Installation on Ubuntu MATE on a Pi 2
 
 This is a little more involved. First download gir1.2-wnck-1.0 for arm architechure from [here](http://launchpadlibrarian.net/160438738/gir1.2-wnck-1.0_2.30.7-0ubuntu4_armhf.deb) and install it with sudo dpkg -i. Then install other dependencies - sudo apt-get install git autoreconf libglib2.0-dev
 
