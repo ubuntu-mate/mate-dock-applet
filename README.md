@@ -23,13 +23,13 @@ The applet is available in Debian testing:
 
 ### Ubuntu MATE 16.04
 
-The applet is included by default in Ubuntu MATE 16.04. It can be used by selecting the 'Mutiny' desktop layout in the MATE Tweak application, or by simply adding it to any pane'.
+The applet is included by default in Ubuntu MATE 16.04. It can be used by selecting the 'Mutiny' desktop layout in the MATE Tweak application, or by simply adding it to any panel.
 
 Note: when upgrading from Ubuntu Mate 15.10 to 16.04 any previously installed version of the applet will be replaced with the one from the distribution's respositories.
 
 ### Ubuntu MATE 15.10
 
-Users of Ubuntu MATE 15.10 and earlier, or of Linux Mint can install the applet from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
+Users of Ubuntu MATE 15.10 and earlier, or of Linux Mint, can install the applet from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
 
 ### Arch Linux
 
