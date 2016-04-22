@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 
-"""Provide functionality allowing the dock applets configuration to be saved
-   and loaded
+"""Read and write applet xml configuration files.
 
-Store the configuration in a specified XML file 
+Provide functionality allowing the dock applets configuration to be saved
+and loaded.
+
+Store the configuration in a specified XML file
 
 The file will contain the following information:
     : a list of all pinned app's .desktop files
     : the indicator type (light or dark)
     : whether unpinned apps from all workspaces are to be displayed
     : whether an indicator for each open window is to be displayed
+
+
+Also provide the ability to read an xml file which contains details
+of apps which are difficult to match with their respective .desktop
+files and which specifies the .desktop file to use
 """
 
 # Copyright (C) 1997-2003 Free Software Foundation, Inc.
@@ -33,6 +40,7 @@ The file will contain the following information:
 #     Robin Thompson
 
 import xml.etree.ElementTree as ET
+import sys, os, platform
 
 def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
                click_restore_last_active, pinned_from_all, panel_change_color,
@@ -40,7 +48,7 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
     """ Write the xml file using the specified information
 
     The xml file will be in the following format:
-        
+
         <root>
             <pinned_apps>
                 <desktop_file name="name1"/>
@@ -56,19 +64,19 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
             <dock_panel_change_only>True or False</>
         </root>
 
-    Args: 
+    Args:
         filename - the filename to use. If the file already exists it will be
                    overwritten.
         desktop_files: a list containing the names of the applet's pinned app's
                        .desktop files e.g. ['pluma.desktop']
         light_ind : boolean - Whether or not a light indicator is to be used
         unpinned_from_all : boolean - Whethr or not unpinned apps from all workspaces
-                            are to be shown 
-        multi_ind : Whether indicators for each of an app's open windows are to be 
+                            are to be shown
+        multi_ind : Whether indicators for each of an app's open windows are to be
                    shown
         click_restore_last_active: whether clicking a running app's dock icon restores
                    only the last active window or all windows
-        pinned_from_all : boolean - whether or not pinned apps from all workspaces are to 
+        pinned_from_all : boolean - whether or not pinned apps from all workspaces are to
                           be shown (new with V0.66)
         panel_change_color : boolean - Whether or not MATE panels are to change color according
                              to the desktop wallpaper (new with V0.66)
@@ -90,12 +98,12 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
     ind_el = ET.Element("ind_type", light = "%d" %light_ind)
     ufa_el = ET.Element("unpinned_from_all", show_all = "%s" %unpinned_from_all)
     mi_el = ET.Element("multi_ind", show_multi = "%s" %multi_ind)
-    crla_el = ET.Element("click_restore_last_active", 
+    crla_el = ET.Element("click_restore_last_active",
                         restore_last_active_only = "%s" %click_restore_last_active)
     pfa_el = ET.Element("pinned_from_all", pfa = "%s" %pinned_from_all)
     pcc_el = ET.Element("panel_change_color", pcc = "%s" %panel_change_color)
     dcc_el = ET.Element("dock_panel_change_only", dcc = "%s" %dock_panel_change_only)
-                        
+
     root.append (pa_el)
     root.append (ind_el)
     root.append (ufa_el)
@@ -114,8 +122,8 @@ def write_xml (filename, desktop_files, light_ind, unpinned_from_all, multi_ind,
 
 def read_xml (filename):
     """ Reads an xml file created using the write_xml method
-    
-    Args: 
+
+    Args:
         filename - the filename to read.
 
     Returns:
@@ -129,11 +137,11 @@ def read_xml (filename):
             a boolean - the restore last active settings
             a boolean - the pinned from all setting
             a boolean - the change panel colour setting
-            a boolean - the change dock panel color only setting 
+            a boolean - the change dock panel color only setting
     """
 
     try:
-        root = ET.parse(filename) 
+        root = ET.parse(filename)
     except FileNotFoundError:
         return [False]
 
@@ -169,13 +177,13 @@ def read_xml (filename):
     if crla_el is not None:
         click_restore_last_active = crla_el.get("restore_last_active_only") == "True"
     else:
-        click_restore_last_active = True 
+        click_restore_last_active = True
 
     crla_el = root.find("pinned_from_all")
     if crla_el is not None:
         pinned_from_all = crla_el.get("pfa") == "True"
     else:
-        pinned_from_all = True 
+        pinned_from_all = True
 
     crla_el = root.find("panel_change_color")
     if crla_el is not None:
@@ -190,29 +198,87 @@ def read_xml (filename):
         dock_panel_change_only = False
 
     return [True, df_list, light_ind, show_all, multi_ind, click_restore_last_active, \
-            pinned_from_all, panel_change_color, dock_panel_change_only] 
+            pinned_from_all, panel_change_color, dock_panel_change_only]
+
+
+def read_app_xml (filename):
+    """ Reads the xml file containing the list of hard to match apps
+
+    Args:
+        filename - the filename to read.
+
+    Returns:
+        boolean : True if the file was read successfully, False otherwise
+
+        A list of tuples containing the following:
+            a string - the app name (as identified by wnck)
+            a string - the window class of the app (as identified by wnck)
+            a string - the .desktop file to be used for this app
+
+        Note: the list will only contain enries relating to the distro the app is running
+        on
+    """
+
+    distro, release, did = platform.linux_distribution()
+    # Note: platform.linux_distribution is deprecated. Once it is removed, the ld module
+        # can be used instead
+
+    if (distro is None) or (distro == ""):
+        return [False]
+
+    try:
+        tree  = ET.parse(filename)
+        root = tree.getroot()
+    except FileNotFoundError:
+        return [False]
+
+    app_list = []
+    for entry in root.findall("app"):
+        add_it = False
+        if (distro is not None) and (distro != ""):
+            if distro == entry.find("distro").text:
+                if (release is not None) and (release != ""):
+                    add_it = release in entry.find("release").text
+                else:
+                    add_it = True
+
+        if add_it:
+            app_list.append([entry.find("name").text, \
+                            entry.find("class").text,
+                            entry.find("desktop").text])
+    return [True, app_list]
 
 def main():
     """Main function.
 
     Debugging code can go here
     """
-    
-#    write_xml ("/home/robin/tmp/text.xml", ["thing.desktop","blah.desktop"], 99, False, True, False, False, True, False)
-    results = read_xml ("/home/robin/tmp/text.xml")
-    if results[0] == True:
-        for df in results[1]:
-            print ("Desktop file found: %s" %df)
-        
-        print ("Use light ind = %d" %results[2])
-        print ("Show unpinned on all = %s" %results[3])
-        print ("Multi ind = %s" %results[4])
-        print ("Click restore all = %s" %results[5])
-        print ("pinned on all = %s" %results[6])
-        print ("panel change color = %s" %results[7])
-        print ("dock panel only = %s" %results[8])
+
+    print (os.path.dirname(sys.argv[0]))
+    results = read_app_xml( "src/app_match.xml")
+    if results[0]:
+        for app in results[1]:
+            print("App name = %s" %app[0])
+            print("App class = %s" %app[1])
+            print ("App desktop = %s" %app[2])
     else:
-        print ("Error reading file....")
-    
+        print("could not read app_match.xml")
+
+#    write_xml ("/home/robin/tmp/text.xml", ["thing.desktop","blah.desktop"], 99, False, True, False, False, True, False)
+#    results = read_xml ("/home/robin/tmp/text.xml")
+#    if results[0] == True:
+#        for df in results[1]:
+#            print ("Desktop file found: %s" %df)
+
+#        print ("Use light ind = %d" %results[2])
+#        print ("Show unpinned on all = %s" %results[3])
+#        print ("Multi ind = %s" %results[4])
+#        print ("Click restore all = %s" %results[5])
+#        print ("pinned on all = %s" %results[6])
+#        print ("panel change color = %s" %results[7])
+#        print ("dock panel only = %s" %results[8])
+#    else:
+#        print ("Error reading file....")
+
 if __name__ == "__main__":
     main()
