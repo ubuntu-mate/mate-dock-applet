@@ -9,7 +9,7 @@ appletdir = $(libdir)/mate-applets/mate-dock-applet/
 APPLET_LOCATION = $(appletdir)dock_applet.py
 
 appletsdir       = $(datadir)/mate-panel/applets
-applets_in_files = org.mate.panel.DockApplet.mate-panel-applet 
+applets_in_files = org.mate.panel.DockApplet.mate-panel-applet
 applets_DATA     = $(applets_in_files:.mate-panel-applet.in=.mate-panel-applet)
 
 do_substitution = $(AM_V_GEN)sed \
@@ -17,7 +17,7 @@ do_substitution = $(AM_V_GEN)sed \
 		  -e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 		  -e 's,[@]VERSION[@],$(VERSION),g' \
 		  -e 's,[@]LOCATION[@],$(appletdir),g' \
-		  -e 's,[@]localedir[@],$(datadir)/locale,g' 
+		  -e 's,[@]localedir[@],$(datadir)/locale,g'
 
 #$(applets_in_files): $(applets_in_files).in Makefile
 #	$(AM_V_GEN)sed \
@@ -41,6 +41,9 @@ do_substitution = $(AM_V_GEN)sed \
 servicedir       = $(datadir)/dbus-1/services
 service_in_files = org.mate.panel.applet.DockAppletFactory.service.in
 service_DATA     = $(service_in_files:.service.in=.service)
+
+xmldir		 =$(appletdir)
+xml_DATA 	 = app_match.xml
 
 #imagedir	 = $(libexecdir)
 #image_DATA	 = sahsl.png \
@@ -114,6 +117,7 @@ dom_color.py: dom_color.in Makefile
 	$(do_substitution) < $(srcdir)/dom_color.in > dom_color.py
 	chmod +x dom_color.py
 
+
 applet_PYTHON = \
 		     dock_applet.py \
 		     dock_about.py \
@@ -144,5 +148,5 @@ EXTRA_DIST = dock_applet.in \
 	     dom_color.in \
 	     $(gsettings_SCHEMAS) \
 	     $(applets_in_files) \
-	     $(service_in_files)
-
+	     $(service_in_files) \
+	     $(xml_DATA)
