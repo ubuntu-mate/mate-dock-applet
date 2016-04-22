@@ -53,6 +53,7 @@ from gi.repository import Gio
 from gi.repository import GLib
 import os
 import os.path
+import sys
 from time import sleep
 
 import docked_app
@@ -142,7 +143,7 @@ class Dock(object):
         # instantiate these - will be set up later
         self.object_settings = ""
         self.panel_id = ""
-        
+
         # specify the xml file to be used as an alternative storage location for the
         # applet settings
         self.xml_conf=os.path.expanduser("~/.config/mate_dock_applet.conf")
@@ -159,6 +160,8 @@ class Dock(object):
         self.change_dock_color_only = False
         self.read_settings()
 
+        # read the list of apps which are difficult to match with their .desktop files
+        self.app_match = self.read_app_match()
         self.dock_action_group = None
 
         self.app_win_list  = dock_win_list.DockWinList(self.wnck_screen)
@@ -166,7 +169,7 @@ class Dock(object):
         self.win_list_delay = 500
         self.win_list_timer = None
 
-        # create an event handler so that we can react to changes e.g 
+        # create an event handler so that we can react to changes e.g
         # the panel the applet is on, or it's position on the panel
         applet_spath = self.settings_path[0: len(self.settings_path)-6] # remove "prefs/" suffix
         self.object_settings = Gio.Settings.new_with_path("org.mate.panel.object", applet_spath)
@@ -197,7 +200,7 @@ class Dock(object):
         else:
             self.panel_cc.set_single_panel("")
 
-        # enable panel colour changing? 
+        # enable panel colour changing?
         if self.change_panel_color:
             self.panel_cc.enable_color_change()
             self.panel_cc.do_change_panel_color() # we're starting up so need to do an initial panel
@@ -250,8 +253,8 @@ class Dock(object):
             # this dock is being run for the first time, so if we have any saved settings
             # from other docks, import them. Note: prior to V0.70 the applet presented a
             # dialog asking the user whether or not to import the previous settings.
-            # The is dialog has been removed and the previous settings are now silently 
-            # imported to prevent problems when swtiching to the Mutiny layout in Ubuntu 
+            # The is dialog has been removed and the previous settings are now silently
+            # imported to prevent problems when swtiching to the Mutiny layout in Ubuntu
             # Mate 16.04
 
             xml_settings = dock_xml.read_xml(self.xml_conf)
@@ -292,7 +295,7 @@ class Dock(object):
 
         # we get here if there was no previous configuration, or the configuration couldn't be read.
         # Where the configuration cou;n't be read this could be due to an error or because new versions
-        # of the applet have added configuration options not yet in the user's xml file. To recover, 
+        # of the applet have added configuration options not yet in the user's xml file. To recover,
         # simply  assume a default set of options
         self.indicator = self.settings.get_int("indicator-type")
         self.multi_ind = self.settings.get_boolean("multi-ind")
@@ -301,6 +304,7 @@ class Dock(object):
         self.show_all_pinned_apps = self.settings.get_boolean("pinned-apps-from-all-workspaces")
         self.change_panel_color = self.settings.get_boolean("change-panel-color")
         self.change_dock_color_only = self.settings.get_boolean("change-panel-color-dock-only")
+
 
     def write_settings(self):
         """Write the current dock settings.
@@ -333,6 +337,25 @@ class Dock(object):
                            self.show_all_unpinned_apps, self.multi_ind, self.click_restore_last_active,
                            self.show_all_pinned_apps, self.change_panel_color,
                            self.change_dock_color_only)
+
+    def read_app_match(self):
+        """ Read an xml file which contains a list of apps which are difficult to match with
+            their respective .desktop file.
+
+        Returns:
+            A list of tuples which containing the following:
+                the app name (as reported by wnck)
+                the app's wm_class (as reported by wnck)
+                the .desktop file to be used by apps whose name or wm_class match the above
+        """
+
+        d, f = os.path.split(os.path.abspath(__file__))
+        results = dock_xml.read_app_xml("%s/app_match.xml" %d)
+        if results[0]:
+            # the file was read successfully
+            return results[1]
+        else:
+            return []
 
     def set_actions_for_app(self, app):
         """Show or hide actions in the context menu so that only relevant ones are
@@ -712,16 +735,16 @@ class Dock(object):
                 if app.is_running():
                     app.queue_draw()
             self.show_or_hide_app_icons()
-    
+
             if new_panel_color_setting:
-                # panel colour changing setting has been changed so we need to 
+                # panel colour changing setting has been changed so we need to
                 # enable or disable colour changing
                 if self.change_panel_color:
                     self.panel_cc.enable_color_change()
                     self.panel_cc.do_change_panel_color()
                 else:
                     self.panel_cc.disable_color_change()
-            
+
         self.prefs_win.hide()
 
     def show_ccl_win(self, data=None):
@@ -993,7 +1016,7 @@ class Dock(object):
                 # setup a new docked app object with info from wnck
                 dock_app = docked_app.DockedApp()
                 dock_app.applet_win = self.applet.window
-                dock_app.setup_from_wnck(wnck_app, wnck_class)
+                dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match)
 
                 # if this is a pinned app, merge the running app details with the item already
                 # set up in app_list
@@ -1093,7 +1116,7 @@ class Dock(object):
             dock_app.applet_orient = self.applet.get_orient()
             dock_app.set_indicator(self.indicator)
             dock_app.set_multi_ind(self.multi_ind)
-            got_desktop = dock_app.setup_from_wnck(wnck_app, wnck_class)
+            got_desktop = dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match)
 
             # look for the app relating to the window in the dock
             in_dock = False
@@ -1107,7 +1130,7 @@ class Dock(object):
                      ((app.wnck_class == dock_app.wnck_class or \
                      app.wm_class_name.upper() == dock_app.wm_class_name.upper() and \
                      # test below is fix for https://bugs.launchpad.net/ubuntu-mate/+bug/1555324
-                     app.wm_class_name.strip() != "")):   #  
+                     app.wm_class_name.strip() != "")):   #
                          in_dock = True
 
                 if in_dock == True:
@@ -1245,7 +1268,7 @@ class Dock(object):
                         app.hide_icon()
 
         # now do pinned apps
-        if self.show_all_pinned_apps: 
+        if self.show_all_pinned_apps:
             for app in self.app_list:
                 if (app.is_pinned) and (not app.is_visible()):
                     app.show_icon()
@@ -1253,7 +1276,7 @@ class Dock(object):
             cur_ws = self.wnck_screen.get_active_workspace()
             for app in self.app_list:
                 if app.is_pinned:
-                    # if the app is not running, then always show the icon regardless of the 
+                    # if the app is not running, then always show the icon regardless of the
                     # current workspace.
                     # This has to be done, since hiding none running pinned apps will not
                     # give the user any way to start them....
@@ -1334,6 +1357,10 @@ class Dock(object):
             #
             # 1 .. quick and dirty - check to see if the icon points to an actual file
             #                        or ...
+            #                        look in /usr/share/icons/hicolor/<icon_size>x<iconsize>/
+            #                        apps/ and
+            #                        ~/.local/share/icons/icons/hicolor</icon_size>x<icon_size>/apps/
+            #                        for the icon name or ...
             #                        look in /usr/share/pixmaps for an icon of any type with
             #                        the same name as the app
             #                        then ...
@@ -1350,24 +1377,39 @@ class Dock(object):
             if os.path.isfile(dock_app.icon_name):
                 pixbuf = GdkPixbuf.Pixbuf.new_from_file(dock_app.icon_name)
             else:
-                icon_file = ""
-                icon_name = os.path.splitext(dock_app.icon_name)[0] # remove any extension
-                if os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name):
-                    icon_file = icon_name + ".png"
-                elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.upper()):
-                    icon_file = icon_name.upper() + ".png"
-                elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.lower()):
-                    icon_file = icon_name.lower() + ".png"
+                icon_name = dock_app.icon_name
 
-                if icon_file != "":
-                    pixbuf = GdkPixbuf.Pixbuf.new_from_file("/usr/share/pixmaps/%s"%icon_file)
+                #look in the 'hicolor' icon directories for the icon file
+                icon_path = "/usr/share/icons/hicolor/%dx%d/apps/" %(icon_size, icon_size)
+                if os.path.isfile("%s%s" %(icon_path, icon_name)):
+                    icon_file = "%s%s" %(icon_path, icon_name)
                 else:
-                    icon_file = os.path.expanduser("~/.local/share/icons/%s" %dock_app.icon_name)
-                    if os.path.isfile(icon_file):
-                        pixbuf= GdkPixbuf.Pixbuf.new_from_file(icon_file)
-                    else:
-                        pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size, None)
-                        dock_app.icon_filename = "STOCK_EXECUTE"
+                    icon_path = os.path.expanduser("~/.local/share/icons/hicolor/%dx%d/apps/" %(icon_size, icon_size))
+                    if os.path.isfile("%s%s" %(icon_path, icon_name)):
+                        icon_file = "%s%s" %(icon_path, icon_name)
+
+                # if we still haven't found the icon, look in /usr/share/pixmaps for a .png file
+                if icon_file == "":
+                    icon_name = os.path.splitext(dock_app.icon_name)[0] # remove any extension
+                    if os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name):
+                        icon_file = "/usr/share/pixmaps/%s.png" %icon_name
+                    elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.upper()):
+                        icon_file = "/usr/share/pixmaps/%s.png" %icon_name.upper()
+                    elif os.path.isfile("/usr/share/pixmaps/%s.png" %icon_name.lower()):
+                        icon_file = "/usr/share/pixmaps/%s.png" %icon_name.lower()
+
+                # final attempt - look in ~/.local/share/icons for the icon
+                if icon_file == "":
+                    if os.path.isfile(os.path.expanduser("~/.local/share/icons/%s" %dock_app.icon_name)):
+                        icon_file = os.path.expanduser("~/.local/share/icons/%s" %dock_app.icon_name)
+
+                # if we've found an icon, load it
+                if icon_file != "":
+                        pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_file)
+                else:
+                    # if not, use a stock icon to represent the app
+                    pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size, None)
+                    dock_app.icon_filename = "STOCK_EXECUTE"
 
         # scale the icon to the size that is available
         # Note - we're allowing for a 3 pixel border all around the icon, hence using size-6
@@ -1772,14 +1814,14 @@ class Dock(object):
                 last_active_win.minimize()
                 sleep(0.01)
 
-    
+
     def do_window_scroll(self, scroll_dir, event_time):
         """ Scroll to the next/previous window of the currently active app
-        
+
         This function is called in response to the mouse scroll event on the
         panel applet
 
-        Depending on the scroll direction, make the next or previous window of 
+        Depending on the scroll direction, make the next or previous window of
         the current app active. Scrolling will wrap around in both directions
 
         If the app only has one window or we don't know which window was last active
@@ -1788,7 +1830,7 @@ class Dock(object):
 
         If the new window is not on the current workspace, change to the relevant
         workspace
-        
+
         Also, hide the app window list and stop any timer that might be running
 
         Args:
@@ -1810,7 +1852,7 @@ class Dock(object):
         # if the app isn't running, there's nothing to do...
         if app.is_running() == False:
             return
-        
+
         windows = app.get_wnck_windows()
         if (app.last_active_win is None) or (len(windows) == 1):
             new_index = 0
@@ -1831,7 +1873,7 @@ class Dock(object):
                     new_index = 0
                 else:
                     new_index = index +1
-    
+
         # hide the window list and stop any timer
         self.hide_win_list()
         self.stop_win_list_timer()
@@ -1866,4 +1908,3 @@ def win_activation_timer(args):
     args[0].activate(0)
     sleep(0.01)
     return (False)
-
