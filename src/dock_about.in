@@ -35,8 +35,14 @@ import gi
 gi.require_version("Gtk", "2.0")
 from gi.repository import Gtk
 
+import dock_info
+
 class AboutWindow(Gtk.Window):
-    """Provides the About window"""
+    """Provides the About window
+    
+    Also includes a 'Hints & Tips' Button which displays a dialog 
+    containing useful info about the applet
+    """
 
     def __init__(self):
         """Init for the About window class
@@ -48,13 +54,22 @@ class AboutWindow(Gtk.Window):
 
         self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
         self.__button.connect("button-press-event", self.win_button_press)
+
+        self.__button_hints =Gtk.Button(label="Hints & Tips")
+        img_hint = Gtk.Image()
+        img_hint.set_from_stock(Gtk.STOCK_INFO, Gtk.IconSize.BUTTON)
+        self.__button_hints.set_image(img_hint)
+        self.__button_hints.connect("button-press-event", self.hint_button_press)
+
         self.connect("delete-event", self.win_delete_event)
         self.set_border_width(5)
         self.__vbox = Gtk.VBox()
         self.__vbox.set_spacing(2)
         self.__hbx = Gtk.HButtonBox()
         self.__hbx.set_layout(Gtk.ButtonBoxStyle.END)
+        self.__hbx.pack_start(self.__button_hints, False, False, 4)
         self.__hbx.pack_start(self.__button, False, False, 4)
+        self.__hbx.set_child_secondary(self.__button_hints, True)
 
         self.__image = Gtk.Image()
         self.__image.set_from_stock(Gtk.STOCK_ABOUT, Gtk.IconSize.DIALOG)
@@ -104,6 +119,18 @@ class AboutWindow(Gtk.Window):
 
 	The window is hidden so that it can be shown again
         """
+
+        self.hide()
+
+    def hint_button_press(self, widget, event):
+        """
+        callback for the Hint button on the About dialog
+
+        Show the Hints and Tips dialog and hide the About dialog
+        """
+
+        info_win = dock_info.InfoWindow(running_from_about=True)
+        info_win.show_all()
 
         self.hide()
 

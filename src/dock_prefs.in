@@ -173,33 +173,36 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_unpinned_apps_align.add(self.__table_unpinned_apps)
         self.__frame_unpinned_apps.add(self.__frame_unpinned_apps_align)
 
-        self.__frame_pinned_apps = self.create_frame("Pinned applications")
-        lbl = self.__frame_pinned_apps.get_label_widget()
-        lbl.set_use_markup(True)
-        lbl.set_label("<b>" +"Pinned applications" + "</b>")
-        self.__frame_pinned_apps.set_shadow_type(Gtk.ShadowType.NONE)
+        self.__cb_win_cur_ws = Gtk.CheckButton(label="Display indicators/window list items for current workspace only")
 
-        self.__rb_pinned_all_ws = Gtk.RadioButton(label="Display pinned apps from all workspaces")
-        self.__rb_pinned_cur_ws = Gtk.RadioButton(group=self.__rb_pinned_all_ws, \
-                                  label="Display pinned apps only from current workspace")
-        self.__table_pinned_apps = Gtk.Table(rows=2, columns=1, homogeneous=False)
-        self.__table_pinned_apps.attach(self.__rb_pinned_all_ws, 0, 1, 0, 1,
-                                        Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                        2, 2)
-        self.__table_pinned_apps.attach(self.__rb_pinned_cur_ws, 0, 1, 1, 2,
-                                        Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                        2, 2)
+#        self.__frame_pinned_apps = self.create_frame("Pinned applications")
+#        lbl = self.__frame_pinned_apps.get_label_widget()
+#        lbl.set_use_markup(True)
+#        lbl.set_label("<b>" +"Pinned applications" + "</b>")
+#        self.__frame_pinned_apps.set_shadow_type(Gtk.ShadowType.NONE)
 
-        self.__frame_pinned_apps_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                       xscale=1.0, yscale=1.0)
-        self.__frame_pinned_apps_align.set_padding(0, 0, 12, 0)
-        self.__frame_pinned_apps_align.add(self.__table_pinned_apps)
-        self.__frame_pinned_apps.add(self.__frame_pinned_apps_align)
+#        self.__rb_pinned_all_ws = Gtk.RadioButton(label="Display pinned apps from all workspaces")
+#        self.__rb_pinned_cur_ws = Gtk.RadioButton(group=self.__rb_pinned_all_ws, \
+#                                  label="Display pinned apps only from current workspace")
+#        self.__table_pinned_apps = Gtk.Table(rows=2, columns=1, homogeneous=False)
+#        self.__table_pinned_apps.attach(self.__rb_pinned_all_ws, 0, 1, 0, 1,
+#                                        Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+#                                        2, 2)
+#        self.__table_pinned_apps.attach(self.__rb_pinned_cur_ws, 0, 1, 1, 2,
+#                                        Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+#                                        2, 2)
+#
+#        self.__frame_pinned_apps_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+#                                                       xscale=1.0, yscale=1.0)
+#        self.__frame_pinned_apps_align.set_padding(0, 0, 12, 0)
+#        self.__frame_pinned_apps_align.add(self.__table_pinned_apps)
+#        self.__frame_pinned_apps.add(self.__frame_pinned_apps_align)
 
         self.__ws_vbox = Gtk.VBox()
         self.__ws_vbox.set_spacing(2)
-        self.__ws_vbox.pack_start(self.__frame_unpinned_apps, True, True, 4)
-        self.__ws_vbox.pack_start(self.__frame_pinned_apps, True, True, 4)
+        self.__ws_vbox.pack_start(self.__frame_unpinned_apps, False, False, 4)
+        self.__ws_vbox.pack_start(self.__cb_win_cur_ws, False, False, 4)
+#        self.__ws_vbox.pack_start(self.__frame_pinned_apps, True, True, 4)
 
         self.__frame_click_action = self.create_frame("Click restoring windows")
         self.__rb_restore_last_active = Gtk.RadioButton \
@@ -478,7 +481,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__cb_panel_color_change.set_active(change_color)
 
     def get_change_dock_color_only(self):
-        """ Get whether only the panel containing the dock is to be changed when settung
+        """ Get whether only the panel containing the dock is to be changed when setting
             the panel colour according to the current wallpaper
 
         Returns: boolean
@@ -494,6 +497,24 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         self.__cb_dock_panel_only.set_active(dock_only)
+
+    def get_win_cur_ws_only(self):
+        """ Gets whether the dock will show indicators/window list items for the current
+            workspace only
+
+        Returns: boolean
+        """
+
+        return self.__cb_win_cur_ws.get_active()
+
+    def set_win_cur_ws_only(self, win_cur_ws_only):
+        """ Sets whether the dock will show indicators/window list items for the current
+           workspace only
+
+        Args: win_cur_ws_only - boolean
+        """
+
+        self.__cb_win_cur_ws.set_active(win_cur_ws_only)
 
 def main():
     """main function - debug code can go here"""
