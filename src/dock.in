@@ -254,10 +254,6 @@ class Dock(object):
         # is this dock being run for the first time?
         if self.settings.get_boolean("first-run") == True:
 
-            if not (os.path.isfile(self.xml_conf)):
-                # we don't have a saved settings file, so show the hints and tips dialog
-                # but delay its appearance slightly..
-
             # this dock is being run for the first time, so if we have any saved settings
             # from other docks, import them. Note: prior to V0.70 the applet presented a
             # dialog asking the user whether or not to import the previous settings.
