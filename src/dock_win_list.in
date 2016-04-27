@@ -538,7 +538,7 @@ class DockWinList(Gtk.Window):
 def draw_title(column, cell_renderer, tree_model, tree_iter, data):
     title = tree_model.get_value(tree_iter, 2)
     if tree_model.get_value(tree_iter, 1) == "*":
-        cell_renderer.set_property ('markup', "<b>%s</b>" %title)
+        cell_renderer.set_property ('markup', "<b><i>%s</i></b>" %title)
     else:
         cell_renderer.set_property('markup', title)
 
