@@ -238,7 +238,14 @@ def read_app_xml (filename):
         if (distro is not None) and (distro != ""):
             if distro == entry.find("distro").text:
                 if (release is not None) and (release != ""):
-                    add_it = release in entry.find("release").text
+
+                    target_rel = entry.find("release").text
+                    if target_rel is None:
+                        add_it = True  # if we specify a release but the distro doesn't have
+                                       # one, just assume a match
+                    else:
+                        add_it = release in target_rel
+
                 else:
                     add_it = True
 
