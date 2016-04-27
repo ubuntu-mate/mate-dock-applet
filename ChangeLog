@@ -1,3 +1,15 @@
+V0.71   More improvements to matching apps with their .desktop files. In particular this relates
+	to Ubuntu 16.04 and Vivaldi, PlayOnLinux, Aptik, Dia, Tor Browser, Gnome Software, Gnome Disks, 
+	Bazaar Explorer.
+	App icons can now be sourced from the 'hicolor' directory
+	The window list now displays the title of the active window in bold and italicised text.
+	Removed the options to display pinned apps from all or only the current workspace as these 
+	were based on a misunderstanding of a feature request. They have been replaced with
+	a new option to only show indicators and window list items for windows which are on
+	the current workspace and this provides the requested functionality.
+	Added a 'Hints and Tips' window accessible from the About dialog as a place to list 
+	useful keyboard shortcuts etc.	
+
 V0.70   Settings from previous instances of the applet are now imported
 	silently (previously the user was presented with a dialog asking the
 	user if they wanted to import the settings). The change is to prevent
