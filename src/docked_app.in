@@ -401,7 +401,6 @@ class DockedApp(object):
         self.wm_class_name = wnck_class.get_res_class()  # afaict this is Gtk 2 only
                                                          # in Gtk 3 it will need to be
                                                          # replaced with .get_id() instead
-        log_it("%s" %self.wm_class_name)
         # get the currently open windows
         for win in wnck_app.get_windows():
             win.connect("state-changed", self.win_state_changed)
@@ -422,12 +421,10 @@ class DockedApp(object):
         # will allow better app matching and if not, other window manageing libraries can be
         # investigated
         for app in app_match_list:
-            log_it ("new win class: %s   xml win class %s" %(win_class_name, app[1]))
             if (wnck_app.get_name() == app[0]) or (win_class_name == app[1]):
                 desktop_file = "/usr/share/applications/%s.desktop" %app[2]
                 if (os.path.exists(desktop_file)):
                     self.desktop_file = desktop_file
-                    log_it("read %s" %desktop_file)
                     return self.read_info_from_desktop_file()
 
         # secondly, search for the required .desktop file
@@ -893,7 +890,6 @@ class DockedApp(object):
             # the command specified in the .desktop should always be used to launch
             # the app
             self.cmd_line = dfile.getExec()
-            log_it("set cmd line to %s" %self.cmd_line)
 
             # now read the right click actions the app supports. These can be specified in
             # two ways - by a key named 'X-Ayatana-Desktop-Shortcuts' or by an Actions key
@@ -1204,7 +1200,6 @@ class DockedApp(object):
         if " " in head:
             head = head.replace(" ", "\ ")
             cmd_line = head + "/" + tail
-        log_it("running %s" %cmd_line)
         app_info = Gio.AppInfo.create_from_commandline(cmd_line,
                                                        None,
                                                        Gio.AppInfoCreateFlags.NONE)
