@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<!-- this file contains a list of apps which are hard to match with
+     their respective .desktop files and provides the applet with a
+     quick, easy and extensible method of doing so.
+
+     each app element contains the following:
+        a distro element - the name of the linux distribution this relates to e.g. Ubuntu
+        a release element - a string containing the release(s) of the distro this relates to,
+                            separated by ~ characters e.g. 15.10~16.04
+        a name element - the name of the element as reported by wnck
+        a class element - the wm_class of the app's window as reported by wnck
+        a desktop element - the name of the .desktop file (minus the .desktop extension)
+                            to be used when the applet is running on the distro and release,
+                            and when the name or class match
+-->
+<root>
+   <app>
+        <!-- Vivaldi on Ubuntu 16.04 -->
+        <distro>Ubuntu</distro>
+        <release>16.04</release>
+        <name></name>
+        <class>vivaldi-preview</class>
+        <desktop>vivaldi-beta</desktop>
+    </app>
+    <app>
+        <!-- PlayOnLinux on Ubuntu 16.04 -->
+        <distro>Ubuntu</distro>
+        <release>16.04</release>
+        <name></name>
+        <class>Mainwindow.py</class>
+        <desktop>PlayOnLinux</desktop>
+    </app>
+    <app>
+        <!-- PlayOnLinux on Arch -->
+        <distro>arch</distro>
+        <release></release>
+        <name></name>
+        <class>Mainwindow.py</class>
+        <desktop>playonlinux</desktop>
+    </app>
+        <app>
+        <!-- PlayOnLinux on Antergos -->
+        <distro>Antergos Linux</distro>
+        <release></release>
+        <name></name>
+        <class>Mainwindow.py</class>
+        <desktop>playonlinux</desktop>
+    </app>
+    <app>
+        <!-- Dia on Ubuntu 16.04 -->
+        <distro>Ubuntu</distro>
+        <release>16.04</release>
+        <name>dia-gnome</name>
+        <class>Dia-gnome</class>
+        <desktop>dia</desktop>
+    </app>
+    <app>
+        <!-- Tor Browser on Ubuntu 16.04 -->
+        <distro>Ubuntu</distro>
+        <release>16.04</release>
+        <name>Tor Browser</name>
+        <class>Tor Browser</class>
+        <desktop>tor-browser-en</desktop>
+    </app>
+    <app>
+        <!-- Bazaar Explorer on Ubuntu 16.04 -->
+        <distro>Ubuntu</distro>
+        <release>16.04</release>
+        <name>Bzr</name>
+        <class>Bzr</class>
+        <desktop>bzr-explorer</desktop>
+    </app>
+    <app>
+        <!-- Aptick on Ubuntu 16.04 -->
+        <distro>Ubuntu</distro>
+        <release>16.04</release>
+        <name>aptik-gtk</name>
+        <class>Aptik-gtk</class>
+        <desktop>aptik</desktop>
+    </app>
+    <app>
+        <!-- Gnome Software on Ubuntu 16.04 -->
+        <distro>Ubuntu</distro>
+        <release>16.04</release>
+        <name>gnome-software</name>
+        <class>Gnome-software</class>
+        <desktop>gnome-software-local-file</desktop>
+    </app>
+	<app>
+        <!-- Gnome Disks on Ubuntu 16.04 -->
+        <distro>Ubuntu</distro>
+        <release>16.04</release>
+        <name>gnome-disks</name>
+        <class>Gnome-disks</class>
+        <desktop>org.gnome.DiskUtility</desktop>
+    </app>
+    <app>
+        <!-- Sublime Text 2 on Arch -->
+        <distro>arch</distro>
+        <release></release>
+        <name></name>
+        <class>sublime_text</class>
+        <desktop>sublime-text</desktop>
+    </app>
+        <app>
+        <!-- Sublime Text 2 on Antergos -->
+        <distro>Antergos Linux</distro>
+        <release></release>
+        <name></name>
+        <class>sublime_text</class>
+        <desktop>sublime-text</desktop>
+    </app>
+</root>
