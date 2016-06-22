@@ -40,11 +40,14 @@ files and which specifies the .desktop file to use
 #     Robin Thompson
 
 import xml.etree.ElementTree as ET
-import sys, os, platform
+import sys
+import os
+import platform
 
-def write_xml (filename, desktop_files, light_ind, show_all_apps, multi_ind,
-               click_restore_last_active, win_from_cur_ws_only, panel_change_color,
-               dock_panel_change_only):
+
+def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
+              click_restore_last_active, win_from_cur_ws_only,
+              panel_change_color, dock_panel_change_only):
     """ Write the xml file using the specified information
 
     The xml file will be in the following format:
@@ -70,18 +73,22 @@ def write_xml (filename, desktop_files, light_ind, show_all_apps, multi_ind,
         desktop_files: a list containing the names of the applet's pinned app's
                        .desktop files e.g. ['pluma.desktop']
         light_ind : boolean - Whether or not a light indicator is to be used
-        show_all_apps : boolean - Whether or not unpinned apps from all workspaces
-                       are to be shown
-        multi_ind : Whether indicators for each of an app's open windows are to be
-                   shown
-        click_restore_last_active: whether clicking a running app's dock icon restores
-                   only the last active window or all windows
-        win_from_cur_ws_only: boolean - If True, indicators and window list items will only
-                              be shown for windows on the current workspace (new with V0.67)
-        panel_change_color : boolean - Whether or not MATE panels are to change color according
-                             to the desktop wallpaper (new with V0.66)
-        dock_panel_change_only : boolean - whether panel colour changes are to limited to
-                                 only the panel containing the dock applet (new with V0.66)
+        show_all_apps : boolean - Whether or not unpinned apps from all
+                        workspaces are to be shown
+        multi_ind : Whether indicators for each of an app's open windows are to
+                    be shown
+        click_restore_last_active: whether clicking a running app's dock icon
+                                   restores only the last active window or all
+                                   windows
+        win_from_cur_ws_only: boolean - If True, indicators and window list
+                              items will only be shown for windows on the
+                              current workspace (new with V0.67)
+        panel_change_color : boolean - Whether or not MATE panels are to change
+                             color according to the desktop wallpaper (new
+                             with V0.66)
+        dock_panel_change_only : boolean - whether panel colour changes are to
+                                 limited to only the panel containing the dock
+                                 applet (new with V0.66)
 
     Returns:
         Boolean - True if the file was written successfully, False otherwise
@@ -89,38 +96,41 @@ def write_xml (filename, desktop_files, light_ind, show_all_apps, multi_ind,
     """
 
     root = ET.Element("root")
-    pa_el = ET.Element ("pinned_apps")
+    pa_el = ET.Element("pinned_apps")
 
     for df in desktop_files:
-        df_el = ET.Element("desktop_file", name = df)
+        df_el = ET.Element("desktop_file", name=df)
         pa_el.append(df_el)
 
-    ind_el = ET.Element("ind_type", light = "%d" %light_ind)
-    sa_el = ET.Element("show_all", show_all = "%s" %show_all_apps)
-    mi_el = ET.Element("multi_ind", show_multi = "%s" %multi_ind)
+    ind_el = ET.Element("ind_type", light="%d" % light_ind)
+    sa_el = ET.Element("show_all", show_all="%s" % show_all_apps)
+    mi_el = ET.Element("multi_ind", show_multi="%s" % multi_ind)
     crla_el = ET.Element("click_restore_last_active",
-                        restore_last_active_only = "%s" %click_restore_last_active)
-    wcw_el = ET.Element("win_from_cur_ws_only", wcw = "%s" %win_from_cur_ws_only)
-    pcc_el = ET.Element("panel_change_color", pcc = "%s" %panel_change_color)
-    dcc_el = ET.Element("dock_panel_change_only", dcc = "%s" %dock_panel_change_only)
+                        restore_last_active_only="%s" % click_restore_last_active)
+    wcw_el = ET.Element("win_from_cur_ws_only",
+                        wcw="%s" % win_from_cur_ws_only)
+    pcc_el = ET.Element("panel_change_color", pcc= "%s" % panel_change_color)
+    dcc_el = ET.Element("dock_panel_change_only",
+                        dcc="%s" % dock_panel_change_only)
 
-    root.append (pa_el)
-    root.append (ind_el)
-    root.append (sa_el)
-    root.append (mi_el)
-    root.append (crla_el)
-    root.append (wcw_el)
-    root.append (pcc_el)
-    root.append (dcc_el)
+    root.append(pa_el)
+    root.append(ind_el)
+    root.append(sa_el)
+    root.append(mi_el)
+    root.append(crla_el)
+    root.append(wcw_el)
+    root.append(pcc_el)
+    root.append(dcc_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
     except FileNotFoundError:
-        return False # invalid file or path name
+        return False  # invalid file or path name
 
     return True
 
-def read_xml (filename):
+
+def read_xml(filename):
     """ Reads an xml file created using the write_xml method
 
     Args:
@@ -152,9 +162,9 @@ def read_xml (filename):
         for df in pinned_apps:
             df_list.append(df.get("name"))
 
-    # note - values may be missing from the config file e.g. if a new version of the applet
-    # adds a new configuration settings. If this happens, we just assume a default option
-    # rather than reporting an error
+    # note - values may be missing from the config file e.g. if a new version
+    # of the applet adds a new configuration settings. If this happens, we just
+    # assume a default option rather than reporting an error
     #
     ind_el = root.find("ind_type")
     if ind_el is not None:
@@ -198,10 +208,12 @@ def read_xml (filename):
     else:
         dock_panel_change_only = False
 
-    return [True, df_list, light_ind, show_all, multi_ind, click_restore_last_active, \
-            win_from_cur_ws_only, panel_change_color, dock_panel_change_only]
+    return [True, df_list, light_ind, show_all, multi_ind,
+            click_restore_last_active, win_from_cur_ws_only,
+            panel_change_color, dock_panel_change_only]
 
-def read_app_xml (filename):
+
+def read_app_xml(filename):
     """ Reads the xml file containing the list of hard to match apps
 
     Args:
@@ -215,19 +227,19 @@ def read_app_xml (filename):
             a string - the window class of the app (as identified by wnck)
             a string - the .desktop file to be used for this app
 
-        Note: the list will only contain enries relating to the distro the app is running
-        on
+        Note: the list will only contain enries relating to the distro the app
+        is running on
     """
 
     distro, release, did = platform.linux_distribution()
-    # Note: platform.linux_distribution is deprecated. Once it is removed, the ld module
-        # can be used instead
+    # Note: platform.linux_distribution is deprecated. Once it is removed,
+    # the ld module can be used instead
 
     if (distro is None) or (distro == ""):
         return [False]
 
     try:
-        tree  = ET.parse(filename)
+        tree = ET.parse(filename)
         root = tree.getroot()
     except FileNotFoundError:
         return [False]
@@ -241,8 +253,8 @@ def read_app_xml (filename):
 
                     target_rel = entry.find("release").text
                     if target_rel is None:
-                        add_it = True  # if we specify a release but the distro doesn't have
-                                       # one, just assume a match
+                        add_it = True  # if we specify a release but the distro
+                                       # doesn't have one, just assume a match
                     else:
                         add_it = release in target_rel
 
@@ -250,10 +262,11 @@ def read_app_xml (filename):
                     add_it = True
 
         if add_it:
-            app_list.append([entry.find("name").text, \
+            app_list.append([entry.find("name").text,
                             entry.find("class").text,
                             entry.find("desktop").text])
     return [True, app_list]
+
 
 def main():
     """Main function.
@@ -261,13 +274,13 @@ def main():
     Debugging code can go here
     """
 
-    print (os.path.dirname(sys.argv[0]))
-    results = read_app_xml( "src/app_match.xml")
+    print(os.path.dirname(sys.argv[0]))
+    results = read_app_xml("src/app_match.xml")
     if results[0]:
         for app in results[1]:
-            print("App name = %s" %app[0])
-            print("App class = %s" %app[1])
-            print ("App desktop = %s" %app[2])
+            print("App name = %s" % app[0])
+            print("App class = %s" % app[1])
+            print("App desktop = %s" % app[2])
     else:
         print("could not read app_match.xml")
 
