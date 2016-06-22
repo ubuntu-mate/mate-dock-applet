@@ -1,6 +1,6 @@
 # An application dock applet for the MATE panel
 
-The applet allows you to:
+The applet works with both GTK2 and GTK3 versions of MATE and allows you to:
 
 * Place a dock on any MATE panel, of any size, on any side of the desktop you desire.
 * Pin and unpin apps to the dock
@@ -9,7 +9,7 @@ The applet allows you to:
 * Minimize/unminimize running app windows by clicking the app's dock icon
 * Detect changes in the current icon theme and update the dock accordingly
 * Use an indicator by each app to show when it is running
-* Optionally, use multiple indicators for each window an app has open	
+* Optionally, use multiple indicators for each window an app has open
 * Use either a light or dark indicator that it can always be seen no matter what colour the panel is, or turn indicators off altogether
 * Change the colour of MATE panels to the dominant colour (i.e. the most common colour) of the desktop wallpaper. The colour can be applied to all panels or just the panel containing the dock.
 
@@ -17,7 +17,7 @@ The applet allows you to:
 
 ### Debian
 
-The applet is available in Debian testing:
+The applet is available in Debian testing (currently GTK2 only):
 
 `apt-get install mate-dock-applet`
 
@@ -31,9 +31,11 @@ Note: when upgrading from Ubuntu Mate 15.10 to 16.04 any previously installed ve
 
 Users of Ubuntu MATE 15.10 and earlier, or of Linux Mint, can install the applet from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
 
+Note: this is GTK2 only
+
 ### Arch Linux
 
-For Arch users there's a [package](http://aur.archlinux.org/packages/mate-applet-dock-git) available in the AUR. 
+For Arch users there's a [package](http://aur.archlinux.org/packages/mate-applet-dock-git) available in the AUR.
 
 ### Other distributions
 
@@ -42,7 +44,7 @@ Users of other distros will need to install from source, so first install the re
 * Python3
 * gir1.2-wnck-1.0
 * libglib2-dev
-* Python Imaging Library 
+* Python Imaging Library
 * SciPy
 * Python 3 Cairo bindings
 
@@ -54,9 +56,20 @@ aclocal
 automake --add-missing
 
 autoreconf
+```
 
+To build a GTK2 version of the applet:
+```
 ./configure --prefix=/usr
+```
 
+To build a GTK3 version:
+```
+./configure --prefix=/usr --with-gtk3
+```
+
+Then enter the following commands:
+```
 make
 
 sudo make install
@@ -82,4 +95,3 @@ Running on Ubuntu with a Windows 7 style layout
 Running on a Raspberry Pi 2 with Ubuntu MATE
 
 ![Pi2 screenshot](https://github.com/robint99/screenshots/raw/master/pi2_mate_V0.62_ss.png)
-
