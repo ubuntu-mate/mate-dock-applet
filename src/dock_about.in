@@ -3,9 +3,9 @@
 Provide an about dialog for the MATE dock applet
 
 The applet displays the following:
-	applet name and version number
-        licensing info (GPL3) with a clickable link for the full version
-        a close button
+    applet name and version number
+    licensing info (GPL3) with a clickable link for the full version
+    a close button
 """
 
 # Copyright (C) 1997-2003 Free Software Foundation, Inc.
@@ -29,18 +29,27 @@ The applet displays the following:
 #     Robin Thompson
 #
 
-import sys
+# do not change the value of this variable - it will be set during build
+# according to the value of the --with-gtk3 option used with .configure
+build_gtk2 = False
 
 import gi
-gi.require_version("Gtk", "2.0")
-from gi.repository import Gtk
 
+if build_gtk2:
+    gi.require_version("Gtk", "2.0")
+else:
+    gi.require_version("Gtk", "3.0")
+
+import sys
+
+from gi.repository import Gtk
 import dock_info
+
 
 class AboutWindow(Gtk.Window):
     """Provides the About window
-    
-    Also includes a 'Hints & Tips' Button which displays a dialog 
+
+    Also includes a 'Hints & Tips' Button which displays a dialog
     containing useful info about the applet
     """
 
@@ -55,17 +64,29 @@ class AboutWindow(Gtk.Window):
         self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
         self.__button.connect("button-press-event", self.win_button_press)
 
-        self.__button_hints =Gtk.Button(label="Hints & Tips")
+        self.__button_hints = Gtk.Button(label="Hints & Tips")
         img_hint = Gtk.Image()
         img_hint.set_from_stock(Gtk.STOCK_INFO, Gtk.IconSize.BUTTON)
         self.__button_hints.set_image(img_hint)
-        self.__button_hints.connect("button-press-event", self.hint_button_press)
+        self.__button_hints.connect("button-press-event",
+                                    self.hint_button_press)
 
         self.connect("delete-event", self.win_delete_event)
         self.set_border_width(5)
-        self.__vbox = Gtk.VBox()
-        self.__vbox.set_spacing(2)
-        self.__hbx = Gtk.HButtonBox()
+        if build_gtk2:
+            self.__vbox = Gtk.VBox()
+            self.__vbox.set_spacing(2)
+        else:
+            self.__vbox = Gtk.Grid()
+            self.__vbox.set_column_spacing(2)
+            self.__vbox.set_row_spacing(4)
+
+        if build_gtk2:
+            self.__hbx = Gtk.HButtonBox()
+        else:
+            self.__hbx = Gtk.ButtonBox()
+            self.__hbx.orientation = Gtk.Orientation.HORIZONTAL
+
         self.__hbx.set_layout(Gtk.ButtonBoxStyle.END)
         self.__hbx.pack_start(self.__button_hints, False, False, 4)
         self.__hbx.pack_start(self.__button, False, False, 4)
@@ -76,15 +97,26 @@ class AboutWindow(Gtk.Window):
         self.__lbl_title = Gtk.Label()
         self.__lbl_title.set_use_markup(True)
 
-        self.__lbl_title.set_markup('<b><span size="17408">' +'Dock Applet ' + 'V'+ \
-                                            "@VERSION@" + '</span></b>')
+        if build_gtk2:
+            gtk_ver = "GTK2"
+        else:
+            gtk_ver = "GTK3"
+
+        self.__lbl_title.set_markup('<b><span size="17408">' + 'Dock Applet ' +
+                                    'V' + "@VERSION@ (" + gtk_ver +
+                                    ')</span></b>')
 
         self.__lbl_blurb1 = \
             Gtk.Label("An applet to provide an application dock for the MATE panel.")
         self.__lbl_blurb2 = \
             Gtk.Label("This program comes with ABSOLUTELY NO WARRENTY.")
 
-        self.__hbx_gpl = Gtk.HBox()
+        if build_gtk2:
+            self.__hbx_gpl = Gtk.HBox()
+        else:
+            self.__hbx_gpl = Gtk.Box()
+            self.__hbx_gpl.set_orientation(Gtk.Orientation.HORIZONTAL)
+
         self.__lbl_gpl1 = Gtk.Label("See the")
         self.__lb_gpl = \
             Gtk.LinkButton("http://www.gnu.org/licenses/gpl-3.0.html",
@@ -95,12 +127,22 @@ class AboutWindow(Gtk.Window):
         self.__hbx_gpl.pack_start(self.__lb_gpl, False, False, 1)
         self.__hbx_gpl.pack_start(self.__lbl_gpl, False, False, 0)
 
-        self.__vbox.pack_start(self.__image, False, False, 2)
-        self.__vbox.pack_start(self.__lbl_title, False, False, 0)
-        self.__vbox.pack_start(self.__lbl_blurb1, False, False, 8)
-        self.__vbox.pack_start(self.__lbl_blurb2, False, False, 0)
-        self.__vbox.pack_start(self.__hbx_gpl, False, False, 0)
-        self.__vbox.pack_end(self.__hbx, False, False, 5)
+        if build_gtk2:
+            self.__vbox.pack_start(self.__image, False, False, 2)
+            self.__vbox.pack_start(self.__lbl_title, False, False, 0)
+            self.__vbox.pack_start(self.__lbl_blurb1, False, False, 8)
+            self.__vbox.pack_start(self.__lbl_blurb2, False, False, 0)
+            self.__vbox.pack_start(self.__hbx_gpl, False, False, 0)
+            self.__vbox.pack_end(self.__hbx, False, False, 5)
+
+        else:
+            self.__vbox.attach(self.__image, 0, 0, 1, 1)
+            self.__vbox.attach(self.__lbl_title, 0, 1, 1, 1)
+            self.__vbox.attach(self.__lbl_blurb1, 0, 2, 1, 1)
+            self.__vbox.attach(self.__lbl_blurb2, 0, 3, 1, 1)
+            self.__vbox.attach(self.__hbx_gpl, 0, 4, 1, 1)
+            self.__vbox.attach(self.__hbx, 0, 5, 1, 1)
+
         self.add(self.__vbox)
 
     def win_delete_event(self, widget, event, data=None):
@@ -117,7 +159,7 @@ class AboutWindow(Gtk.Window):
         """
         callback for the Ok button on the About dialog
 
-	The window is hidden so that it can be shown again
+        The window is hidden so that it can be shown again
         """
 
         self.hide()
@@ -133,6 +175,7 @@ class AboutWindow(Gtk.Window):
         info_win.show_all()
 
         self.hide()
+
 
 def main():
     """
