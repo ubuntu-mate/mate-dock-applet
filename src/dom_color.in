@@ -13,6 +13,7 @@ import scipy.cluster
 
 NUM_CLUSTERS = 5
 
+
 def get_dom_color(filename):
     im = Image.open(filename)
     im = im.resize((150, 150))      # optional, to reduce time
