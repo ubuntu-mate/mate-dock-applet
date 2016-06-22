@@ -26,8 +26,17 @@
 # Author:
 #     Robin Thompson
 
+# do not change the value of this variable - it will be set during build
+# according to the value of the --with-gtk3 option used with .configure
+build_gtk2 = False
+
 import gi
-gi.require_version("Gtk", "2.0")
+
+if build_gtk2:
+    gi.require_version("Gtk", "2.0")
+else:
+    gi.require_version("Gtk", "3.0")
+
 from gi.repository import Gtk
 from gi.repository import Gio
 
@@ -49,15 +58,15 @@ class PanelColorChanger(object):
     """ Class to change the color of the MATE panel(s) to the dominant color of
         the wallpaper image
 
-    Provide support for wallpaper images only - gradients, solid colours and slideshows
-    will be ignored
+    Provide support for wallpaper images only - gradients, solid colours and
+    slideshows will be ignored
     Change the panel color whenever the wallpaper image is changed
     Allow only a specific panel's color to be changed, rather than all panels
 
     Attributes:
 
-        single_panel : the toplevel id of a panel which is the only one whose colour is
-                       to be changed
+        single_panel : the toplevel id of a panel which is the only one whose
+                       colour is to be changed
     """
 
     def __init__(self, update_callback=None):
@@ -66,16 +75,17 @@ class PanelColorChanger(object):
             Use Gio.Settings to monitor the MATE desktop wallpaper setting
 
             Args:
-                updated_callback - a function to be called after the panel colors
-                                   have been updated
+                updated_callback - a function to be called after the panel
+                                   colors have been updated
         """
 
         super().__init__()
 
         self.update_cb = update_callback
 
-        self.__red = self.__green = self.__blue = 0 # will hold rgb of the dom color
-                                                    # of the wallpaper
+        self.__red = self.__green = self.__blue = 0  # will hold rgb of the
+                                                     # dom color
+                                                     # of the wallpaper
 
         self.__bg_settings = Gio.Settings.new("org.mate.background")
 
@@ -93,7 +103,8 @@ class PanelColorChanger(object):
         Monitor the MATE wallpaper setting and create an event handler to be
         called whenever it changes """
 
-        self.__event_handler_id = self.__bg_settings.connect("changed", self.background_changed)
+        self.__event_handler_id = self.__bg_settings.connect("changed",
+                                                             self.background_changed)
 
     def disable_color_change(self):
         """ Disable panel color changing
@@ -115,8 +126,8 @@ class PanelColorChanger(object):
             to be changed
 
         Args:
-            toplevel_id : the toplevel_id of the panel. If this is an empty string
-                          all panels are to have their colour changed
+            toplevel_id : the toplevel_id of the panel. If this is an empty
+                          string all panels are to have their colour changed
         """
 
         self.__toplevel_id = toplevel_id
@@ -142,10 +153,6 @@ class PanelColorChanger(object):
         """
 
         colstr = dom_color.get_dom_color(self.__pf)
-#        cols = colorz (self.__pf)
-        #for c in cols:
-#            colstr = c
-#            break
 
         self.__red = int(colstr[0:2], 16)
         self.__green = int(colstr[2:4], 16)
@@ -155,42 +162,58 @@ class PanelColorChanger(object):
         """ Change panel colors to the rgb of the current dominant color
 
             Change the colour smoothly over an interval of 0.5 seconds
-            
+
         """
 
         self.get_dom_color()
 
-        change_list = [] # initialise list of panels & settings we need to change
+        change_list = []  # initialise list of panels & settings we neee
+                          # to change
 
         # get the list of panels
         panel_list = self.__panel_settings.get_value("toplevel-id-list").unpack()
         for panel in panel_list:
 
             # do we want to change this panel?
-            do_change = (self.__toplevel_id == "") or (self.__toplevel_id == panel)
+            do_change = (self.__toplevel_id == "") or \
+                        (self.__toplevel_id == panel)
 
             if do_change:
                 # get the settings path for the current panel
-                settings_path = "/org/mate/panel/toplevels/%s/background/" %panel
+                settings_path = "/org/mate/panel/toplevels/%s/background/" % panel
 
                 # get this panel's settings
                 psettings = Gio.Settings.new_with_path("org.mate.panel.toplevel.background", \
-                                                    settings_path)
+                                                       settings_path)
 
                 # get the panel's original colour rgb components
                 colstr = psettings.get_string("color")
-                
-                pr = int(colstr[1:3], 16)
-                pg = int(colstr[3:5], 16)
-                pb = int(colstr[5:7], 16)
 
-                # we're going to change the panel's color in 25 discrete steps, so
-                # get the difference we need to apply to each color component each step
+                # the color can be stored as either a set of rgba values or as
+                # an rgb hex ...
+                store_rgba = False
+                if colstr.startswith("rgba"):
+                    store_rgba = True
+                    colstrip = colstr[4:255]
+                    colstrip = colstrip.strip("()")
+                    cols = colstrip.split(",")
+                    pr = int(cols[0])
+                    pg = int(cols[1])
+                    pb = int(cols[2])
+                    po = float(cols[3])
+                else:
+                    pr = int(colstr[1:3], 16)
+                    pg = int(colstr[3:5], 16)
+                    pb = int(colstr[5:7], 16)
+
+                # we're going to change the panel's color in 25 discrete steps,
+                # so get the difference we need to apply to each color
+                # component each step
                 if pr > self.__red:
                     rs = -(pr - self.__red)
                 else:
                     rs = self.__red - pr
-                    
+
                 if pg > self.__green:
                     gs = -(pg - self.__green)
                 else:
@@ -200,36 +223,56 @@ class PanelColorChanger(object):
                     bs = -(pb - self.__blue)
                 else:
                     bs = self.__blue - pb
-              
+
                 rs /= 25
                 gs /= 25
                 bs /= 25
 
-                change_list.append(ChangeTup (settings = psettings, ored = pr, ogreen = pg, 
-                                              oblue = pb, step_red = rs, step_blue = bs,  
-                                              step_green = gs))
+                change_list.append(ChangeTup(settings=psettings, ored=pr,
+                                             ogreen=pg, oblue=pb, step_red=rs,
+                                             step_blue=bs, step_green=gs))
 
         # now do the colour change
         for loop in range(1, 25):
             for change_item in change_list:
-                if loop==1:
+                if loop == 1:
                     # make sure the panel in question is set to be a colour
                     change_item.settings.set_string("type", "color")
 
                 # work out new rgb values for this interval
-                new_red = int(change_item.ored + (loop * change_item.step_red)) & 0xff
-                new_blue = int(change_item.oblue + (loop * change_item.step_blue)) & 0xff
-                new_green = int(change_item.ogreen + (loop * change_item.step_green))
-                change_item.settings.set_string("color",
-                                    "#%.2x%.2x%.2x" %(new_red, new_green, new_blue))
-                                    
+                new_red = int(change_item.ored +
+                              (loop * change_item.step_red)) & 0xff
+                new_blue = int(change_item.oblue +
+                               (loop * change_item.step_blue)) & 0xff
+                new_green = int(change_item.ogreen +
+                                (loop * change_item.step_green)) & 0xff
+                if store_rgba:
+                    change_item.settings.set_string("color",
+                                                    "rgba(%d,%d,%d,%0.6f)"
+                                                    % (new_red, new_green,
+                                                       new_blue, po))
+                else:
+                    change_item.settings.set_string("color",
+                                                    "#%.2x%.2x%.2x"
+                                                    % (new_red, new_green,
+                                                       new_blue))
+
             # all panels have been changed for this step, so pause for a bit
             sleep(0.02)
 
-        # now that we've had a smooth transition, set panel colours to the final value
+        # now that we've had a smooth transition, set panel colours to the
+        # final value
         for change_item in change_list:
-            change_item.settings.set_string("color",
-                                "#%.2x%.2x%.2x" %(self.__red, self.__green, self.__blue))
+            if store_rgba:
+                change_item.settings.set_string("color",
+                                                "rgba(%d,%d,%d,%0.6f)"
+                                                % (self.__red, self.__green,
+                                                   self.__blue, po))
+            else:
+                change_item.settings.set_string("color",
+                                                "#%.2x%.2x%.2x"
+                                                % (self.__red, self.__green,
+                                                   self.__blue))
 
         # finally, call the callback function
         if self.update_cb is not None:
@@ -249,6 +292,7 @@ class PanelColorChanger(object):
         """
 
         return self.__red, self.__green, self.__blue
+
 
 class TestWindow(Gtk.Window):
     """Testing window for the color changer code"""
@@ -308,18 +352,18 @@ class TestWindow(Gtk.Window):
         """ Draw a rectangle filled withe dominant color of the image
         """
 
-        # there are lots of drawing operations to be done, so do them to an offscreen
-        # surface and when all is finished copy this to the window
+        # there are lots of drawing operations to be done, so do them to an
+        # offscreen surface and when all is finished copy this to the window
         offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 64, 64)
         ctx = cairo.Context(offscreen_surface)
 
         # convert the highlight values to their cairo equivalents
         self.__red, self.__green, self.__blue = self.pcc.panel_rgb()
         pfn = os.path.split(self.pcc.wallpaper_filename())[1]
-        self.__lbl_desktop_img.set_markup("<b>%s</b>" %pfn)
-        self.__lbl_red.set_text("red: %s" %self.__red)
-        self.__lbl_green.set_text("red: %s" %self.__green)
-        self.__lbl_blue.set_text("red: %s" %self.__blue)
+        self.__lbl_desktop_img.set_markup("<b>%s</b>" % pfn)
+        self.__lbl_red.set_text("red: %s" % self.__red)
+        self.__lbl_green.set_text("red: %s" % self.__green)
+        self.__lbl_blue.set_text("red: %s" % self.__blue)
         red = self.__red / 255
         green = self.__green / 255
         blue = self.__blue / 255
@@ -329,8 +373,8 @@ class TestWindow(Gtk.Window):
         ctx.fill()
 
         screen_ctx = self.__da.window.cairo_create()
-        screen_ctx.rectangle(event.area.x, event.area.y, \
-                     event.area.width, event.area.height)
+        screen_ctx.rectangle(event.area.x, event.area.y,
+                             event.area.width, event.area.height)
         screen_ctx.clip()
 
         screen_ctx.set_source_surface(offscreen_surface, 0, 0)
@@ -341,7 +385,6 @@ class TestWindow(Gtk.Window):
 
     def RefreshUi(self):
         self.__da.queue_draw()
-
 
     def win_delete_event(self, widget, event, data=None):
         """Callback for the about window delete event
@@ -358,6 +401,7 @@ class TestWindow(Gtk.Window):
         """
 
         Gtk.main_quit()
+
 
 def main():
     """
