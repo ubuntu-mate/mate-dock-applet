@@ -37,15 +37,28 @@
 # Author:
 #     Robin Thompson
 
+# do not change the value of this variable - it will be set during build
+# according to the value of the --with-gtk3 option used with .configure
+build_gtk2 = False
+
 import gi
-gi.require_version("Gtk", "2.0")
-gi.require_version("Wnck", "1.0")
+
+if build_gtk2:
+    gi.require_version("Gtk", "2.0")
+    gi.require_version("Wnck", "1.0")
+else:
+    gi.require_version("Gtk", "3.0")
+    gi.require_version("Wnck", "3.0")
+
+gi.require_version("MatePanelApplet", "4.0")
+
 from gi.repository import Gtk
 from gi.repository import Wnck
 from gi.repository import GdkPixbuf
 from gi.repository import Gio
 from gi.repository import Gdk
 from gi.repository import GObject
+from gi.repository import MatePanelApplet
 
 import os
 import cairo
@@ -53,28 +66,45 @@ import tempfile
 from time import sleep
 
 import docked_app
+from log_it import log_it as log_it
 
 CONST_TIMER_DELAY = 500
 CONST_CLOSE_ICON_SIZE = 16
+
 
 class DockWinList(Gtk.Window):
 
     """
 
         Attributes : (aside from ui elements)
-            __mouse_areas : a list containing Gdk.Rectangle objects - used when the
-                            window has been shown and defines the on screen areas in which
-                            the mouse pointer must stay, otherwise the window list
-                            will be hidden. The rectangles should therefore include the
-                            the applet, the area between the window and the applet, and the
+            __mouse_areas : a list containing Gdk.Rectangle objects - used when
+                            the window has been shown and defines the on screen
+                            areas in which the mouse pointer must stay,
+                            otherwise the window list will be hidden. The
+                            rectangles should therefore include the he applet,
+                            the area between the window and the applet, and the
                             window itself with a suitable buffer area around it
-            __timer_id : a ref to a timer used for priodically checking the mouse cursor
-                         position to see if it is within the areas specified in
-                         __mouse_areas
+            __timer_id : a ref to a timer used for priodically checking the
+                         mouse cursor position to see if it is within the areas
+                         specified in __mouse_areas
             __the_app : the docked_app to which the window list relates
-            __icontheme : used for drawing app icons in the window list. This is set from
-                          from the Gtk.IconIcon used by the dock, and will therefore
-                          track changes to the icon theme whilst the dock is running
+            __icontheme : used for drawing app icons in the window list. This
+                          is set from the Gtk.IconIcon used by the dock, and
+                          will therefore track changes to the icon theme whilst
+                          the dock is running
+
+            __win_w : the width of the window
+            __win_h : the height of the window
+
+            The atrributes below are used for positioning this window relative
+            to the applet and it's panel:
+            __app_x : the x position of the docked app in root coordinates
+            __app_y : the y position of the docked app in root coordinates
+            __applet_x : the x position of the applet in root coordinates
+            __applet_y : the y position of the applet in root coordinates
+            __applet_w : the width of the applet in pixels
+            __applet_h : the height of the applet in pixels
+            __panel_orient : the orienation of the MATE panel the applet is on
 
     """
 
@@ -83,16 +113,17 @@ class DockWinList(Gtk.Window):
         """
         create the window and its contents
 
-        Args: 
+        Args:
             wnck_screen: the wnck_screen of the applet
         """
 
         super().__init__(title="", type=Gtk.WindowType.POPUP)
 
         self.wnck_screen = wnck_screen
-        self.set_name("gtk-tooltips")  # allows the window to inherit tooltip colours
+        self.set_name("gtk-tooltips")   # allows the window to inherit tooltip
+                                        # colours
         self.set_decorated(False)  # we don't want a titlebar..
-        self.set_skip_taskbar_hint(True) # we don't want to be in the taskbar
+        self.set_skip_taskbar_hint(True)  # we don't want to be in the taskbar
 
         self.__icon_size = 32  # size of icons in the window
 
@@ -101,15 +132,31 @@ class DockWinList(Gtk.Window):
         self.__timer_id = None
         self.__dismissed = False
 
+        self.__win_w = 0
+        self.__win_h = 0
+
+        self.__app_x = 0
+        self.__app_y = 0
+        self.__panel_orient = MatePanelApplet.AppletOrient.LEFT
+
         # create ui
-        self.__vbox = Gtk.VBox()
-        self.__vbox.set_spacing(0)
+        if build_gtk2:
+            self.__vbox = Gtk.VBox()
+            self.__vbox.set_spacing(0)
+        else:
+            self.__vbox = Gtk.Grid()
+            self.__vbox.set_orientation(Gtk.Orientation.VERTICAL)
+            self.__vbox.hexpand = True
+            self.__vbox.vexpand = True
+            self.hexpand = True
+            self.vexpand = True
 
         # debug stuff
         #  self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
         #  self.__button.connect("button-press-event", self.win_button_press)
         #  self.connect("delete-event", Gtk.main_quit)
-        #  self.__mbutton = Gtk.Button(label="Menu...", stock=Gtk.STOCK_REFRESH)
+        #  self.__mbutton = Gtk.Button(label="Menu...",
+        #                                stock=Gtk.STOCK_REFRESH)
         #  self.__mbutton.connect("button-press-event", self.mbutton_press)
         #  self.__hbx = Gtk.HButtonBox()
         #  self.__hbx.set_layout(Gtk.ButtonBoxStyle.END)
@@ -119,26 +166,45 @@ class DockWinList(Gtk.Window):
 
         self.__lbl_app_name = Gtk.Label()
         self.__lbl_app_name.set_use_markup(True)
-        self.__hbox_title = Gtk.HBox()
-        self.__vbox.pack_start(self.__lbl_app_name, True, True, 0)
 
-        # we use a treeview to list each window, so initialise it and its liststore
+        if build_gtk2:
+            self.__hbox_title = Gtk.HBox()
+        else:
+            self.__hbox_title = Gtk.Box(Gtk.Orientation.HORIZONTAL, 0)
+
+        if build_gtk2:
+            self.__vbox.pack_start(self.__lbl_app_name, True, True, 0)
+        else:
+            self.__vbox.add(self.__lbl_app_name)
+
+        # we use a treeview to list each window, so initialise it and its
+        # liststore
         self.__tree_view = Gtk.TreeView()
+
+        if not build_gtk2:
+            self.__tree_view.set_valign(Gtk.Align.START)
+            self.__tree_view.set_halign(Gtk.Align.START)
+            self.__tree_view.hexpand = True
+            self.__tree_view.vexpand = True
+
         self.__tree_view.set_headers_visible(False)
 
-        # turn grid lines off, although they still seem to appear in some themes e.g. Menta
+        # turn grid lines off, although they still seem to appear in some
+        # themes e.g. Menta
         self.__tree_view.set_grid_lines(Gtk.TreeViewGridLines.NONE)
 
         self.__tree_view.set_hover_selection(True)
 
-        # the list contains the window icon, active indicator, window title, close icon and
-        # the window itself
-        self.__list_store = Gtk.ListStore(GdkPixbuf.Pixbuf, str, str, GdkPixbuf.Pixbuf, Wnck.Window)
+        # the list contains the window icon, active indicator, window title,
+        # close icon and the window itself
+        self.__list_store = Gtk.ListStore(GdkPixbuf.Pixbuf, str, str,
+                                          GdkPixbuf.Pixbuf, Wnck.Window)
         self.__active_renderer = Gtk.CellRendererText()
         self.__icon_renderer = Gtk.CellRendererPixbuf()
         self.__title_renderer = Gtk.CellRendererText()
         self.__close_renderer = Gtk.CellRendererPixbuf()
-        self.__close_renderer.set_alignment(1, 0.0)   # align to to topright of the cell
+        self.__close_renderer.set_alignment(1, 0.0)   # align to to topright of
+                                                      # the cell
 
         # create columns for the treeview
         self.__col_icon = Gtk.TreeViewColumn("",
@@ -156,7 +222,7 @@ class DockWinList(Gtk.Window):
         self.__col_title = Gtk.TreeViewColumn("",
                                               self.__title_renderer,
                                               text=2)
-        self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+        self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.GROW_ONLY)
 
         self.__col_close = Gtk.TreeViewColumn("",
                                               self.__close_renderer,
@@ -175,7 +241,11 @@ class DockWinList(Gtk.Window):
         # to display the active window title in bold text
         self.__col_title.set_cell_data_func(self.__title_renderer, draw_title)
 
-        self.__vbox.pack_start(self.__tree_view, True, True, 0)
+        if build_gtk2:
+            self.__vbox.pack_start(self.__tree_view, True, True, 0)
+        else:
+            self.__vbox.add(self.__tree_view)
+
         self.__vbox.show_all()
         self.add(self.__vbox)
 
@@ -189,6 +259,8 @@ class DockWinList(Gtk.Window):
         self.connect("show", self.win_shown)
         self.connect("hide", self.win_hidden)
 
+        self.connect("configure-event", self.win_configure)
+
         self.__pb_close = None
 
     def create_close_pixbuf(self):
@@ -199,24 +271,27 @@ class DockWinList(Gtk.Window):
         # create a pixbuf for holding the 'close' icon
         pb_close = self.render_icon(Gtk.STOCK_CLOSE, Gtk.IconSize.MENU, None)
 
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, CONST_CLOSE_ICON_SIZE,
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
+                                     CONST_CLOSE_ICON_SIZE,
                                      CONST_CLOSE_ICON_SIZE)
         ctx = cairo.Context(surface)
         Gdk.cairo_set_source_pixbuf(ctx, pb_close, 0, 0)
         ctx.paint()
 
-        # we now need to copy the cairo surface to a pixbuf. The best way to do this would
-        # be by calling GdkPixbuf.Pixbuf.new_from_data as in these comments. Unfortunately
-        # this function does not seem to be introspectable and therefore doesn't work.
+        # we now need to copy the cairo surface to a pixbuf. The best way to do
+        # this would be by calling GdkPixbuf.Pixbuf.new_from_data as in these
+        # comments. Unfortunately this function does not seem to be
+        # introspectable (Gtk2) or not implemented yet (Gtk3) and therefore
+        # doesn't work.
         #
-        #self.__pb_close = GdkPixbuf.Pixbuf.new_from_data(surface.get_data(),
+        # self.__pb_close = GdkPixbuf.Pixbuf.new_from_data(surface.get_data(),
         #                                                 GdkPixbuf.Colorspace.RGB,
         #                                                 True, 8, pb_close.get_width(),
         #                                                 pb_close.get_height(),
         #                                                 64)
 
-        # Therefore we have to resort to writing the surface to a temporary .png file
-        # and then loading it into our pixbuf ...
+        # Therefore we have to resort to writing the surface to a temporary
+        # .png file and then loading it into our pixbuf ...
 
         handle, tempfn = tempfile.mkstemp()
         surface.write_to_png(tempfn)
@@ -226,14 +301,186 @@ class DockWinList(Gtk.Window):
     def win_shown(self, widget):
         """ Event handler for the window's show event
 
-            Instantiate a timer to periodically check the mouse cursor position
+            Get the window's size so that its position can be set and mouse
+            areas created
+        """
 
-            Args :
-                widget : the widget the caused the event (i.e. self)
+        if build_gtk2:
+            self.set_win_position()
+        else:
+            if (self.__win_w == 0) or (self.__win_h == 0):
+                self.__win_w, self.__win_h = self.get_size()
+
+            # gtk3 - if the list store contains any items we'll get configure
+            # events firing after this event, so we don't actually know the
+            # correct window size yet. Therefore, don't call set_win_position
+            # here, just let the configure event do it. If there aren't any
+            # list store items then we can set the window position...
+            if len(self.__list_store) == 0:
+                self.set_win_position()
+
+    def set_win_position(self):
+        """
+            Move the window so that it appears near the panel and centrered on
+            the app (has to be done here for Gtk3 reasons
+
+            Create mouse areas as required so we can check when the mouse
+            leaves the window
+
+            Instantiate a timer to periodically check the mouse cursor position
 
         """
 
+        def create_rect(x, y, w, h):
+            """ Convenience function to create and return a Gdk.Rectangle
+                (needed with Gtk3)
+            """
+
+            if build_gtk2:
+                rect = Gdk.Rectangle(0, 0, 0, 0)
+            else:
+                rect = Gdk.Rectangle()
+
+            rect.x = x
+            rect.y = y
+            rect.width = w
+            rect.height = h
+
+            return rect
+
+        panel_space = 5  # how many pixels away from the panel the window list
+                         # will appear
+
+        win_border = 15  # size of the border (in pixels) around the window
+                         # list where the mouse must remain, outside of which
+                         # the window list will hide
+
+        screen = self.get_screen()
+        screen_w = screen.get_width()
+        screen_h = screen.get_height()
+
+        # if the size of the window hasnt been set (because the configure-event
+        # doesn't always fire if the window list is empty) use an alternative
+        # method to get the window width and height
+        # work out where to place the window - adjacent to the panel and
+        #  centered on the highlighted dock app and add appropriate mouse areas
+
+        # first, a mouse area to cover the entire applet
+        self.add_mouse_area(create_rect(self.__applet_x, self.__applet_y,
+                                        self.__applet_w, self.__applet_h))
+
+        app_alloc = self.__the_app.drawing_area.get_allocation()
+
+        if self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
+            centre_pos = self.__app_y + app_alloc.height / 2
+            win_x = self.__applet_w + panel_space
+            win_y = centre_pos - (self.__win_h/2)
+
+            # adjust win_y in case we're off the top the screen...
+            if win_y < panel_space:
+                win_y = panel_space
+
+            # adjust win_y if case the window list extends beyound the end of
+            # the panel ..
+            if (win_y + self.__win_h) > screen_h:
+                win_y = screen_h - self.__win_h - panel_space
+
+            # setup a new mouse area covering the window (minus a border) and
+            # extending to the panel
+            self.add_mouse_area(create_rect(self.__applet_x,
+                                            win_y - win_border,
+                                            win_x + self.__win_w + win_border,
+                                            self.__win_h + (2*win_border)))
+
+        elif self.__panel_orient == MatePanelApplet.AppletOrient.LEFT:
+            centre_pos = self.__app_y + app_alloc.height / 2
+            win_x = self.__applet_x - panel_space - self.__win_w
+            win_y = centre_pos - (self.__win_h/2)
+
+            # adjust win_y in case we're off the top the screen...
+            if win_y < panel_space:
+                win_y = panel_space
+
+            # adjust win_y if case the window list extends beyound the end of
+            # the panel ..
+            if (win_y + self.__win_h) > screen_h:
+                win_y = screen_h - win_h - panel_space
+
+            # setup a new mouse area covering the window (minus a border) and
+            # extending to the panel
+            self.add_mouse_area(create_rect(win_x - win_border,
+                                            win_y - win_border,
+                                            (self.__win_w + win_border +
+                                             panel_space + app_alloc.width),
+                                            self.__win_h + (2 * win_border)))
+
+        elif self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
+            centre_pos = self.__app_x + app_alloc.width / 2
+            win_x = centre_pos - (self.__win_w / 2)
+            win_y = self.__applet_h + panel_space
+
+            # adjust win_x in case we're off the left of the screen...
+            if win_x < panel_space:
+                win_x = panel_space
+
+            # adjust win_x if case the window list extends beyond the end of
+            # the panel ..
+            if (win_x + self.__win_w) > screen_w:
+                win_x = screen_w - self.__win_w - panel_space
+
+            # setup a new mouse area covering the window (minus a border) and
+            # extending to the panel
+            self.add_mouse_area(create_rect(win_x - win_border,
+                                            self.__applet_y,
+                                            self.__win_w + (2*win_border),
+                                            win_y + self.__win_h + win_border))
+        else:
+            centre_pos = self.__app_x + app_alloc.width / 2
+            win_x = centre_pos - (self.__win_w / 2)
+            win_y = self.__applet_y - panel_space - self.__win_h
+
+            # adjust win_x in case we're off the left of the screen...
+            if win_x < panel_space:
+                win_x = panel_space
+
+            # adjust win_x if case the window list extends beyond the end of
+            # the panel ..
+            if (win_x + self.__win_w) > screen_w:
+                win_x = screen_w - self.__win_w - panel_space
+
+            # setup a new mouse area covering the window (minus a border) and
+            # extendingto the panel
+            self.add_mouse_area(create_rect(win_x - win_border,
+                                            win_y - win_border,
+                                            self.__win_w + (2*win_border),
+                                            self.__win_h + win_border +
+                                            panel_space + app_alloc.height))
+
+        self.move(win_x, win_y)
+
+        if self.__timer_id is not None:
+            GObject.source_remove(self.__timer_id)
+
         self.__timer_id = GObject.timeout_add(CONST_TIMER_DELAY, self.do_timer)
+
+    def win_configure(self, widget, event):
+        """ Event handler for the window's configure event
+
+        Stores the new width and height of the window
+
+        Args:
+            widget : the widget that caused the event (i.e. self)
+            event  : the event parameters
+        """
+
+        # if the new size of the window isn't the same as the old one, we need
+        # to recaclulate the window position and mouse areas
+
+        if (event.width != self.__win_w) or (event.height != self.__win_h):
+            self.__win_w = event.width
+            self.__win_h = event.height
+
+            self.set_win_position()
 
     def win_hidden(self, widget):
         """ Event handler for the window's hide event
@@ -241,8 +488,8 @@ class DockWinList(Gtk.Window):
             Delete the timer object
 
         """
-        
-        if self.__timer_id != None:
+
+        if self.__timer_id is not None:
             GObject.source_remove(self.__timer_id)
             self.__timer_id = None
 
@@ -305,7 +552,7 @@ class DockWinList(Gtk.Window):
         """
 
         if event.button != 1:
-            return False # let other handlers run
+            return False  # let other handlers run
 
         path, col, xrel, yrel = self.__tree_view.get_path_at_pos(event.x, event.y)
         sel_iter = self.__list_store.get_iter(path)
@@ -322,16 +569,18 @@ class DockWinList(Gtk.Window):
 
         self.hide()
 
-        # if the window to be activated is not on the current workspace, switch to that workspace
+        # if the window to be activated is not on the current workspace, switch
+        # to that workspace
 
         wnck_aws = self.wnck_screen.get_active_workspace()
         wnck_ws = win.get_workspace()
-        
-        # the windows's current workspace can be None if it is pinned to all workspaces
-        # or it is not on any at all...
+
+        # the windows's current workspace can be None if it is pinned to all
+        # workspaces or it is not on any at all...
         # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392 and
         # https://bugs.launchpad.net/ubuntu-mate/+bug/1555336 (regarding software updater))
-        if (wnck_aws is not None) and (wnck_ws is not None) and (wnck_aws != wnck_ws):
+        if (wnck_aws is not None) and (wnck_ws is not None) and \
+           (wnck_aws != wnck_ws):
                 wnck_ws.activate(0)
                 sleep(0.01)
         win.activate(0)
@@ -346,7 +595,7 @@ class DockWinList(Gtk.Window):
         # get the mouse x y
         root_win, x, y, mask = self.get_screen().get_root_window().get_pointer()
         if not self.point_is_in_mouse_areas(x, y):
-            self.hide() 
+            self.hide()
             self.__timer_id = None
             return False
 
@@ -369,14 +618,17 @@ class DockWinList(Gtk.Window):
             active_text = ""
 
         if icon is None:
-            icon_pb = self.render_icon(Gtk.STOCK_EXECUTE, Gtk.IconSize.MENU, None)
+            icon_pb = self.render_icon(Gtk.STOCK_EXECUTE,
+                                       Gtk.IconSize.MENU, None)
         else:
             icon_pb = icon
 
-        self.__list_store.append([icon_pb, active_text, title, self.__pb_close, window])
+        self.__list_store.append([icon_pb, active_text, title,
+                                  self.__pb_close, window])
 
     def clear_win_list(self):
         """ Clear the list of open windows """
+
         self.__list_store.clear()
 
     def set_app_name(self, app_name):
@@ -388,7 +640,7 @@ class DockWinList(Gtk.Window):
 
         # use pango markup to make the app name bold and large
 
-        self.__lbl_app_name.set_markup('<span size="larger"><b>%s</b></span>' %(app_name))
+        self.__lbl_app_name.set_markup('<span size="larger"><b>%s</b></span>' % (app_name))
 
     def win_button_press(self, widget, event):
         """ this is for debug puposes only"""
@@ -406,18 +658,20 @@ class DockWinList(Gtk.Window):
         close icon
 
         Args:
-            win_on_cur_ws_only : boolean - whether to show only windows which are on the
-                                 current workspace, or show windows for all workspaces
+            win_on_cur_ws_only : boolean - whether to show only windows which
+                                 are on the current workspace, or show windows
+                                 for all workspaces
 
         """
 
         self.create_close_pixbuf()
 
-        # reduce the size of the window - it will autosize to fit the contents...
-        self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        self.__col_title.set_fixed_width(150)
-        self.resize(100, 10)
-        self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+        # reduce the size of the window - it will autosize to fit the contents
+        if build_gtk2:
+            self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+            self.__col_title.set_fixed_width(150)
+            self.resize(100, 10)
+            self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
 
         self.set_app_name(self.__the_app.app_name)
         win_list = self.__the_app.get_wnck_windows()
@@ -425,25 +679,25 @@ class DockWinList(Gtk.Window):
         wnck_aws = self.wnck_screen.get_active_workspace()
         add_to_list = False
         for win in win_list:
-
             if win_on_cur_ws_only:
                 # only add if the window is on the current workspace
                 add_to_list = win.is_on_workspace(wnck_aws)
             else:
                 add_to_list = True
-
             if add_to_list:
                 if self.__icontheme.has_icon(self.__the_app.icon_name):
-    
+
                     # draw the app icon at the size we want
                     icon_info = self.__icontheme.choose_icon([self.__the_app.icon_name, None],
-                                                         self.__icon_size, 0)
+                                                             self.__icon_size, 0)
 
                     try:
                         pixbuf = icon_info.load_icon()
                     except GLib.GError:
-                        # default to a stock icon if we couldn't load the app icon
-                        pixbuf = self.render_icon(Gtk.STOCK_EXECUTE, Gtk.IconSize.DND, None)
+                        # default to a stock icon if we couldn't load the app
+                        # icon
+                        pixbuf = self.render_icon(Gtk.STOCK_EXECUTE,
+                                                  Gtk.IconSize.DND, None)
                 else:
                     pixbuf = self.__the_app.app_pb.scale_simple(self.__icon_size,
                                                             self.__icon_size,
@@ -484,8 +738,8 @@ class DockWinList(Gtk.Window):
                 y : the y position
 
             Returns:
-                True if the position is within one of the rectangles in self.__mouse_areas,
-                False otherwise
+                True if the position is within one of the rectangles in
+                self.__mouse_areas, False otherwise
         """
 
         for rect in self.__mouse_areas:
@@ -525,6 +779,7 @@ class DockWinList(Gtk.Window):
 
     def set_icontheme(self, the_icontheme):
         """ Sets the icontheme currently being used
+
             Args : the_icontheme
         """
 
@@ -532,15 +787,50 @@ class DockWinList(Gtk.Window):
 
     icontheme = property(get_icontheme, set_icontheme)
 
-    the_app = property(get_app, set_app)
+    def set_panel_orient(self, panel_orient):
+        """ Set the variable which records the orientation of the panel the
+            applet is on
+
+        Args:
+                panel_orient : the panel  orientation
+        """
+
+        self.__panel_orient = panel_orient
+
+    def set_app_root_coords(self, x, y):
+        """ Sets the x and y root coords of the app
+        """
+
+        self.__app_x = x
+        self.__app_y = y
+
+    def set_applet_details(self, applet_x, applet_y, applet_w, applet_h):
+        """ Sets the variables which record the root coords and size of the
+            applet
+
+            Args:
+                applet_x : the x position of the top left of the applet
+                           (root coords)
+                applet_y : the y position of the top left of the applet
+                           (root coords)
+                applet_w : the width of the applet
+                applet_h : the height of the applet
+
+        """
+
+        self.__applet_x = applet_x
+        self.__applet_y = applet_y
+        self.__applet_w = applet_w
+        self.__applet_h = applet_h
 
 
 def draw_title(column, cell_renderer, tree_model, tree_iter, data):
     title = tree_model.get_value(tree_iter, 2)
     if tree_model.get_value(tree_iter, 1) == "*":
-        cell_renderer.set_property ('markup', "<b><i>%s</i></b>" %title)
+        cell_renderer.set_property('markup', "<b><i>%s</i></b>" % title)
     else:
         cell_renderer.set_property('markup', title)
+
 
 def main():
     """
