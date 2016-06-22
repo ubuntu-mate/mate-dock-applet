@@ -12,12 +12,29 @@ appletsdir       = $(datadir)/mate-panel/applets
 applets_in_files = org.mate.panel.DockApplet.mate-panel-applet
 applets_DATA     = $(applets_in_files:.mate-panel-applet.in=.mate-panel-applet)
 
+#@echo "This is a test"
+#if WITH_GTK2_SET
+#	$(info **************  Legacy Mode - Building for Gtk2  **************)
+#else
+#	$(info **************  Building for Gtk3 **************)
+#endif
+
+if WITH_GTK3_SET
 do_substitution = $(AM_V_GEN)sed \
-		  -e 's,[@]pythondir[@],$(pythondir),g' \
-		  -e 's,[@]PACKAGE[@],$(PACKAGE),g' \
-		  -e 's,[@]VERSION[@],$(VERSION),g' \
-		  -e 's,[@]LOCATION[@],$(appletdir),g' \
-		  -e 's,[@]localedir[@],$(datadir)/locale,g'
+		-e 's,[@]pythondir[@],$(pythondir),g' \
+		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
+	  	-e 's,[@]VERSION[@],$(VERSION),g' \
+	    -e 's,[@]LOCATION[@],$(appletdir),g' \
+	    -e 's,[@]localedir[@],$(datadir)/locale,g' 
+else
+do_substitution = $(AM_V_GEN)sed \
+		-e 's,[@]pythondir[@],$(pythondir),g' \
+		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
+	  	-e 's,[@]VERSION[@],$(VERSION),g' \
+	    -e 's,[@]LOCATION[@],$(appletdir),g' \
+	    -e 's,[@]localedir[@],$(datadir)/locale,g' \
+	    -e 's,build_gtk2 = False,build_gtk2 = True,g'
+endif
 
 #$(applets_in_files): $(applets_in_files).in Makefile
 #	$(AM_V_GEN)sed \
