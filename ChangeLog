@@ -1,14 +1,24 @@
+V0.72   The applet now works on and can be built for both GTK2 and GTK3 versions of MATE.
+    Aside from the changes to layout containers (i.e. GTK2 VBox & HBoxes become GTK3
+    Boxes/Grids), underlying differences between the two toolkits meant that the code
+    to calculate window minimise positions and window list popup positions had to be
+    reworked.
+
+    A GTK2 verison of the applet can be produced by running './configure --prefix=/usr'
+    during the build process, while running './configure --prefix=/usr --with-gtk3'
+    will produce a Gtk3 version.
+
 V0.71   More improvements to matching apps with their .desktop files. In particular this relates
-	to Ubuntu 16.04 and Vivaldi, PlayOnLinux, Aptik, Dia, Tor Browser, Gnome Software, Gnome Disks, 
+	to Ubuntu 16.04 and Vivaldi, PlayOnLinux, Aptik, Dia, Tor Browser, Gnome Software, Gnome Disks,
 	Bazaar Explorer.
 	App icons can now be sourced from the 'hicolor' directory
 	The window list now displays the title of the active window in bold and italicised text.
-	Removed the options to display pinned apps from all or only the current workspace as these 
+	Removed the options to display pinned apps from all or only the current workspace as these
 	were based on a misunderstanding of a feature request. They have been replaced with
 	a new option to only show indicators and window list items for windows which are on
 	the current workspace and this provides the requested functionality.
-	Added a 'Hints and Tips' window accessible from the About dialog as a place to list 
-	useful keyboard shortcuts etc.	
+	Added a 'Hints and Tips' window accessible from the About dialog as a place to list
+	useful keyboard shortcuts etc.
 
 V0.70   Settings from previous instances of the applet are now imported
 	silently (previously the user was presented with a dialog asking the
@@ -17,17 +27,17 @@ V0.70   Settings from previous instances of the applet are now imported
 	Ubuntu Mate 16.04
 	When saving custom launchers the ~/.local/share/applications directory
 	will be created if it doesn't already exist
-	
+
 v0.69   Added code to allow new instances of apps to be started by middle
 	clicking their dock icon (see https://bugs.launchpad.net/ubuntu-mate/+bug/1554128)
 	Fixed bug that would prevent apps from launching if they were in a
-	directory structure which contained a space character e.g. 
+	directory structure which contained a space character e.g.
 	~/Downloads/PopCorn Time/
 	Fixed bug which associated newly opened windows with incorrect apps
 	and which occurred when the wm_class_name of the window was not set.
 	Fix for https://bugs.launchpad.net/ubuntu-mate/+bug/1555324
-	
-V0.68	Fix for Launchpad bug 1550392 
+
+V0.68	Fix for Launchpad bug 1550392
 	(https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392)
 
 V0.67   Panel colour changing now occurs smoothly over over 0.5s rather than
@@ -42,17 +52,17 @@ V0.66	Improved matching of apps with their .desktop files, in particular
 	on the dock
 	Added option to change MATE panel colour according to the current
 	desktop wallpaper. (Note: this works for images only, not slideshows,
-	gradients, or solid colour backgrounds). The colour can be applied to 
+	gradients, or solid colour backgrounds). The colour can be applied to
 	all panels or just the panel containing the dock. The applet now depends
 	on the Python Imaging Library and SciPy packages because of this
 	change
-	Added new preferences to options to both activate panel colour changing 
+	Added new preferences to options to both activate panel colour changing
 	and to limit it to the dock panel panel only
 	Added option to not display indicators under running apps
-	Added option to not display in the dock running pinned apps which are 
+	Added option to not display in the dock running pinned apps which are
 	not on the current workspace
 	Using the mouse wheel on a dock icon to scroll through an app's
-	windows will now change workspace if the new window is not on the 
+	windows will now change workspace if the new window is not on the
 	current workspace
 	Selecting an app's window from the pop-up window list will now change
 	workspace if the window is not on the current workspace
@@ -69,17 +79,17 @@ V0.64   Fixed bug that would sometimes prevent a window from being focused
 	Right click options (e.g. 'Open new Window' and Open new incognito
 	window with Chrome) are now read from .desktop files and appear on
 	the dock icon right click menu
-	Custom launchers now set the Type field of the .desktop files they 
-	create to 'Application' and also set the NoDisplay field to 'true' 
+	Custom launchers now set the Type field of the .desktop files they
+	create to 'Application' and also set the NoDisplay field to 'true'
 	so that the launcher is not displayed in the MATE menu
 	Customer launchers now write .desktop files that do not contain spaces
 	in the filename, as per the GNOME developer docs
 	App icons can now be sourced from ~/.local/share/icons (e.g
 	popcorn-time puts its icon here)
-	
+
 V0.63   Removed the tooltip that appears when the mouse hovers over a docked
 	app and replaced it with a list of the app's open windows. For
-	each window, the list displays the app icon, an indicator showing which 
+	each window, the list displays the app icon, an indicator showing which
 	window is currently active, the window title, and a close icon.
 	Clicking the close icon closes the window, clicking anywhere else
 	makes the window active.
@@ -88,7 +98,7 @@ V0.63   Removed the tooltip that appears when the mouse hovers over a docked
 	Changed the way the applet works when a running app's dock icon is
 	clicked. This no longer minimizes/maximises all windows, but simply
 	activates the app's last active window.
-	Using the mouse scroll wheel over a running app's dock icon now 
+	Using the mouse scroll wheel over a running app's dock icon now
 	scrolls through each of the app's open windows, unminimizing them
 	and activating them as necessary
 	.desktop files located in the user's home directory now take
@@ -108,12 +118,12 @@ V0.62	Fixed app icon drawing on non-composited displays.
 	are incorrect) added a new right click menu option on the dock
 	to create a custom launcher for the app. This displays a dialog
 	(like the one for the MATE panel) allowing the app's command line,
-	name, and icon to be specified. For user convenience, the applet will 
-	automatically fill in as many of these details as it can. Once 
+	name, and icon to be specified. For user convenience, the applet will
+	automatically fill in as many of these details as it can. Once
 	the new launcher has been created, the app needs to be closed and
-	reopened for it to be recognised by the dock. Typically, this 
+	reopened for it to be recognised by the dock. Typically, this
 	option will only be needed for apps which have not been installed
-	into the usual locations within the Linux filesystem. 
+	into the usual locations within the Linux filesystem.
 	When an app's windows are minimised by clicking on the app's dock
 	icon and then maximised by clicking it again, the app window that
 	was previously active is made active again.
@@ -121,7 +131,7 @@ V0.62	Fixed app icon drawing on non-composited displays.
 V0.61   improved the way in which the windows owned by apps are
 	detected
 	Fixed the function that calculates the average colour of
-	icons (for use when drawing highligts on the dock). It 
+	icons (for use when drawing highligts on the dock). It
 	works now....
 	Fixed launching of Caja on linux mint
 	Fixed docked_app.setup_from_wnck so that it passes '/' terminated
@@ -143,7 +153,7 @@ V0.60 - various bugfixes and minor additions including:
 	end
 	Improved detection of app icons and app windows. In general
 	this is a good thing, and in particular it means that the
-	applet now works correctly with guvcview on Ubuntu Mate 
+	applet now works correctly with guvcview on Ubuntu Mate
 	15.04
 	Fixed a bug on Ubuntu Mate 15.04 where terminals started
 	from the applet would have their working directory set
@@ -151,7 +161,7 @@ V0.60 - various bugfixes and minor additions including:
 	Updated the readme with instructions on how to compile the
 	applet from source
 
-V0.59 - initial commit to git. 
+V0.59 - initial commit to git.
 	Honour panel transparency and background settings
 	Pin and unpin apps to the dock
 	Rearrange application icons on the dock
@@ -165,4 +175,3 @@ V0.59 - initial commit to git.
 	Allow the user to specify whether a light or dark indicator is used so
 	that it can always be seen no matter what colour the panel is
 	Provide an About dialog
-
