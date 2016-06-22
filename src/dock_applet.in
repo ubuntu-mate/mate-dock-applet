@@ -31,20 +31,30 @@ Note: Functionality for docked apps is provided in docked_app.py
 # Author:
 #     Robin Thompson
 
+# do not change the value of this variable - it will be set during build
+# according to the value of the --with-gtk3 option used with .configure
+build_gtk2 = False
+
+import gi
+
+if build_gtk2:
+    gi.require_version("Gtk", "2.0")
+    gi.require_version("Wnck", "1.0")
+else:
+    gi.require_version("Gtk", "3.0")
+    gi.require_version("Wnck", "3.0")
+
+gi.require_version("MatePanelApplet", "4.0")
+
 import os
 import sys
 sys.path.insert(1, '@pythondir@')
 
-import gi
-gi.require_version("Gtk", "2.0")
-gi.require_version("MatePanelApplet", "4.0")
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk
 from gi.repository import Gio
 from gi.repository import GObject
-
-gi.require_version("Wnck", "1.0")
 from gi.repository import Wnck
 
 import xdg.DesktopEntry as DesktopEntry
@@ -54,6 +64,7 @@ import dock
 from dock_win_list import DockWinList
 
 from log_it import log_it as log_it
+
 
 def applet_button_press(widget, event, the_dock):
     """Button press event for the applet
@@ -73,16 +84,17 @@ def applet_button_press(widget, event, the_dock):
     # However, we do get button press event for the right mouse button,
     # so we can do what we need to do here ....
     if event.button == 3:
-        #right click, so save the app that was clicked because
+        # right click, so save the app that was clicked because
         # the_dock.app_with_mouse is going to be set to None when the
-        # right click menu appears and we move the mouse over the menu to select
-        # an option
+        # right click menu appears and we move the mouse over the menu to
+        # select an option
         app = the_dock.get_app_at_mouse(event.x, event.y)
         the_dock.right_clicked_app = app
 
         # because the right click menu is about to be shown, we need to hide
         # the window list
         the_dock.hide_win_list()
+
 
 def applet_button_release(widget, event, the_dock):
     """Button press event for the applet
@@ -107,31 +119,33 @@ def applet_button_release(widget, event, the_dock):
 
     if event.button == 1:
 
-        # hide the window list window 
+        # hide the window list window
         the_dock.hide_win_list()
 
         app = the_dock.get_app_at_mouse(event.x, event.y)
         if app is not None:
 
-            #TODO
+            # TODO
             # move this code into docked_app.in ...
-            
+
             # if the app is not running start the app
-            # if the app is running and the shift key is being pressed, start another
-            # instance of the app
-            start_app = app.is_running() == False
-            start_app = start_app | (event.state & Gdk.ModifierType.SHIFT_MASK) != 0
+            # if the app is running and the shift key is being pressed, start
+            # another instance of the app
+            start_app = app.is_running() is False
+            start_app = start_app | (event.state &
+                                     Gdk.ModifierType.SHIFT_MASK) != 0
             if start_app:
                 app.start_app()
             else:
                 the_dock.minimize_or_restore_windows(app, event)
-                
+
     # See https://bugs.launchpad.net/ubuntu-mate/+bug/1554128
     if event.button == 2:
         app = the_dock.get_app_at_mouse(event.x, event.y)
         if app is not None:
             the_dock.hide_win_list()
             app.start_app()
+
 
 def applet_enter_notify(widget, event, the_dock):
     """Enter notify event for the applet
@@ -169,8 +183,9 @@ def applet_enter_notify(widget, event, the_dock):
 
         # set up the available options for the app
         the_dock.set_actions_for_app(app)
-    
+
         the_dock.reset_win_list_timer()
+
 
 def applet_leave_notify(widget, event, the_dock):
     """Leave notifiy event handle for the applet
@@ -190,12 +205,13 @@ def applet_leave_notify(widget, event, the_dock):
 
     the_dock.stop_win_list_timer()
 
+
 def applet_motion_notify(widget, event, the_dock):
     """Motion notify event for the applet
 
     If the docked app under the mouse cursor does not have its icon
-    brightened and another app has a brightened icon then darken the other app icon
-    and reset the applet tooltip text
+    brightened and another app has a brightened icon then darken the other app
+    # icon and reset the applet tooltip text
 
     Then, if the docked app under the mouse cursor does not have its icon
     brightened then brighten it and setup the applet right click menu
@@ -208,14 +224,15 @@ def applet_motion_notify(widget, event, the_dock):
 
     app = the_dock.get_app_at_mouse(event.x, event.y)
 
-    if (the_dock.app_with_mouse is not None) and (the_dock.app_with_mouse != app):
+    if (the_dock.app_with_mouse is not None) and \
+       (the_dock.app_with_mouse != app):
         the_dock.app_with_mouse.has_mouse = False
         the_dock.app_with_mouse.queue_draw()
 
         widget.queue_draw()
 
-        # because a new app is highlighted reset the window list timer and hide any 
-        # currently open window list
+        # because a new app is highlighted reset the window list timer and hide
+        # any currently open window list
         the_dock.hide_win_list()
         the_dock.reset_win_list_timer()
 
@@ -223,12 +240,13 @@ def applet_motion_notify(widget, event, the_dock):
 
         # reset the window list timer
         the_dock.reset_win_list_timer()
-       
-        if app.has_mouse == False:
+
+        if app.has_mouse is False:
             app.has_mouse = True
             app.queue_draw()
             the_dock.app_with_mouse = app
             the_dock.set_actions_for_app(app)
+
 
 def applet_change_orient(applet, orient, the_dock):
     """Handler for applet change orientation event
@@ -245,10 +263,12 @@ def applet_change_orient(applet, orient, the_dock):
     the_dock.applet.show_all()
     the_dock.show_or_hide_app_icons()
 
+
 def applet_change_size(applet, size, the_dock):
     """Handler for the applet change size event
 
-    Resize the icon and recalculate the minimize location of each app in the dock
+    Resize the icon and recalculate the minimize location of each app in the
+    dock
 
     Args:
         widget : the widget that registered the event i.e. the applet
@@ -258,7 +278,7 @@ def applet_change_size(applet, size, the_dock):
 
     for app in the_dock.app_list:
         the_dock.set_app_icon(app, size)
-        app.set_icon_geometry()
+
 
 def applet_scroll_event (applet, event, the_dock):
     """ Handler for the scroll event
@@ -269,6 +289,7 @@ def applet_scroll_event (applet, event, the_dock):
     """
 
     the_dock.do_window_scroll(event.direction, event.time)
+
 
 def applet_fill(applet):
     """
@@ -284,15 +305,15 @@ def applet_fill(applet):
         applet : the applet
     """
 
-    os.chdir (os.path.expanduser("~"))
+    os.chdir(os.path.expanduser("~"))
     applet.set_events(applet.get_events() | Gdk.EventMask.BUTTON_PRESS_MASK \
-                       | Gdk.EventMask.BUTTON_RELEASE_MASK \
-                       | Gdk.EventMask.POINTER_MOTION_MASK \
-                       | Gdk.EventMask.KEY_PRESS_MASK \
-                       | Gdk.EventMask.KEY_RELEASE_MASK \
-                       | Gdk.EventMask.SCROLL_MASK \
-                       | Gdk.EventMask.STRUCTURE_MASK)
-   
+                                          | Gdk.EventMask.BUTTON_RELEASE_MASK \
+                                          | Gdk.EventMask.POINTER_MOTION_MASK \
+                                          | Gdk.EventMask.KEY_PRESS_MASK \
+                                          | Gdk.EventMask.KEY_RELEASE_MASK \
+                                          | Gdk.EventMask.SCROLL_MASK \
+                                          | Gdk.EventMask.STRUCTURE_MASK)
+
     the_dock = dock.Dock(applet)
     the_dock.setup_dock()
 
@@ -308,7 +329,7 @@ def applet_fill(applet):
     applet.connect("change-size", applet_change_size, the_dock)
     applet.connect("scroll-event", applet_scroll_event, the_dock)
 
-    applet.set_background_widget(applet) # hack for panel transparency
+    applet.set_background_widget(applet)  # hack for panel transparency
 
 
 def applet_factory(applet, iid, data):
