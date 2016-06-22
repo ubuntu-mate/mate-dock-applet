@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """Provide a dialog for the dock panel applet that allows
-   a custom app launcher to be added to the dock. 
+   a custom app launcher to be added to the dock.
 
    Note: This is primarily intended for apps that do not create
    a .desktop file, or get installed into non-standard locations
@@ -14,7 +14,7 @@
         A comment
 
     When the Ok button is clicked, a .desktop file will be created
-    in the ~/.local/share/applications and its name will be in 
+    in the ~/.local/share/applications and its name will be in
     the format 'mda_<app_name>.desktop' to allow the applet
     to recognise and if necessary give priority to self
     created custom launchers
@@ -39,19 +39,28 @@
 # Author:
 #     Robin Thompson
 
+# do not change the value of this variable - it will be set during build
+# according to the value of the --with-gtk3 option used with .configure
+build_gtk2 = False
 
 import gi
-gi.require_version("Gtk", "2.0")
+
+if build_gtk2:
+    gi.require_version("Gtk", "2.0")
+else:
+    gi.require_version("Gtk", "3.0")
+
 from gi.repository import Gtk, GdkPixbuf
 
 import os
+
 
 class DockCLWindow(Gtk.Window):
     """Class to provide the create custom launcher functionality
 
     Create and display the create custom launcher dialog
 
-    Provide properties to get and set the custom laucher name, 
+    Provide properties to get and set the custom laucher name,
     command, comment and icon
     """
     def __init__(self, ok_callback):
@@ -76,9 +85,17 @@ class DockCLWindow(Gtk.Window):
 
         # setup the window contents
         self.set_border_width(5)
-        self.__hbox = Gtk.HBox()
+
+        if build_gtk2:
+            self.__hbox = Gtk.HBox()
+            self.__vbox = Gtk.VBox()
+        else:
+            self.__hbox = Gtk.Box()
+            self.__hbox.set_orientation(Gtk.Orientation.HORIZONTAL)
+            self.__vbox = Gtk.Box()
+            self.__vbox.set_orientation(Gtk.Orientation.VERTICAL)
+
         self.__hbox.set_spacing(2)
-        self.__vbox = Gtk.VBox()
         self.__vbox.set_spacing(2)
 
         self.__btn_help = Gtk.Button(label="Help", stock=Gtk.STOCK_HELP)
@@ -90,15 +107,27 @@ class DockCLWindow(Gtk.Window):
         self.__btn_ok = Gtk.Button(label="Ok", stock=Gtk.STOCK_OK)
         self.__btn_ok.connect("button-press-event", ok_callback)
 
-        self.__hbox_btns = Gtk.HBox()
-        self.__hbbx = Gtk.HButtonBox()
+        if build_gtk2:
+            self.__hbox_btns = Gtk.HBox()
+            self.__hbbx = Gtk.HButtonBox()
+        else:
+            self.__hbox_btns = Gtk.Box()
+            self.__hbox_btns.set_orientation(Gtk.Orientation.HORIZONTAL)
+            self.__hbbx = Gtk.ButtonBox()
+            self.__hbbx.set_orientation(Gtk.Orientation.HORIZONTAL)
+
         self.__hbbx.set_spacing(4)
         self.__hbbx.set_layout(Gtk.ButtonBoxStyle.END)
 
         self.__hbbx.pack_start(self.__btn_cancel, False, False, 4)
         self.__hbbx.pack_end(self.__btn_ok, False, False, 4)
 
-        self.__hbbx1 = Gtk.HButtonBox()
+        if build_gtk2:
+            self.__hbbx1 = Gtk.HButtonBox()
+        else:
+            self.__hbbx1 = Gtk.ButtonBox()
+            self.__hbbx1.set_orientation(Gtk.Orientation.HORIZONTAL)
+
         self.__hbbx1.set_spacing(4)
         self.__hbbx1.set_layout(Gtk.ButtonBoxStyle.START)
         self.__hbbx1.pack_start(self.__btn_help, False, False, 4)
@@ -112,30 +141,46 @@ class DockCLWindow(Gtk.Window):
         self.__btn_icon.set_tooltip_text("Click to select an icon")
         self.__btn_icon.add(self.__img_icon)
 
-        self.__vbox1 = Gtk.VBox()
+        if build_gtk2:
+            self.__vbox1 = Gtk.VBox()
+        else:
+            self.__vbox1 = Gtk.Box()
+            self.__vbox1.set_orientation(Gtk.Orientation.VERTICAL)
+
         self.__vbox1.set_spacing(4)
         self.__vbox1.pack_start(self.__btn_icon, False, False, 4)
 
-        self.__table_layout = Gtk.Table(rows=4, columns=2, homogeneous=False)
+        if build_gtk2:
+            self.__table_layout = Gtk.Table(rows=4, columns=2,
+                                            homogeneous=False)
+        else:
+            self.__table_layout = Gtk.Grid()
+            self.__table_layout.set_column_spacing(2)
+            self.__table_layout.set_row_spacing(2)
 
         self.__lbl_name = Gtk.Label()
         self.__lbl_name.set_use_markup(True)
-        self.__lbl_name.set_label("<b>" +"Name:" + "</b>")
+        self.__lbl_name.set_label("<b>" + "Name:" + "</b>")
         self.__lbl_name.set_alignment(1, 0.5)
 
         self.__entry_name = Gtk.Entry()
 
-        self.__hbox_cmd = Gtk.HBox()
+        if build_gtk2:
+            self.__hbox_cmd = Gtk.HBox()
+        else:
+            self.__hbox_cmd = Gtk.Box()
+            self.__hbox_cmd.set_orientation(Gtk.Orientation.HORIZONTAL)
+
         self.__hbox_cmd.set_spacing(2)
 
         self.__lbl_cmd = Gtk.Label()
         self.__lbl_cmd.set_use_markup(True)
-        self.__lbl_cmd.set_label("<b>" +"Command:" + "</b>")
+        self.__lbl_cmd.set_label("<b>" + "Command:" + "</b>")
         self.__lbl_cmd.set_alignment(1, 0.5)
-       
+
         self.__entry_cmd = Gtk.Entry()
         self.__entry_cmd.set_width_chars(40)
-        self.__btn_cmd = Gtk.Button(label = "Browse...")
+        self.__btn_cmd = Gtk.Button(label="Browse...")
         self.__btn_cmd.connect("button-press-event", self.cmd_button_press)
         self.__hbox_cmd.pack_start(self.__entry_cmd, True, True, 0)
         self.__hbox_cmd.pack_end(self.__btn_cmd, False, False, 0)
@@ -150,7 +195,7 @@ class DockCLWindow(Gtk.Window):
 
         self.__lbl_comment = Gtk.Label()
         self.__lbl_comment.set_use_markup(True)
-        self.__lbl_comment.set_label("<b>" +"Comment:" + "</b>")
+        self.__lbl_comment.set_label("<b>" + "Comment:" + "</b>")
 
         self.__entry_comment = Gtk.Entry()
 
@@ -160,22 +205,29 @@ class DockCLWindow(Gtk.Window):
         self.__entry_wm_class = Gtk.Entry()
         self.__entry_wm_class.set_sensitive(False)
 
-        self.__table_layout.attach(self.__lbl_name, 0, 1, 0, 1,
-                                    Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
-                                   2, 2)
-        self.__table_layout.attach(self.__entry_name, 1, 2, 0, 1,
-                                    Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
-                                   2, 2)
-        
-        self.__table_layout.attach(self.__lbl_cmd, 0, 1, 1, 2,
-                                   Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
-                                   2, 2)
-        self.__table_layout.attach(self.__hbox_cmd, 1, 2, 1, 2,
-                                   Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
-                                   2, 2)
+        if build_gtk2:
+            self.__table_layout.attach(self.__lbl_name, 0, 1, 0, 1,
+                                       Gtk.AttachOptions.SHRINK,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__table_layout.attach(self.__entry_name, 1, 2, 0, 1,
+                                       Gtk.AttachOptions.FILL |
+                                       Gtk.AttachOptions.EXPAND,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
 
-        # Code below can be uncommented if adding terminal apps to the dock ever
-        # becomes a needed thing
+            self.__table_layout.attach(self.__lbl_cmd, 0, 1, 1, 2,
+                                       Gtk.AttachOptions.SHRINK,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__table_layout.attach(self.__hbox_cmd, 1, 2, 1, 2,
+                                       Gtk.AttachOptions.FILL |
+                                       Gtk.AttachOptions.EXPAND,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+
+        # Code below can be uncommented if adding terminal apps to the dock
+        # everbecomes a needed thing
         #self.__table_layout.attach(self.__lbl_term, 0, 1, 2, 3,
         #                           Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
         #                           2, 2)
@@ -184,19 +236,35 @@ class DockCLWindow(Gtk.Window):
         #                           Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
         #                           2, 2)
 
-        self.__table_layout.attach(self.__lbl_comment, 0, 1, 2, 3,
-                                   Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
-                                   2, 2)
-        self.__table_layout.attach(self.__entry_comment, 1, 2, 2, 3,
-                                   Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
-                                   2, 2)
+            self.__table_layout.attach(self.__lbl_comment, 0, 1, 2, 3,
+                                       Gtk.AttachOptions.SHRINK,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__table_layout.attach(self.__entry_comment, 1, 2, 2, 3,
+                                       Gtk.AttachOptions.FILL |
+                                       Gtk.AttachOptions.EXPAND,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
 
-        self.__table_layout.attach(self.__lbl_wm_class, 0, 1, 3, 4,
-                                   Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
-                                   2, 2)
-        self.__table_layout.attach(self.__entry_wm_class, 1, 2, 3, 4,
-                                   Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
-                                   2, 2)
+            self.__table_layout.attach(self.__lbl_wm_class, 0, 1, 3, 4,
+                                       Gtk.AttachOptions.SHRINK,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__table_layout.attach(self.__entry_wm_class, 1, 2, 3, 4,
+                                       Gtk.AttachOptions.FILL |
+                                       Gtk.AttachOptions.EXPAND,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+        else:
+            self.__table_layout.attach(self.__lbl_name, 0, 0, 1, 1)
+            self.__table_layout.attach(self.__entry_name, 1, 0, 1, 1)
+            self.__table_layout.attach(self.__lbl_cmd, 0, 1, 1, 1)
+            self.__table_layout.attach(self.__hbox_cmd, 1, 1, 1, 1)
+            self.__table_layout.attach(self.__lbl_comment, 0, 2, 1, 1)
+            self.__table_layout.attach(self.__entry_comment, 1, 2, 1, 1)
+            self.__table_layout.attach(self.__lbl_wm_class, 0, 3, 1, 1)
+            self.__table_layout.attach(self.__entry_wm_class, 1, 3, 1, 1)
+
         self.__hbox.pack_start(self.__vbox1, False, False, 0)
         self.__hbox.pack_end(self.__table_layout, True, True, 0)
 
@@ -204,7 +272,7 @@ class DockCLWindow(Gtk.Window):
         self.__vbox.pack_start(Gtk.HSeparator(), False, False, 4)
         self.__vbox.pack_end(self.__hbox_btns, False, False, 0)
 
-        self.add (self.__vbox)
+        self.add(self.__vbox)
         self.set_default_values()
         self.show_all()
 
@@ -239,7 +307,7 @@ class DockCLWindow(Gtk.Window):
         """
         self.hide()
 
-    def set_cmd (self, cmd):
+    def set_cmd(self, cmd):
         """ Set the command line used by the launcher
 
         Args:
@@ -248,26 +316,26 @@ class DockCLWindow(Gtk.Window):
 
         self.__entry_cmd.set_text(cmd)
 
-    def get_cmd (self):
+    def get_cmd(self):
         """ Get the command line used by the launcher
 
         Returns:
             A string containing the command line
         """
-        
+
         return self.__entry_cmd.get_text()
 
     command = property(get_cmd, set_cmd)
 
-    def cmd_button_press (self, widget, event):
+    def cmd_button_press(self, widget, event):
         """Callback for the browse commands button
 
         Show a FileChooserDialog to allow the user to select a command to
         be associated with the laucher
         """
 
-        fdc_cmd = Gtk.FileChooserDialog (title = "Choose an application...", 
-                                         action = Gtk.FileChooserAction.OPEN)
+        fdc_cmd = Gtk.FileChooserDialog(title="Choose an application...",
+                                        action=Gtk.FileChooserAction.OPEN)
 
         # set the working directory of the dialog
         cmd = self.get_cmd()
@@ -276,7 +344,8 @@ class DockCLWindow(Gtk.Window):
             if path is not None:
                 fdc_cmd.set_current_folder(path)
 
-        btn_cancel = fdc_cmd.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        btn_cancel = fdc_cmd.add_button(Gtk.STOCK_CANCEL,
+                                        Gtk.ResponseType.CANCEL)
         fdc_cmd.add_button(Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
         btn_cancel.grab_default()
         response = fdc_cmd.run()
@@ -286,10 +355,10 @@ class DockCLWindow(Gtk.Window):
 
         fdc_cmd.destroy()
 
-    def set_icon_filename (self, filename):
+    def set_icon_filename(self, filename):
         """ Set the filename of the icon to be used with the launcher
             and update the image on the icon selection button
-        
+
         Args: filename  - the filename
         """
 
@@ -298,7 +367,7 @@ class DockCLWindow(Gtk.Window):
         self.__img_icon.set_from_pixbuf(pixbuf)
         self.__icon_filename = filename
 
-    def get_icon_filename (self):
+    def get_icon_filename(self):
         """ Get the filename of the icon to be used with the launcher
 
         Returns: A string containing the filename
@@ -315,8 +384,8 @@ class DockCLWindow(Gtk.Window):
         launcher
         """
 
-        fdc_icon = Gtk.FileChooserDialog (title = "Choose an application...", 
-                                         action = Gtk.FileChooserAction.OPEN)
+        fdc_icon = Gtk.FileChooserDialog(title="Choose an application...",
+                                         action=Gtk.FileChooserAction.OPEN)
 
         ff_graphic = Gtk.FileFilter()
         ff_graphic.set_name("Image files")
@@ -335,7 +404,8 @@ class DockCLWindow(Gtk.Window):
             if path is not None:
                 fdc_icon.set_current_folder(path)
 
-        btn_cancel = fdc_icon.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        btn_cancel = fdc_icon.add_button(Gtk.STOCK_CANCEL,
+                                         Gtk.ResponseType.CANCEL)
         fdc_icon.add_button(Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
         btn_cancel.grab_default()
         response = fdc_icon.run()
@@ -374,7 +444,7 @@ class DockCLWindow(Gtk.Window):
     def set_name(self, name):
         """ Set the name associated with the launcher
 
-        Args: name - a string 
+        Args: name - a string
         """
 
         self.__entry_name.set_text(name)
@@ -386,12 +456,12 @@ class DockCLWindow(Gtk.Window):
 
         Returns: A string containing the wm_class_name
         """
-        
+
         return self.__entry_wm_class.get_text()
 
     def set_wm_class(self, wm_class):
         """ Set the text of the launcher's wm_class entry widget
-        
+
         Args:
             wm_class : The wm_class name
         """
@@ -422,11 +492,12 @@ class DockCLWindow(Gtk.Window):
     def help_btn_press(self, widget, event):
         """ Event handler for the Help button press event
 
-        Display an explanation of the usages of custom launchers in a dialog box
+        Display an explanation of the usages of custom launchers in a dialog
+        box
         """
-            
-        md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.INFO, 
-                               Gtk.ButtonsType.OK,
+
+        md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL,
+                               Gtk.MessageType.INFO, Gtk.ButtonsType.OK,
                                None)
         md.set_markup ('<span size="x-large"><b>Custom Launchers</b></span>')
         info_text = "Custom launchers are an advanced feature meant to be used only with apps " +\
@@ -440,6 +511,7 @@ class DockCLWindow(Gtk.Window):
         md.format_secondary_text(info_text)
         md.run()
         md.destroy()
+
 
 def main():
     """main function - debug code can go here"""
