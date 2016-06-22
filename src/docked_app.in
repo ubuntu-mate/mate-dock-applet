@@ -8,8 +8,8 @@
     Provide a surface on which the application's icon and the running indicator
     can be drawn
 
-    Ensure that the app's icon and indicator are always drawn correctly according
-    to the size and orienation of the panel
+    Ensure that the app's icon and indicator are always drawn correctly
+    according to the size and orienation of the panel
 
     Provide visual feedback to the user when an app is lauched by pulsating
     the app's icon
@@ -18,8 +18,8 @@
 
     Maintain a list of all of the app's running processes and their windows
 
-    Ensure that the application's windows visually minimise to the application's icon
-    on the dock
+    Ensure that the application's windows visually minimise to the
+    application's icon on the dock
 """
 
 #
@@ -43,18 +43,27 @@
 # Author:
 #     Robin Thompson
 
+# do not change the value of this variable - it will be set during build
+# according to the value of the --with-gtk3 option used with .configure
+build_gtk2 = False
+
 import gi
-gi.require_version("Gtk", "2.0")
+
+if build_gtk2:
+    gi.require_version("Gtk", "2.0")
+    gi.require_version("Wnck", "1.0")
+else:
+    gi.require_version("Gtk", "3.0")
+    gi.require_version("Wnck", "3.0")
+
+gi.require_version("MatePanelApplet", "4.0")
+
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk
-
-gi.require_version("Wnck", "1.0")
 from gi.repository import Wnck
 
-#from gi.repository import GdkPixbuf
 from gi.repository import Gio
-#from gi.repository import GLib
 from gi.repository import GObject
 import cairo
 import math
@@ -73,6 +82,7 @@ ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
 AppInfoTup = namedtuple('AppInfoTup', ['app', 'pid', 'windows'])
 ActionTup = namedtuple('ActionTup', ['name', 'command'])
 
+
 def im_get_comp_color(filename):
     """Find the complimentary colour of the average colour of an image.
 
@@ -86,7 +96,7 @@ def im_get_comp_color(filename):
 
     """
 
-    cmdstr = "convert "+filename +" -colors 16 -depth 8 -format ""%c"" " + \
+    cmdstr = "convert " + filename + " -colors 16 -depth 8 -format ""%c"" " + \
              "histogram:info:|sort -rn|head -n 1| grep -oe '#[^\s]*'"
     cmd = subprocess.Popen(cmdstr, shell=True, stdout=subprocess.PIPE)
 
@@ -107,7 +117,7 @@ def im_get_comp_color(filename):
     astr = lll
     astr = lll[3].lstrip("#")
     if len(astr) == 8:
-        #remove alpha channel
+        # remove alpha channel
         astr = astr[0:6]
 
     red = int(astr[0:2], 16)
@@ -115,11 +125,13 @@ def im_get_comp_color(filename):
     blue = int(astr[4:6], 16)
     return red, green, blue
 
+
 def get_avg_color(pixbuf):
     """calculate the average colour of a pixbuf.
 
     Read all of the pixel values in a pixbuf (excluding those which are below a
-    certain alpha value) and calculate the average colour of all the contained colours
+    certain alpha value) and calculate the average colour of all the contained
+    colours
 
     Args:
         pixbuf  : a pixbuf object containing the image
@@ -134,7 +146,7 @@ def get_avg_color(pixbuf):
     has_alpha = pixbuf.get_has_alpha()
     pixels = pixbuf.get_pixels()
     nchannels = pixbuf.get_n_channels()
-    ## convert the pixels into an rgb array with alpha channel
+    # convert the pixels into an rgb array with alpha channel
     data = []
     for y_count in range(height-1):
         x_count = 0
@@ -157,7 +169,8 @@ def get_avg_color(pixbuf):
     num_counted = 0
 
     for pixels in range(len(data)):
-        if data[pixels][3] > 200:    # only count pixel if alpha above this level
+        if data[pixels][3] > 200:       # only count pixel if alpha above this
+                                        # level
             red += data[pixels][0]
             green += data[pixels][1]
             blue += data[pixels][2]
@@ -169,14 +182,16 @@ def get_avg_color(pixbuf):
         bavg = int(blue/num_counted)
     else:
         # in case of a bad icon assume a grey average colour
-        # this should fix a division by zero error that occurred at this point in the
-        # code, but which I've only seen once and never been able to duplicate
+        # this should fix a division by zero error that occurred at this point
+        # in the code, but which I've only seen once and never been able to
+        # duplicate
         ravg = gavg = bavg = 128
 
     return ravg, gavg, bavg
 
 CONST_PULSE_STEPS = 20
 CONST_PULSE_DELAY = 40
+
 
 class PulseTimer(object):
     """Class to help provide feedback when a user launches an app from the dock.
@@ -194,8 +209,8 @@ class PulseTimer(object):
     def __init__(self, app):
         """Init for the PulseTimer class.
 
-        Sets everything up by creating the timer, setting a reference to the DockedApp and
-        telling the app that it is pulsing
+        Sets everything up by creating the timer, setting a reference to the
+        DockedApp and telling the app that it is pulsing
 
         Arguments:
             app : the DockedApp object
@@ -229,6 +244,7 @@ class PulseTimer(object):
 
 CONST_FLASH_DELAY = 330
 
+
 class FlashTimer(object):
     """Class to help provide visual feedback when an app requries user attention.
 
@@ -244,8 +260,8 @@ class FlashTimer(object):
     def __init__(self, app):
         """Init for the FlashTimer class.
 
-        Sets everything up by creating the timer, setting a reference to the DockedApp and
-        setting the inital flash state to off
+        Sets everything up by creating the timer, setting a reference to the
+        DockedApp and setting the inital flash state to off
 
         Arguments:
             app : the DockedApp object
@@ -268,7 +284,7 @@ class FlashTimer(object):
         Finally,Redraw the app's icon
         """
 
-        if self.app.is_flashing == True:
+        if self.app.is_flashing:
             self.app.flash_on = not self.app.flash_on
         else:
             GObject.source_remove(self.timer_id)
@@ -277,38 +293,42 @@ class FlashTimer(object):
 
         return True
 
+
 class DockedApp(object):
     """Provide a docked app class
 
     Attributes:
-        app_info    : list of AppInfoTups to hold details of all running processes
-                      the app has
+        app_info    : list of AppInfoTups to hold details of all running
+                      processes the app has
         wnck_class  : the WnckClass object relating to the app
-        app_name    : e.g. Google Chrome, used for tooltips and the applet right click menu etc
-        rc_actions  : list of ActionTups to hold details of right click actions the app supports
+        app_name    : e.g. Google Chrome, used for tooltips and the applet
+                      right click menu etc
+        rc_actions  : list of ActionTups to hold details of right click actions
+                      the app supports
         cmd_line    : the command line and arguments used to start the app
         icon_name   : name of the app icon
         icon_filename : the filename of the app icon
         desktop_file : the filename of the app's .desktop file
         wm_class_name:
-        icon_geometry_set : boolean - indicates whether the app windows have been set to minimise
-                            to the dock
         applet_win  : the Gdk.Window of the panel applet
         applet_orient : the applet orientation
 
-        drawing_area: Gtk.Label- provides a surface on which the app icon can be drawn
-        drawing_area_size : the size in pixels (height AND width) that we have to draw in
+        drawing_area: Gtk.Label- provides a surface on which the app icon can
+                              be drawn
+        drawing_area_size : the size in pixels (height AND width) that we have
+                            to draw in
         is_pulsing  : boolean - True if the app is pulsing
         pulse_step  : a count of how far we are through the pulse animation
         app_pb      : a pixbuf of the app's icon
-        highlight_colour : ColorTup of the colours used to highlight the app when it is
-                           foreground
+        highlight_colour : ColorTup of the colours used to highlight the app
+                           when it is foreground
         is_active   : boolean - True = the app is the foreground app
         has_mouse   : boolean - True = the mouse is over the app's icon
         is_pinned   : boolean - Whether or not the app is pinned to the dock
-        indicator   : the type of indictor (light or dark) to draw under running apps
-        ind_ws      : wnck_workspace or None - if set, indicators are to be drawn for
-                      windows on the specified workspace
+        indicator   : the type of indictor (light or dark) to draw under
+                      running apps
+        ind_ws      : wnck_workspace or None - if set, indicators are to be
+                      drawn for windows on the specified workspace
         last_active_win : the wnck_window of the app's last active window
 
     """
@@ -336,10 +356,11 @@ class DockedApp(object):
         self.applet_orient = None
         self.ind_ws = None
 
-        # all drawing is done to a Gtk.Label rather than e.g. a drawing area or event box
-        # this allows panel transparency/custom backgrounds to be honoured
-        # However, the downside of this is that mouse events cannot be handled by
-        # this class and instead have to be done by the applet itself
+        # all drawing is done to a Gtk.Label rather than e.g. a drawing area
+        # or event box this allows panel transparency/custom backgrounds to be
+        # honoured
+        # However, the downside of this is that mouse events cannot be handled
+        # by this class and instead have to be done by the applet itself
 
         self.drawing_area = Gtk.Label()
         self.drawing_area.set_app_paintable(True)
@@ -360,13 +381,18 @@ class DockedApp(object):
 
         self.is_pinned = False
 
-        self.indicator = dock_prefs.IndicatorType.LIGHT     # default to a light indicator
-        self.multi_ind = False                              # default to single indicator
-        self.last_active_win = None                         # the app's last active wnck_window
+        # set defaults
+        self.indicator = dock_prefs.IndicatorType.LIGHT     # light indicator
+        self.multi_ind = False                              # single indicator
+        self.last_active_win = None
 
-        self.drawing_area.connect("expose-event", self.do_expose_event)   # the draw event
+        # set up event handler for the draw/expose event
+        if build_gtk2:
+            self.drawing_area.connect("expose-event", self.do_expose_event)
+        else:
+            self.drawing_area.connect("draw", self.do_expose_event)
 
-    def has_wnck_app (self, wnck_app):
+    def has_wnck_app(self, wnck_app):
         """ see if this app has a process with the specified wnck_app
 
         Returns True if the wnck_app is found, False otherwise
@@ -383,46 +409,50 @@ class DockedApp(object):
     def setup_from_wnck(self, wnck_app, wnck_class, app_match_list):
         """Set up for an already running app, obtaining info from libWnck.
 
-        Will attempt to get the app path, icon path, .desktop file, currently open windows
-        and pids.
+        Will attempt to get the app path, icon path, .desktop file, currently
+        open windows and pids.
 
         Args:
             wnck_app    : a WnckApplication object relating to the app
             wnck_class  : a WnckClass obect relating to the app
-            app_match_list : a list of tuples containing details of apps which are hard
-                             to match with their .desktop files
+            app_match_list : a list of tuples containing details of apps which
+                             are hard to match with their .desktop files
 
         Returns: True if successful, False otherwise
         """
 
-        new_app_info = AppInfoTup(app=wnck_app, pid=wnck_app.get_pid(), windows=[])
+        new_app_info = AppInfoTup(app=wnck_app,
+                                  pid=wnck_app.get_pid(), windows=[])
         self.wnck_class = wnck_class
         self.set_app_name(wnck_app.get_name())
-        self.wm_class_name = wnck_class.get_res_class()  # afaict this is Gtk 2 only
-                                                         # in Gtk 3 it will need to be
-                                                         # replaced with .get_id() instead
+#        if build_gtk2:
+        self.wm_class_name = wnck_class.get_res_class()
+#        else:
+#            self.wm_class_namw = wnck_class.get_id()
+
         # get the currently open windows
         for win in wnck_app.get_windows():
             win.connect("state-changed", self.win_state_changed)
             win_class = win.get_class_group()
             win_class_name = win_class.get_res_class()
 
-            if ((win.get_window_type() == Wnck.WindowType.NORMAL) or \
-                (win.get_window_type() == Wnck.WindowType.DIALOG)) and \
-                (self.wm_class_name == win_class_name) and \
-                (win.is_skip_tasklist() == False):
+            if ((win.get_window_type() == Wnck.WindowType.NORMAL) or
+                    (win.get_window_type() == Wnck.WindowType.DIALOG)) and \
+                    (self.wm_class_name == win_class_name) and \
+                    (win.is_skip_tasklist() is False):
                 new_app_info.windows.append(win.get_xid())
         self.app_info.append(new_app_info)
         if new_app_info.pid != 0:
             self.get_cmdline_from_pid(new_app_info.pid)
 
-        # first of all, see if we can get this app's .desktop file from the list of hard to match apps
-        # Note: this is not intended to be a permanent feature. Hopefully the Gtk3 version of wnck
-        # will allow better app matching and if not, other window manageing libraries can be
-        # investigated
+        # first of all, see if we can get this app's .desktop file from the
+        # list of hard to match apps
+        # Note: this is not intended to be a permanent feature. Hopefully the
+        # Gtk3 version of wnck will allow better app matching and if not, other
+        # window manageing libraries can be investigated
         for app in app_match_list:
             if (wnck_app.get_name() == app[0]) or (win_class_name == app[1]):
-                desktop_file = "/usr/share/applications/%s.desktop" %app[2]
+                desktop_file = "/usr/share/applications/%s.desktop" % app[2]
                 if (os.path.exists(desktop_file)):
                     self.desktop_file = desktop_file
                     return self.read_info_from_desktop_file()
@@ -470,7 +500,7 @@ class DockedApp(object):
 
         """
 
-        cmdstr = "xargs -0 < /proc/%d/cmdline" %pid
+        cmdstr = "xargs -0 < /proc/%d/cmdline" % pid
 
         cmd = subprocess.Popen(cmdstr, shell=True, stdout=subprocess.PIPE)
 
@@ -493,10 +523,10 @@ class DockedApp(object):
                 win_type = wnck_win.get_window_type()
                 win_cg = wnck_win.get_class_group()
                 win_wm_class_name = win_cg.get_res_class()
-                if ((win_type == Wnck.WindowType.NORMAL) or \
+                if ((win_type == Wnck.WindowType.NORMAL) or
                     (win_type == Wnck.WindowType.DIALOG)) and \
-                    (win_wm_class_name.lower() == self.wm_class_name.lower()) and \
-                    (wnck_win.is_skip_tasklist() == False):
+                    (win_wm_class_name.lower() == self.wm_class_name.lower()) \
+                    and (wnck_win.is_skip_tasklist() is False):
                     num_win += 1
 
         return num_win
@@ -510,10 +540,10 @@ class DockedApp(object):
                 win_type = wnck_win.get_window_type()
                 win_cg = wnck_win.get_class_group()
                 win_wm_class_name = win_cg.get_res_class()
-                if ((win_type == Wnck.WindowType.NORMAL) or \
+                if ((win_type == Wnck.WindowType.NORMAL) or
                     (win_type == Wnck.WindowType.DIALOG)) and \
                     (win_wm_class_name.lower() == self.wm_class_name.lower()) and \
-                    (wnck_win.is_skip_tasklist() == False):
+                    (wnck_win.is_skip_tasklist() is False):
                     win_list.append(wnck_win)
 
         return win_list
@@ -570,17 +600,19 @@ class DockedApp(object):
         return self.drawing_area.get_visible()
 
     def get_desktop_from_app_info(self, srch_dir):
-        """Attempt to find the .desktop file for the app based on the app wm_class
-           and app name. Will search for files in srch_dir and its sub directories.
+        """Attempt to find the .desktop file for the app based on the app
+           wm_class and app name. Will search for files in srch_dir and its
+           sub directories.
 
-        In addition to <self.wm_class_name>.desktop looks for the following variations of
-        name for the desktop flie:
+        In addition to <self.wm_class_name>.desktop looks for the following
+        variations of name for the desktop flie:
             lowercase<self.wm_class_name>.desktop
             uppercase<self.wm_class_name>.desktop
             <self.app_name>.desktop
             lowercase<self.app_name>.desktop
             <self.app_name> with space characters replaced by '-'.desktop
-            lowercase<self.app_name> with space characters replaced by "-",desktop
+            lowercase<self.app_name> with space characters replaced by
+                "-",desktop
             <self.wm_class_name>.desktop
 
         If the destop file is found, self.desktop_file is set accordingly,
@@ -626,7 +658,8 @@ class DockedApp(object):
                 self.desktop_file = dfname
                 return True
 
-            dfname = the_dir + self.app_name.replace(" ", "-").lower() + ".desktop"
+            dfname = the_dir + self.app_name.replace(" ", "-").lower() + \
+                ".desktop"
             if os.path.isfile(dfname):
                 self.desktop_file = dfname
                 return True
@@ -661,7 +694,7 @@ class DockedApp(object):
         """
 
         # if the search dir doesn't exist, don't do anything
-        if os.path.isdir(srch_dir) == False:
+        if os.path.isdir(srch_dir) is False:
             return False
 
         # split the app name into it's various parts using ' - ' as a
@@ -674,41 +707,49 @@ class DockedApp(object):
         # note: strings that contain spaces will obviously be split into
         # more than one part, but that's not a problem as we don't care
         # about string aguments
-        cmd_parts=self.cmd_line.split()
+        cmd_parts = self.cmd_line.split()
 
-        # search search_dir and any sub-directories it contains for .desktop files
+        # search search_dir and any sub-directories it contains for .desktop
+        # files
         for the_dir, dir_list, file_list in os.walk(srch_dir):
             for the_file in file_list:
 
                 if the_file.endswith(".desktop"):
 
-                    the_de = DesktopEntry.DesktopEntry(os.path.join(the_dir, the_file))
+                    the_de = DesktopEntry.DesktopEntry(os.path.join(the_dir,
+                                                                    the_file))
 
-                    # if the app name in the desktop file matches any of the parts
-                    # of the app name, we have a match
+                    # if the app name in the desktop file matches any of the
+                    # parts of the app name, we have a match
                     try:
                         unused_var = name_parts.index(the_de.getName().upper())
                         name_part_found = True
                     except ValueError:
                         name_part_found = False
 
-                    # remove command line args from the Exec field of the .desktop
+                    # remove command line args from the Exec field of the
+                    # .desktop
                     de_exec = the_de.getExec()
                     exec_found = False
                     if (de_exec is not None) and (de_exec != ""):
                         de_exec = de_exec.split()
 
-                        # now that we have the app command line we can simply check that
-						# it ends with the same command as the .desktop file contains. So...
+                        # now that we have the app command line we can simply
+                        # check that it ends with the same command as the
+                        # .desktop file contains. So...
                         exec_found = self.cmd_line.strip().endswith(de_exec[0])
 
                         if not exec_found:
-                            # we can now search within self.cmd_line for de_exec
-                            # Note: we don't test for equality because some apps are launched via
-                            # another (e.g. python apps) and therefore will be one of the command
-                            # line args. An example of this is Ubuntu Software Center - in the
-                            # .desktop file the Exec field is '/usr/bin/software-center' whilst
-                            # it's command line while running is 'usr/bin/python /usr/bin/software-center'
+                            # we can now search within self.cmd_line for
+                            # de_exec
+                            # Note: we don't test for equality because some
+                            # apps are launched via another (e.g. python apps)
+                            # and therefore will be one of the command line
+                            # args. An example of this is Ubuntu Software
+                            # Center - in the .desktop file the Exec field is
+                            # '/usr/bin/software-center' whilst its command
+                            # line while running is
+                            # 'usr/bin/python /usr/bin/software-center'
                             for exec_part in de_exec:
                                 try:
                                     unused_var = cmd_parts.index(exec_part)
@@ -723,10 +764,11 @@ class DockedApp(object):
                     wm_class_found = False
                     de_wm_class = the_de.getStartupWMClass()
                     if ((de_wm_class is not None) and (de_wm_class != "")) and \
-                        ((self.wm_class_name is not None) and (self.wm_class_name != "")):
-                        # if both the .desktop and the app have a wm_class then they
-                        # MUST match for the app to be found, and nm_part_found and
-                        # exec_found become irrelevant
+                        ((self.wm_class_name is not None) and
+                         (self.wm_class_name != "")):
+                        # if both the .desktop and the app have a wm_class then
+                        # they MUST match for the app to be found, and
+                        # nm_part_found and exec_found become irrelevant
 
                         if (de_wm_class.lower() == self.wm_class_name.lower()):
                             wm_class_found = True
@@ -734,9 +776,9 @@ class DockedApp(object):
                         exec_found = wm_class_found
                         name_part_found = wm_class_found
 
-                    if (name_part_found == True) or \
-                       (exec_found == True) or \
-                       (wm_class_found == True):
+                    if (name_part_found is True) or \
+                       (exec_found is True) or \
+                       (wm_class_found is True):
                         self.desktop_file = os.path.join(the_dir, the_file)
                         return True
 
@@ -760,44 +802,53 @@ class DockedApp(object):
         """
 
         # if the search dir doesn't exist, don't do anything
-        if os.path.isdir(srch_dir) == False:
+        if os.path.isdir(srch_dir) is False:
             return False
 
         for the_file in os.listdir(srch_dir):
-            if (the_file.startswith("mda_")) and (the_file.endswith(".desktop")):
+            if (the_file.startswith("mda_")) and \
+               (the_file.endswith(".desktop")):
                 the_de = DesktopEntry.DesktopEntry(srch_dir+the_file)
 
                 # remove command line args from the Exec field of the .desktop
                 de_exec = the_de.getExec().split(None, 1)[0]
 
                 if (self.cmd_line.find(de_exec) != -1) and \
-                    (self.wm_class_name.upper()==the_de.getStartupWMClass().upper()):
+                   (self.wm_class_name.upper() ==
+                    the_de.getStartupWMClass().upper()):
                     self.desktop_file = srch_dir+the_file
                     return True
 
-    def set_all_windows_icon_geometry(self, root_x, root_y):
-        """Set the location on screen where all of the app's windows will be minimised
-           to.
+    def set_all_windows_icon_geometry(self, x, y, width, height):
+        """Set the location on screen where all of the app's windows will be
+           minimised to.
 
         Args:
-            root_x : The X position in root window coordinates
-            root_y : The Y position in root window coordinates
+            x : The X position in root window coordinates
+            y : The Y position in root window coordinates
+            width: the width of the minimise location
+            height:  the height of the minimise location
 
         """
 
-        # get the height/width of the drawing area
-        alloc = self.drawing_area.get_allocation()
-
-        # iterate through of the windows this process has open and set their minimize location
+        # iterate through of the windows this process has open and set their
+        # minimize location
         for window in self.get_wnck_windows():
             win_type = window.get_window_type()
-            if ((win_type == Wnck.WindowType.NORMAL) or \
+            if ((win_type == Wnck.WindowType.NORMAL) or
                 (win_type == Wnck.WindowType.DIALOG)) and \
                 (window.is_skip_tasklist() == False):
 
-                window.set_icon_geometry(root_x, root_y, alloc.width, alloc.height)
+                window.set_icon_geometry(x, y, width, height)
 
         return True
+
+    def get_allocation(self):
+        """ Returns the allocated position and size of the app's icon within the applet
+        """
+
+        alloc = self.drawing_area.get_allocation()
+        return alloc.x, alloc.y, alloc.width, alloc.height
 
     def set_drawing_area_size(self, size):
         """Set the size request of the app's drawing area.
@@ -824,20 +875,13 @@ class DockedApp(object):
         """
         self.indicator = indicator
 
-    def set_multi_ind (self, multi_ind):
+    def set_multi_ind(self, multi_ind):
         """ Set whether to use an indicator for each open window
 
         Args:
             multi_ind - boolean
         """
         self.multi_ind = multi_ind
-
-    def set_icon_geometry(self):
-        """Ensure that the  minimize location is for all of the app's open windows
-           is recalculated.
-        """
-        self.icon_geometry_set = False
-        self.queue_draw()
 
     def is_running(self):
         """Is the app running or not?
@@ -855,19 +899,20 @@ class DockedApp(object):
         return ret_val
 
     def has_desktop_file(self):
-         """ Does the app have a .desktop file?
+        """ Does the app have a .desktop file?
 
-         Returns: True if there is a desktop file, False otherwise
-         """
+        Returns: True if there is a desktop file, False otherwise
+        """
 
-         return self.desktop_file is not None
+        return self.desktop_file is not None
 
     def read_info_from_desktop_file(self):
         """Attempt to read from read the app's desktop file.
 
         Will try to read the icon name and app name from the desktop file
         Will also get the executeable path if we don't already have this
-        Will read the details of any right click menu options the .desktop file defines
+        Will read the details of any right click menu options the .desktop
+        file defines
 
         Returns:
             True if successful, False otherwise
@@ -878,39 +923,43 @@ class DockedApp(object):
             self.app_name = dfile.getName()
             self.icon_name = dfile.getIcon()
 
-            # if the desktop file does not specify an icon name, use the app name instead
+            # if the desktop file does not specify an icon name, use the app
+            # name instead
             if (self.icon_name is None) or (self.icon_name == ""):
                 self.icon_name = self.app_name.lower()
 
-                # hack for the MATE application browser app, where the .desktop file on
-                # Ubuntu does not specify an icon
+                # hack for the MATE application browser app, where the
+                # .desktop file on Ubuntu does not specify an icon
                 if self.icon_name == "application browser":
                     self.icon_name = "computer"
 
-            # the command specified in the .desktop should always be used to launch
-            # the app
+            # the command specified in the .desktop should always be used to
+            # launch the app
             self.cmd_line = dfile.getExec()
 
-            # now read the right click actions the app supports. These can be specified in
-            # two ways - by a key named 'X-Ayatana-Desktop-Shortcuts' or by an Actions key
-            #
+            # now read the right click actions the app supports. These can be
+            # specified in two ways - by a key named
+            # 'X-Ayatana-Desktop-Shortcuts' or by an Actions key
+
             xads = dfile.get('X-Ayatana-Desktop-Shortcuts')
             if (xads is not None) and (xads != ""):
-                #the shortcut ids are in the the form of a semi-colon separated string
+                # the shortcut ids are in the the form of a semi-colon
+                # separated string
                 for rca in xads.split(";"):
-                    rcname = dfile.get("Name", group = "%s Shortcut Group" %rca)
-                    rcexec = dfile.get("Exec", group = "%s Shortcut Group" %rca)
-                    if (rcname != "") and (rcexec !=""):
-                        new_action = ActionTup(name=rcname, command= rcexec)
+                    rcname = dfile.get("Name",
+                                       group="%s Shortcut Group" % rca)
+                    rcexec = dfile.get("Exec",
+                                       group="%s Shortcut Group" % rca)
+                    if (rcname != "") and (rcexec != ""):
+                        new_action = ActionTup(name=rcname, command=rcexec)
                         self.rc_actions.append(new_action)
 
             for action in dfile.getActions():
-                rcname = dfile.get("Name", group  ="Desktop Action %s" %action)
-                rcexec = dfile.get("Exec", group = "Desktop Action %s" %action)
-                if (rcname != "") and (rcexec !=""):
-                    new_action = ActionTup(name=rcname, command= rcexec)
+                rcname = dfile.get("Name", group="Desktop Action %s" % action)
+                rcexec = dfile.get("Exec", group="Desktop Action %s" % action)
+                if (rcname != "") and (rcexec != ""):
+                    new_action = ActionTup(name=rcname, command=rcexec)
                     self.rc_actions.append(new_action)
-
 
             return True
 
@@ -945,21 +994,20 @@ class DockedApp(object):
             if not self.is_flashing:
                 self.is_flashing = True
                 self.flash_on = False  # initial flash state = off
-                Flasher  = FlashTimer(self)
+                Flasher = FlashTimer(self)
 
                 if not self.is_visible():
                     self.show_icon()
-                    self.set_icon_geometry
 
         else:
-            if self.is_flashing == True:
+            if self.is_flashing:
                 # we need to turn flashing off
                 self.is_flashing = False
                 self.queue_draw()
 
                 # the timer will handle the rest ....
-                # hiding the icon (if necessary) will be taken care of next time the user
-                # changes workspace
+                # hiding the icon (if necessary) will be taken care of next
+                # time the user changes workspace
 
     def do_expose_event(self, drawing_area, event):
         """The main drawing event for the docked app.
@@ -967,38 +1015,29 @@ class DockedApp(object):
         Does the following:
             draw the app icon
             if the mouse is over the app icon, highlight the icon
-            if the is running draw the app running indicators(according to the applet orientation)
-            if the app is the foreground app, highlight the background with a gradient fill
-            if the app is pulsing, draw the icon with a variable level of transparency according to
-            the pulse count
-            if the app is flashing, draw the icon either fully opaque or completely transparent
-            according to its flash state
-
-        Additionally, if necessary, calculate and set the app's on screen minimise location
-        (this is done here as it can only be done after the drawing area has been created, set to
-        the required size and then shown...)
+            if the is running draw the app running indicators(according to the
+            applet orientation)
+            if the app is the foreground app, highlight the background with a
+            gradient fill
+            if the app is pulsing, draw the icon with a variable level of
+            transparency according to the pulse count
+            if the app is flashing, draw the icon either fully opaque or
+            completely transparent according to its flash state
 
         Args:
-            drawing_area : the drawing area that related to the event. Will always be the same as
-                           self.drawing area
-            event        : the event arguments
+            drawing_area : the drawing area that related to the event. Will
+                           always be the same as self.drawing area
+            event        : in Gtk2 the event arguments, in Gtk3 a cairo context
+                           to draw on
 
         """
 
-        if self.icon_geometry_set == False:
-            # the minimize location needs to be set ..
-
-            if event.window is not None:
-                # get the minimise coordinates
-                dxc, dyc = event.window.get_root_coords(event.area.x, event.area.y)
-
-            # set the coordinates
-            if self.set_all_windows_icon_geometry(dxc, dyc):
-                self.icon_geometry_set = True
-
-        # there are lots of drawing operations to be done, so do them to an offscreen
-        # surface and when all is finished copy this to the docked app
-        offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.drawing_area_size, self.drawing_area_size)
+        # there are lots of drawing operations to be done, so do them to an
+        # offscreen surface and when all is finished copy this to the docked
+        # app
+        offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
+                                               self.drawing_area_size,
+                                               self.drawing_area_size)
         ctx = cairo.Context(offscreen_surface)
 
         # convert the highlight values to their cairo equivalents
@@ -1034,8 +1073,8 @@ class DockedApp(object):
         ctx.rectangle(0, 0, self.drawing_area_size, self.drawing_area_size)
 
         if self.is_pulsing:
-            # draw the icon semi-transparently according to how far through the animation
-            # we are
+            # draw the icon semi-transparently according to how far through the
+            # animation we are
 
             half_way = CONST_PULSE_STEPS/2
             if self.pulse_step <= half_way:
@@ -1047,7 +1086,7 @@ class DockedApp(object):
 
         elif self.is_flashing:
             if self.flash_on:
-                ctx.paint() # draw normally if in the flash on state
+                ctx.paint()  # draw normally if in the flash on state
         else:
             ctx.paint()
 
@@ -1058,15 +1097,17 @@ class DockedApp(object):
             ctx.set_operator(cairo.OPERATOR_OVER)
 
         # draw the app running indicators
-        if (self.is_running()) and (self.indicator != dock_prefs.IndicatorType.NONE):
+        if (self.is_running()) and \
+           (self.indicator != dock_prefs.IndicatorType.NONE):
 
             # work out how many indicators to draw - either a single one or
-            # one for each open window up to a maximum of 4, and take into account the
-            # fact that we might only be showing indicators from the current workspace
+            # one for each open window up to a maximum of 4, and take into
+            # account the fact that we might only be showing indicators from
+            # the current workspace
 
             if self.ind_ws is None:
                 # show indicators for windows from all workspaces
-                if self.multi_ind == False:
+                if self.multi_ind is False:
                     num_ind = 1
                 else:
                     num_ind = self.get_num_windows()
@@ -1079,7 +1120,7 @@ class DockedApp(object):
                     if win.is_on_workspace(self.ind_ws):
                         num_ind += 1
 
-                if self.multi_ind == False:
+                if self.multi_ind is False:
                     if num_ind > 1:
                         num_ind = 1
                 else:
@@ -1103,7 +1144,8 @@ class DockedApp(object):
 
             this_ind = 1
             while this_ind <= num_ind:
-                rad_patt = cairo.RadialGradient(ind_x, ind_y, 2, ind_x, ind_y, 4)
+                rad_patt = cairo.RadialGradient(ind_x, ind_y, 2,
+                                                ind_x, ind_y, 4)
 
                 # do a light or dark indicator as necessary
                 if self.indicator == dock_prefs.IndicatorType.LIGHT:
@@ -1117,7 +1159,7 @@ class DockedApp(object):
                 ctx.arc(ind_x, ind_y, 6, 0, 2*math.pi)
 
                 if num_ind > 1:
-                    if(self.applet_orient == MatePanelApplet.AppletOrient.RIGHT) or \
+                    if (self.applet_orient == MatePanelApplet.AppletOrient.RIGHT) or \
                        (self.applet_orient == MatePanelApplet.AppletOrient.LEFT):
                         ind_y += (self.drawing_area_size - 6)/(num_ind+1)
                     else:
@@ -1127,23 +1169,27 @@ class DockedApp(object):
                 ctx.fill()
 
         # now draw to the screen
-        screen_ctx = self.drawing_area.window.cairo_create()
-        screen_ctx.rectangle(event.area.x, event.area.y, \
-                     event.area.width, event.area.height)
-        screen_ctx.clip()
+        if build_gtk2:
+            screen_ctx = self.drawing_area.window.cairo_create()
+            screen_ctx.rectangle(event.area.x, event.area.y,
+                                 event.area.width, event.area.height)
+            screen_ctx.clip()
 
-        alloc = self.drawing_area.get_allocation()
+            alloc = self.drawing_area.get_allocation()
+            if (self.applet_orient == MatePanelApplet.AppletOrient.UP) or \
+               (self.applet_orient == MatePanelApplet.AppletOrient.DOWN):
+                screen_ctx.set_source_surface(offscreen_surface, alloc.x, 0)
+            else:
+                screen_ctx.set_source_surface(offscreen_surface, 0, alloc.y)
 
-        if (self.applet_orient == MatePanelApplet.AppletOrient.UP) or \
-           (self.applet_orient == MatePanelApplet.AppletOrient.DOWN):
-            screen_ctx.set_source_surface(offscreen_surface, alloc.x, 0)
+            screen_ctx.paint()
+            screen_ctx = None
         else:
-            screen_ctx.set_source_surface(offscreen_surface, 0, alloc.y)
+            event.set_source_surface(offscreen_surface, 0, 0)
+            event.paint()
+            alloc = self.drawing_area.get_allocation()
 
-        screen_ctx.paint()
         ctx = None
-        screen_ctx = None
-
 
     def set_pixbuf(self, pixbuf):
         """Set the app pixbuf and calculate its average colour.
@@ -1165,12 +1211,14 @@ class DockedApp(object):
             # Mint has several shortcuts for starting caja so that it can
             # be started in a specific directory e.g. home, /, etc
             # However, the main caja.desktop is responsible for starting the
-            # user's desktop and this is the .desktop file the applet finds first.
-            # When the caja icon on the applet is clicked, caja is run as a desktop
-            # window and no new file browser appears.
-            # To get around this, we can simply check the command that is going to be
-            # run and change it so that a caja window opens in the user's home directory,
-            # which is the behaviour they'll probably be expecting....
+            # user's desktop and this is the .desktop file the applet finds
+            # first.
+            # When the caja icon on the applet is clicked, caja is run as a
+            # desktop window and no new file browser appears.
+            # To get around this, we can simply check the command that is going
+            # to be run and change it so that a caja window opens in the user's
+            # home directory, which is the behaviour they'll probably be
+            # expecting....
             if run_it == "/usr/bin/startcaja":
                 run_it = "caja"
 
@@ -1181,21 +1229,23 @@ class DockedApp(object):
                 run_it = run_it[0:i]
 
         # start the app
-        self.run_cmd_line (run_it)
+        self.run_cmd_line(run_it)
 
     def run_cmd_line(self, cmd_line):
-        """Run a command line. To be used when starting an app for the first time or when running
-           an action/shortcut specfied in the app's .desktop file
+        """Run a command line. To be used when starting an app for the first
+           time or when running an action/shortcut specfied in the app's
+           .desktop file
 
             Args:
                 cmd_line - the command to run
         """
 
         # the command line may contain escape sequences, so unescape them....
-        cmd_line =bytearray(cmd_line, "UTF-8")
+        cmd_line = bytearray(cmd_line, "UTF-8")
         cmd_line = cmd_line.decode("unicode-escape")
 
-        # if any of the directories in cmd_line contain a " ", they need to be escaped
+        # if any of the directories in cmd_line contain a " ", they need to be
+        # escaped
         head,tail = os.path.split(cmd_line)
         if " " in head:
             head = head.replace(" ", "\ ")
@@ -1227,13 +1277,14 @@ class DockedApp(object):
 
         Returns:
                 bool - True if the action exists, False otherwise
-                string - the name of the action (i.e. the text to appear in the right click menu)
+                string - the name of the action (i.e. the text to appear in the
+                right click menu)
                 string - the command line to the be run
         """
 
         if len(self.rc_actions) >= act_no:
             return (True, self.rc_actions[act_no-1].name,
-                          self.rc_actions[act_no-1].command)
+                    self.rc_actions[act_no-1].command)
         else:
             return (False, "", "")
 
@@ -1242,6 +1293,7 @@ class DockedApp(object):
         """
 
         throbber = PulseTimer(self)
+
 
 def main():
     """Main function.
