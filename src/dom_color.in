@@ -1,33 +1,30 @@
 #!/usr/bin/env python3
-""" Calculate the dominant color of an image
+""" Calculate the average color of an image
 
-    Code obtained from: https://stackoverflow.com/questions/34084142/python-3-most-common-color-in-image-kmeans-data-type-match
+    Code adapted from from: https://github.com/ZeevG/python-dominant-image-colour
 """
 
+import binascii
+
 try:
-    import Image
+    import Image, ImageDraw
 except ImportError:
-    from PIL import Image
-import scipy.misc
-import scipy.cluster
-
-NUM_CLUSTERS = 5
-
+    from PIL import Image, ImageDraw
 
 def get_dom_color(filename):
-    im = Image.open(filename)
-    im = im.resize((150, 150))      # optional, to reduce time
-    ar = scipy.misc.fromimage(im)
-    shape = ar.shape
-    ar = ar.reshape(scipy.product(shape[:2]), shape[2])
+    image = Image.open(filename)
+    image = image.resize((150, 150))      # optional, to reduce time
 
-    codes, dist = scipy.cluster.vq.kmeans(ar.astype(float), NUM_CLUSTERS)
+    colour_tuple = [None, None, None]
+    for channel in range(3):
+        # Get data for one channel at a time
+        pixels = image.getdata(band=channel)
 
-    vecs, dist = scipy.cluster.vq.vq(ar, codes)         # assign codes
-    counts, bins = scipy.histogram(vecs, len(codes))    # count occurrences
+        values = []
+        for pixel in pixels:
+            values.append(pixel)
 
-    index_max = scipy.argmax(counts)                    # find most frequent
-    peak = codes[index_max]
-    peak = peak.astype(int)
-    colour = ''.join(format(c, '02x') for c in peak)
+        colour_tuple[channel] = int(sum(values) / len(values))
+
+    colour = binascii.hexlify(struct.pack('BBB', *colour_tuple)).decode('utf-8')
     return colour
