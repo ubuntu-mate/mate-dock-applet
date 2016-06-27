@@ -5,6 +5,7 @@
 """
 
 import binascii
+import struct
 
 try:
     import Image, ImageDraw
