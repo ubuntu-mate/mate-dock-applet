@@ -77,6 +77,145 @@ import dock_info
 
 from log_it import log_it as log_it
 
+class DragMotionTimer(object):
+    """Timer to allow us to track mouse motion during a drag and drop
+       operation.
+
+    Required because:
+        applets (for some reason) do not receive drag-motion events
+        we need to track the mouse x,y so that we can rearrange dock icons
+        on the fly
+
+    Instantiates a timer which periodically gets the root x,y position of
+    the mouse and translates these to applet x,y coordinate
+
+    Attributes:
+        dragee : the docked app which is being dragged
+        drag-ended : the drag and drop operation has finished
+        timer_id = the id of the timer that is instantiated
+        mouse = a Gdk.device we can query for the mouse position
+
+    """
+
+    def __init__(self, dragee, the_dock):
+        """Init for the DragMotionTimer class.
+
+        Sets everything up by creating the timer and  setting a reference to
+        the DockedApp being dragged
+
+        Arguments:
+            app : the DockedApp object
+            the_dock : the dock...
+        """
+
+        self.dragee = dragee
+        self.drag_ended = False
+        self.the_dock = the_dock
+        self.old_drag_pos = -1
+
+        # call the timer function 50 times per second
+        self.timer_id = GObject.timeout_add(20, self.do_timer)
+
+        # get the mouse device
+        display = Gdk.Display.get_default()
+        manager = display.get_device_manager()
+        self.mouse = manager.get_client_pointer()
+
+    def do_timer(self):
+        """The timer function.
+
+        If the drag operation has ended, delete the timer
+
+        Move dock icons about etc....
+
+        """
+
+        # has the drag and drop ended?
+        if self.drag_ended is True:
+            GObject.source_remove(self.timer_id)
+            return False
+
+        none, x, y = self.mouse.get_position()
+
+        dx, dy = self.the_dock.get_dock_root_coords()
+        x = x - dx
+        y = y - dy
+
+        orient = self.the_dock.applet.get_orient()
+
+        app_with_mouse = self.the_dock.get_app_at_mouse(x, y)
+        if app_with_mouse is not None:
+            app_name = app_with_mouse.app_name
+        else:
+            # we're not on the dock, so just record the current mouse x
+            # or y and exit
+            if (orient == MatePanelApplet.AppletOrient.UP) or \
+               (orient == MatePanelApplet.AppletOrient.DOWN):
+                self.old_drag_pos = x
+            else:
+                self.old_drag_pos = y
+
+            return True
+
+        if app_with_mouse == self.dragee:
+            return (True)
+
+        # get the coordinates within the applet of the app that has the
+        # mouse
+
+        ax, ay = self.the_dock.get_app_root_coords(app_with_mouse)
+        ax = ax - dx
+        ay = ay - dy
+
+        orient = self.the_dock.applet.get_orient()
+        if (orient == MatePanelApplet.AppletOrient.UP) or \
+           (orient == MatePanelApplet.AppletOrient.DOWN):
+            if self.old_drag_pos == -1:
+                self.old_drag_pos = x
+                return True
+
+            if x > self.old_drag_pos:
+                # we're moving left to right on a new app, so we need to
+                # trigger an icon move at 40% of the icon width
+                trig_val = ax + (self.dragee.drawing_area_size * 40) / 100
+                if (self.old_drag_pos < trig_val) and (x >= trig_val):
+                    new_pos = self.the_dock.app_list.index(app_with_mouse)
+                    self.the_dock.move_app(self.dragee, new_pos)
+            else:
+                # moving right to left
+                trig_val = ax + self.dragee.drawing_area_size - \
+                           (self.dragee.drawing_area_size *40) / 100
+                if (self.old_drag_pos > trig_val) and (x <= trig_val):
+                    new_pos = self.the_dock.get_app_position_in_dock(app_with_mouse)
+                    self.the_dock.move_app(self.dragee, new_pos)
+
+            self.old_drag_pos = x
+
+        else:
+
+            if self.old_drag_pos == -1:
+                self.old_drag_pos = y
+                return True
+
+            if y > self.old_drag_pos:
+                # we're moving top to bottom on a new app, so we need to
+                # trigger an icon move at 40% of the icon height
+                trig_val = ay + (self.dragee.drawing_area_size * 40) / 100
+                if (self.old_drag_pos < trig_val) and (y >= trig_val):
+                    new_pos = self.the_dock.app_list.index(app_with_mouse)
+                    self.the_dock.move_app(self.dragee, new_pos)
+            else:
+                # moving bottom to top
+                trig_val = ay + self.dragee.drawing_area_size - \
+                           (self.dragee.drawing_area_size * 40) / 100
+                if (self.old_drag_pos > trig_val) and (y <= trig_val):
+                    new_pos = self.the_dock.get_app_position_in_dock(app_with_mouse)
+                    self.the_dock.move_app(self.dragee, new_pos)
+
+            self.old_drag_pos = y
+
+        return True
+
 
 class Dock(object):
     """The main application dock class
@@ -133,6 +272,7 @@ class Dock(object):
             panel_y : the panel's y position on screen
             panel_size : the size of the panel
             applet_pos : the position of the applet(in pixels) in the panel
+            dm_timer : timer to monitor mouse movement during drag and drop
     """
 
     def __init__(self, applet):
@@ -202,6 +342,8 @@ class Dock(object):
         self.panel_y = 0
         self.panel_orient = "top"
         self.applet_pos = 0
+
+        self.dm_timer = None
 
         # create an event handler so that we can react to changes e.g
         # the panel the applet is on, or it's position on the panel
@@ -667,11 +809,16 @@ class Dock(object):
         menu_xml += '<menuitem name="df_shortcut_2_action" action="df_shortcut_2_action"/><separator/>'
         menu_xml += '<menuitem name="df_shortcut_3_action" action="df_shortcut_3_action"/><separator/>'
         menu_xml += '<menuitem name="df_shortcut_4_action" action="df_shortcut_4_action"/><separator/>'
-        menu_xml += '<menuitem name="close_win" action="close_win_action"/><separator/>'
-        menu_xml += '<menuitem name="move_up" action="move_up_action"/>'
-        menu_xml += '<menuitem name="move_down" action="move_down_action"/>'
-        menu_xml += '<menuitem name="move_left" action="move_left_action"/>'
-        menu_xml += '<menuitem name="move_right" action="move_right_action"/>'
+        menu_xml += '<menuitem name="close_win" action="close_win_action"/>'
+
+        # we only need menu items for moving app icons for Gtk2
+        # (Gtk3 does it with drag and drop)
+        if build_gtk2:
+            menu_xml += '<separator/><menuitem name="move_up" action="move_up_action"/>'
+            menu_xml += '<menuitem name="move_down" action="move_down_action"/>'
+            menu_xml += '<menuitem name="move_left" action="move_left_action"/>'
+            menu_xml += '<menuitem name="move_right" action="move_right_action"/>'
+
         menu_xml += '<separator/><menuitem name="Pin" action="pin_action"/>'
         menu_xml += '<menuitem name="Unpin" action="unpin_action"/><separator/>'
         menu_xml += '<menuitem name="Preferences" action="prefs_action"/>'
@@ -795,6 +942,55 @@ class Dock(object):
                 self.set_minimise_target(self.app_list[index])
 
                 self.write_settings()
+
+    def move_app (self, the_app, new_pos):
+        """ Move a docked app to a new position in the dock, adjusting the
+            the positions of other apps as necessary
+
+        This is used during drag and drop operatations and is therefore gtk3
+        only
+
+        Args:
+            the_app : the docked_app we're moving
+            new_pos : int, the new position in the docked
+        """
+
+        old_pos = self.app_list.index(the_app)
+
+        if self.box.orientation == Gtk.Orientation.HORIZONTAL:
+            prop = "left-attach"
+        else:
+            prop = "top-attach"
+
+        if new_pos > old_pos:
+            step = 1
+        else:
+            step = -1
+
+        i = old_pos + step
+
+        # first, adjust the contents of the box
+        while i != new_pos + step:
+            app_to_move = self.app_list[i]
+            self.box.child_set_property(app_to_move.drawing_area,
+                                        prop, i - step)
+            i += step
+
+        # move the desired app
+        self.box.child_set_property(the_app.drawing_area, prop, new_pos)
+
+        # now move things around in the app list to match
+        self.app_list.remove(the_app)
+        self.app_list.insert(new_pos, the_app)
+
+        # we need to redraw the icons and recalculate the minimise positions
+        # of all apps
+        self.set_all_apps_minimise_targets()
+        for app in self.app_list:
+            app.queue_draw()
+
+        # save the new settings
+        self.write_settings()
 
     def get_app_root_coords(self, app):
         """ Calculate and return the root x and y co-ordinates of the top left
@@ -2128,8 +2324,61 @@ class Dock(object):
         #activate the new window
         windows[new_index].activate(0)
 
+    def get_dragee(self):
+        """"
+            Return the app which is currently marked as being dragged to a new
+            position in the dock.
+
+        Returns:
+            a docked_app, or None is no apps are being dragged
+
+        """
+
+        for app in self.app_list:
+            if app.is_dragee is True:
+                return app
+
+        return None
+
+    def start_drag_motion_timer(self, dragee):
+        """ Create a timer to allow us to monitor the mouse position during
+            the drag/drop and rearrange dock icons on the fly
+
+        Args: dragee - the docked_app which is being dragged
+
+        """
+
+        self.dm_timer = DragMotionTimer(dragee, self)
+
+    def stop_drag_motion_timer(self):
+        """  Stop the drag motion timer
+        """
+
+        self.dm_timer.drag_ended = True
+
+    def get_app_under_mouse(self):
+        """ Get the docked which is currently under the mouse cursor
+
+        Returns : a docked_app, or None if the cursor is not over a docked_app
+        """
+
+        # get the mouse device so we can obtain the root coordinates of the
+        # the cursor
+        display = Gdk.Display.get_default()
+        manager = display.get_device_manager()
+        mouse = manager.get_client_pointer()
+        none, x, y = mouse.get_position()
+        dx, dy = self.get_dock_root_coords()
+
+        # convert to applet coords
+        x = x - dx
+        y = y - dy
+
+        return self.get_app_at_mouse(x, y)
+
+
 def win_activation_timer(args):
-    """ sTimer function to be called by GObject.timeout_add and which
+    """ Timer function to be called by GObject.timeout_add and which
         will activate a specified wnck window
 
     Args:
