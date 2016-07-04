@@ -331,6 +331,8 @@ class DockedApp(object):
                       drawn for windows on the specified workspace
         last_active_win : the wnck_window of the app's last active window
 
+        is_dragee  : boolean - indicates whether or not the app's icon is
+                     being dragged to a new position on the dock
     """
 
     def __init__(self):
@@ -391,6 +393,8 @@ class DockedApp(object):
             self.drawing_area.connect("expose-event", self.do_expose_event)
         else:
             self.drawing_area.connect("draw", self.do_expose_event)
+
+        self.is_dragee = False
 
     def has_wnck_app(self, wnck_app):
         """ see if this app has a process with the specified wnck_app
@@ -1023,7 +1027,8 @@ class DockedApp(object):
             transparency according to the pulse count
             if the app is flashing, draw the icon either fully opaque or
             completely transparent according to its flash state
-
+            if the app is being dragged to a new position on the dock, draw
+            a completely transparent background
         Args:
             drawing_area : the drawing area that related to the event. Will
                            always be the same as self.drawing area
@@ -1045,7 +1050,7 @@ class DockedApp(object):
         green = self.highlight_color.g / 255
         blue = self.highlight_color.b / 255
 
-        if self.is_active:
+        if self.is_active and (self.is_dragee is False):
             # draw a background gradient according to the applet orientation
             if self.applet_orient == MatePanelApplet.AppletOrient.RIGHT:
                 pattern = cairo.LinearGradient(0, 0, self.drawing_area_size, 0)
@@ -1087,10 +1092,12 @@ class DockedApp(object):
         elif self.is_flashing:
             if self.flash_on:
                 ctx.paint()  # draw normally if in the flash on state
+        elif self.is_dragee:
+            ctx.paint_with_alpha(0.0)
         else:
             ctx.paint()
 
-        if self.has_mouse:
+        if (self.has_mouse is True) and (self.is_dragee is False):
             # lighten the icon
             ctx.set_operator(cairo.OPERATOR_ADD)
             ctx.paint_with_alpha(0.2)
@@ -1098,7 +1105,8 @@ class DockedApp(object):
 
         # draw the app running indicators
         if (self.is_running()) and \
-           (self.indicator != dock_prefs.IndicatorType.NONE):
+           (self.indicator != dock_prefs.IndicatorType.NONE) and \
+           (self.is_dragee is False):
 
             # work out how many indicators to draw - either a single one or
             # one for each open window up to a maximum of 4, and take into
@@ -1294,6 +1302,15 @@ class DockedApp(object):
 
         throbber = PulseTimer(self)
 
+    def set_dragee(self, is_dragee):
+        """ Set the flag which indicates whether or not this app is being
+            dragged to a new position on the dock
+
+        Set the value of the self.is_dragee flag and redraw the app icon
+        """
+
+        self.is_dragee = is_dragee
+        self.queue_draw()
 
 def main():
     """Main function.
