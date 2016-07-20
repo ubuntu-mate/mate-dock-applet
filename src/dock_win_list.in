@@ -58,6 +58,7 @@ from gi.repository import GdkPixbuf
 from gi.repository import Gio
 from gi.repository import Gdk
 from gi.repository import GObject
+from gi.repository import Pango
 from gi.repository import MatePanelApplet
 
 import os
@@ -70,6 +71,10 @@ from log_it import log_it as log_it
 
 CONST_TIMER_DELAY = 500
 CONST_CLOSE_ICON_SIZE = 16
+CONST_SEP = "--------------------"  # text which denotes tree view item is a
+                                    # separator
+CONST_MAX_TITLE_WIDTH = 300         # max width of the title column in pixles
+CONST__ACTIVE_TEXT = "•"
 
 
 class DockWinList(Gtk.Window):
@@ -95,6 +100,11 @@ class DockWinList(Gtk.Window):
 
             __win_w : the width of the window
             __win_h : the height of the window
+            __bgr, __bgg, bgb : the r,g,b panel colour components
+            __fgr, __fgg, fgb : the r,b,g foreground colour components
+
+            __app_pb : the app's icon scaled to the size required for the
+                       list
 
             The atrributes below are used for positioning this window relative
             to the applet and it's panel:
@@ -109,13 +119,24 @@ class DockWinList(Gtk.Window):
     """
 
     def __init__(self, wnck_screen):
-
         """
         create the window and its contents
 
         Args:
             wnck_screen: the wnck_screen of the applet
         """
+
+        def create_drawing_area(width, height, draw_event):
+            # convenience func to create a drawing area with a specified
+            # width, height and draw event
+            da = Gtk.DrawingArea()
+            da.set_size_request(width, height)
+            if build_gtk2:
+                da.connect("expose-event", draw_event)
+            else:
+                da.connect("draw", draw_event)
+
+            return da
 
         super().__init__(title="", type=Gtk.WindowType.POPUP)
 
@@ -125,12 +146,14 @@ class DockWinList(Gtk.Window):
         self.set_decorated(False)  # we don't want a titlebar..
         self.set_skip_taskbar_hint(True)  # we don't want to be in the taskbar
 
-        self.__icon_size = 32  # size of icons in the window
+        self.__icon_size = 16  # size of icons in the window
 
         self.__the_app = None
         self.__icontheme = None
         self.__timer_id = None
         self.__dismissed = False
+
+        self.__app_pb = None
 
         self.__win_w = 0
         self.__win_h = 0
@@ -141,41 +164,38 @@ class DockWinList(Gtk.Window):
 
         # create ui
         if build_gtk2:
-            self.__vbox = Gtk.VBox()
-            self.__vbox.set_spacing(0)
+            self.__grid = Gtk.VBox()
+            self.__grid.set_spacing(0)
+            self.__grid = Gtk.Table(rows=3, columns=3)
+            self.__grid.set_row_spacings(0)
+            self.__grid.set_col_spacings(0)
         else:
-            self.__vbox = Gtk.Grid()
-            self.__vbox.set_orientation(Gtk.Orientation.VERTICAL)
-            self.__vbox.hexpand = True
-            self.__vbox.vexpand = True
+            self.__grid = Gtk.Grid()
+            self.__grid.set_orientation(Gtk.Orientation.VERTICAL)
+            self.__grid.hexpand = True
+            self.__grid.vexpand = True
             self.hexpand = True
             self.vexpand = True
 
-        # debug stuff
-        #  self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
-        #  self.__button.connect("button-press-event", self.win_button_press)
-        #  self.connect("delete-event", Gtk.main_quit)
-        #  self.__mbutton = Gtk.Button(label="Menu...",
-        #                                stock=Gtk.STOCK_REFRESH)
-        #  self.__mbutton.connect("button-press-event", self.mbutton_press)
-        #  self.__hbx = Gtk.HButtonBox()
-        #  self.__hbx.set_layout(Gtk.ButtonBoxStyle.END)
-        #  self.__hbx.pack_start(self.__button, False, False, 4)
-        #  self.__hbx.pack_start(self.__mbutton, False, False, 4)
-        #  self.__vbox.pack_start(self.__hbx, True, True, 0)
+        # set vars used when drawing the window border
+        self.__border_width = 15
+        self.__border_line = 4.5
+        self.__line_width = 2
+        self.__line_curve = 4
 
-        self.__lbl_app_name = Gtk.Label()
-        self.__lbl_app_name.set_use_markup(True)
-
-        if build_gtk2:
-            self.__hbox_title = Gtk.HBox()
-        else:
-            self.__hbox_title = Gtk.Box(Gtk.Orientation.HORIZONTAL, 0)
-
-        if build_gtk2:
-            self.__vbox.pack_start(self.__lbl_app_name, True, True, 0)
-        else:
-            self.__vbox.add(self.__lbl_app_name)
+        # add drawing areas to all outsides of the 3x3 grid
+        self.__da_top = create_drawing_area(self.__border_width,
+                                            self.__border_width,
+                                            self.draw_top_border)
+        self.__da_left = create_drawing_area(self.__border_width,
+                                             self.__border_width,
+                                             self.draw_left_border)
+        self.__da_right = create_drawing_area(self.__border_width,
+                                              self.__border_width,
+                                              self.draw_right_border)
+        self.__da_bottom = create_drawing_area(self.__border_width,
+                                               self.__border_width,
+                                               self.draw_bottom_border)
 
         # we use a treeview to list each window, so initialise it and its
         # liststore
@@ -195,10 +215,17 @@ class DockWinList(Gtk.Window):
 
         self.__tree_view.set_hover_selection(True)
 
-        # the list contains the window icon, active indicator, window title,
-        # close icon and the window itself
-        self.__list_store = Gtk.ListStore(GdkPixbuf.Pixbuf, str, str,
-                                          GdkPixbuf.Pixbuf, Wnck.Window)
+        # the list consists of open windows (click to select the window)
+        # and items which work as menu items (e.g. pin/unpin app to dock)
+        # and a Gtk.Action from which we can invoke the activate method
+        # the liststore therefore needs to contain an active indictor,
+        # window title/item text, Wnck window (if this is a window),
+        # GdxPixbuf (an icon for the user to click to close the window,  and
+        # a Gtk.Action (if this is something we want to call back)
+        self.__list_store = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf,
+                                          Wnck.Window, Gtk.Action,
+                                          GdkPixbuf.Pixbuf)
+
         self.__active_renderer = Gtk.CellRendererText()
         self.__icon_renderer = Gtk.CellRendererPixbuf()
         self.__title_renderer = Gtk.CellRendererText()
@@ -206,62 +233,82 @@ class DockWinList(Gtk.Window):
         self.__close_renderer.set_alignment(1, 0.0)   # align to to topright of
                                                       # the cell
 
+        # set default cell colours and padding
+        self.__title_renderer.set_padding(2, 6)
+        self.set_bg_col(32, 32, 32)
+
         # create columns for the treeview
         self.__col_icon = Gtk.TreeViewColumn("",
                                              self.__icon_renderer,
-                                             pixbuf=0)
-        self.__col_icon.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        self.__col_icon.set_fixed_width(self.__icon_size+4)
+                                             pixbuf=5)
 
         self.__col_active = Gtk.TreeViewColumn("",
                                                self.__active_renderer,
-                                               text=1)
-        self.__col_active.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        self.__col_active.set_fixed_width(20)
+                                               text=0)
+
+        self.__col_active.set_sizing(Gtk.TreeViewColumnSizing.GROW_ONLY)
+        self.__col_active.set_min_width(0)
 
         self.__col_title = Gtk.TreeViewColumn("",
                                               self.__title_renderer,
-                                              text=2)
+                                              text=1)
+        self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.GROW_ONLY)
+        self.__col_title.set_expand(True)
+
+        self.__col_title.set_max_width(CONST_MAX_TITLE_WIDTH)
+        # assign an event handler to the title column so that we can use it
+        # to display the active window title in bold text
+        self.__col_title.set_cell_data_func(self.__title_renderer,
+                                            self.draw_title)
+
         self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.GROW_ONLY)
 
         self.__col_close = Gtk.TreeViewColumn("",
                                               self.__close_renderer,
-                                              pixbuf=3)
-        self.__col_close.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        self.__col_close.set_fixed_width(40)
+                                              pixbuf=2)
+        self.__col_close.set_sizing(Gtk.TreeViewColumnSizing.GROW_ONLY)
+        self.__col_close.set_max_width(32)
 
         # add the columns
         self.__tree_view.set_model(self.__list_store)
         self.__tree_view.append_column(self.__col_icon)
-        self.__tree_view.append_column(self.__col_active)
         self.__tree_view.append_column(self.__col_title)
         self.__tree_view.append_column(self.__col_close)
 
-        # assign an event handler to the title column so that we can use it
-        # to display the active window title in bold text
-        self.__col_title.set_cell_data_func(self.__title_renderer, draw_title)
+        self.__tree_view.set_row_separator_func(self.check_sep)
 
         if build_gtk2:
-            self.__vbox.pack_start(self.__tree_view, True, True, 0)
+            self.__grid.attach(self.__da_top, 0, 3, 0, 1, xpadding=0, ypadding=0)
+            self.__grid.attach(self.__da_left, 0, 1, 1, 2)
+            self.__grid.attach(self.__da_right, 2, 3, 1, 2)
+            self.__grid.attach(self.__da_bottom, 0, 3, 2, 3)
+            self.__grid.attach(self.__tree_view, 1, 2, 1, 2)
         else:
-            self.__vbox.add(self.__tree_view)
+            self.__grid.attach(self.__da_top, 0, 0, 3, 1)
+            self.__grid.attach(self.__da_left, 0, 1, 1, 1)
+            self.__grid.attach(self.__da_right, 2, 1, 1, 1)
+            self.__grid.attach(self.__da_bottom, 0, 2, 3, 1)
+            self.__grid.attach(self.__tree_view, 1, 1, 1, 1)
 
-        self.__vbox.show_all()
-        self.add(self.__vbox)
+        self.__grid.show_all()
+        self.add(self.__grid)
 
         self.__mouse_areas = []
 
         self.__tree_view.set_has_tooltip(True)
         self.__tree_view.connect("query-tooltip", self.query_tooltip)
         self.__tree_view.connect("button-release-event", self.button_release)
+        self.__tree_view.connect("size-allocate", self.treeview_allocate)
 
         # connect handlers for the show and hide events
         self.connect("show", self.win_shown)
         self.connect("hide", self.win_hidden)
 
         self.connect("configure-event", self.win_configure)
+        self.connect("size-allocate", self.size_allocate)
 
         self.__pb_close = None
+        self.__pb_active = None
 
     def create_close_pixbuf(self):
         """ Create a 'close' icon (based on the stock close icon) for use
@@ -280,6 +327,7 @@ class DockWinList(Gtk.Window):
 
         # we now need to copy the cairo surface to a pixbuf. The best way to do
         # this would be by calling GdkPixbuf.Pixbuf.new_from_data as in these
+        #                                                 64)
         # comments. Unfortunately this function does not seem to be
         # introspectable (Gtk2) or not implemented yet (Gtk3) and therefore
         # doesn't work.
@@ -288,7 +336,6 @@ class DockWinList(Gtk.Window):
         #                                                 GdkPixbuf.Colorspace.RGB,
         #                                                 True, 8, pb_close.get_width(),
         #                                                 pb_close.get_height(),
-        #                                                 64)
 
         # Therefore we have to resort to writing the surface to a temporary
         # .png file and then loading it into our pixbuf ...
@@ -297,6 +344,80 @@ class DockWinList(Gtk.Window):
         surface.write_to_png(tempfn)
         self.__pb_close = GdkPixbuf.Pixbuf.new_from_file(tempfn)
         os.remove(tempfn)
+
+    def create_active_pixbuf(self):
+        """ Create an active window icon (based on the stock forward icon) for
+            use in the treeview
+
+            See the comments in create-close-pixbuf
+        """
+
+        # create a pixbuf for holding the icon
+        pb_active = self.render_icon(Gtk.STOCK_GO_FORWARD, Gtk.IconSize.MENU, None)
+
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
+                                     CONST_CLOSE_ICON_SIZE,
+                                     CONST_CLOSE_ICON_SIZE)
+        ctx = cairo.Context(surface)
+        Gdk.cairo_set_source_pixbuf(ctx, pb_active, 0, 0)
+        ctx.paint()
+
+        handle, tempfn = tempfile.mkstemp()
+        surface.write_to_png(tempfn)
+        self.__pb_active = GdkPixbuf.Pixbuf.new_from_file(tempfn)
+        os.remove(tempfn)
+
+    def treeview_allocate(self, widget, allocation):
+        """ Event handler for the tree view size-allocate event
+
+        If the title column has expanded to its maximum width, ellipsize the
+        title text...
+        """
+
+        if self.__col_title.get_width() == CONST_MAX_TITLE_WIDTH:
+            self.__col_title.set_min_width(CONST_MAX_TITLE_WIDTH)
+            self.__title_renderer.set_property("ellipsize",
+                                               Pango.EllipsizeMode.END)
+
+        self.__tree_view.get_selection().unselect_all()
+
+
+    def set_bg_col (self, bgr, bgg, bgb):
+        """ Sets the background colour of the window
+
+        Also, set a foreground colour that will contrast with the background
+        colour (so we can read text etc...)
+
+        Args:
+            bgr, bgg, bgb : the background rgb colour components
+
+        """
+
+        self.__bgr = bgr
+        self.__bgg = bgg
+        self.__bgb = bgb
+
+        # set foreground colour according to the backgrond colour
+        if (bgr + bgg + bgb) > 384:  # 384 equates to average rgb values of 128
+                                     # per colour components and therefore
+                                     # represents a mid values
+            self.__fgr = self.__fgg = self.__fgb = 0  # dark fg colour
+        else:
+            self.__fgr = self.__fgg = self.__fgb = 255  # light fg color
+
+        # set strings used to setting widget colours
+        self.__bg_str = "#%.2x%.2x%.2x" % (self.__bgr, self.__bgg, self.__bgb)
+        self.__fg_str = "#%.2x%.2x%.2x" % (self.__fgr, self.__fgg, self.__fgb)
+
+        # now set the treeview colours
+        self.__title_renderer.set_property("cell-background", self.__bg_str)
+        self.__title_renderer.set_property("foreground", self.__fg_str)
+
+        self.__active_renderer.set_property("cell-background", self.__bg_str)
+        self.__active_renderer.set_property("foreground", self.__fg_str)
+
+        self.__close_renderer.set_property("cell-background", self.__bg_str)
+        self.__icon_renderer.set_property("cell-background", self.__bg_str)
 
     def win_shown(self, widget):
         """ Event handler for the window's show event
@@ -348,7 +469,7 @@ class DockWinList(Gtk.Window):
 
             return rect
 
-        panel_space = 5  # how many pixels away from the panel the window list
+        panel_space = 10 # how many pixels away from the panel the window list
                          # will appear
 
         win_border = 15  # size of the border (in pixels) around the window
@@ -476,11 +597,210 @@ class DockWinList(Gtk.Window):
         # if the new size of the window isn't the same as the old one, we need
         # to recaclulate the window position and mouse areas
 
+        return
         if (event.width != self.__win_w) or (event.height != self.__win_h):
             self.__win_w = event.width
             self.__win_h = event.height
 
             self.set_win_position()
+
+    def size_allocate(self, widget, event):
+        if (event.width != self.__win_w) or (event.height != self.__win_h):
+            self.__win_w = event.width
+            self.__win_h = event.height
+
+            self.set_win_position()
+
+    # TODO: investigate reason for shape_combine_region not working
+    #def size_allocate(self, widget, allocation):
+    #    def rounded_rectangle(cr, x, y, w, h, r=20):
+    #        # Attribution:
+    #        # https://stackoverflow.com/questions/2384374/rounded-rectangle-in-pygtk
+    #        # This is just one of the samples from
+    #        # http://www.cairographics.org/cookbook/roundedrectangles/
+    #        #   A****BQ
+    #        #  H      C
+    #        #  *      *
+    #        #  G      D
+    #        #   F****E
+    #
+    #            cr.move_to(x + r, y)                      # Move to A
+    #        cr.line_to(x + w - r, y)                    # Straight line to B
+    #        cr.curve_to(x + w, y, x + w, y ,x + w, y + r)
+    #        # Curve to C, Control points are both at Q
+    #        cr.line_to(x + w, y + h - r)                  # Move to D
+    #        cr.curve_to(x + w,y + h, x + w,y + h, x + w - r, y +h ) # Curve to E
+    #        cr.line_to(x + r, y + h)                    # Line to F
+    #        cr.curve_to(x, y + h, x, y + h, x, y + h - r) # Curve to G
+    #        cr.line_to(x,y+r)                      # Line to H
+    #        cr.curve_to(x,y,x,y,x+r,y)             # Curve to A
+    #
+    #    print("size allocated %d %d %d %d" % (allocation.x, allocation.y,
+    #                                           allocation.width, allocation.height))
+    #
+    #    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
+    #                                   allocation.width,
+    #                                   allocation.height)
+    #
+    #    ctx = cairo.Context(surface)
+    #    rounded_rectangle(ctx, allocation.x + 5 , allocation.y + 5,
+    #                      allocation.width - 10, allocation.height - 10)
+    #    ctx.set_source_rgba(1, 1, 1, 1)
+    #
+    #    ctx.fill()
+    #
+    #    region = Gdk.cairo_region_create_from_surface(surface)
+    #    self.props.window.shape_combine_region(region, 0, 0)
+
+    def draw_top_border(self, drawing_area, event):
+        """
+            Draw the top of a rectangle with rounded corners to provide
+            a border for the window
+        """
+        # in gtk3 the last param is a cairo context, in gtk2 we need to
+        # create one
+        if build_gtk2:
+            ctx = drawing_area.window.cairo_create()
+            ctx.rectangle(event.area.x, event.area.y,
+                          event.area.width, event.area.height)
+            ctx.clip()
+        else:
+            ctx = event
+
+        alloc = drawing_area.get_allocation()
+
+        # fill with background the background colour first
+        ctx.rectangle(0, 0, alloc.width, alloc.height)
+        ctx.set_source_rgb(self.__bgr / 255, self.__bgg / 255,
+                           self.__bgb / 255)
+        ctx.fill()
+
+        # do the actual drawing
+        ctx.set_operator(cairo.OPERATOR_OVER)
+        ctx.set_line_width(self.__line_width)
+        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+        ctx.set_source_rgb(self.__fgr / 255, self.__fgg / 255,
+                           self.__fgb / 255)
+        ctx.move_to(self.__border_line, alloc.height)
+        ctx.line_to(self.__border_line,
+                    self.__border_line + self.__line_curve)
+        ctx.curve_to(self.__border_line,
+                     self.__border_line + self.__line_curve,
+                     self.__border_line, self.__border_line,
+                     self.__border_line + self.__line_curve,
+                     self.__border_line)
+        ctx.line_to(alloc.width - self.__border_line - self.__line_curve,
+                    self.__border_line)
+        ctx.curve_to(alloc.width - self.__border_line - self.__line_curve,
+                     self.__border_line,
+                     alloc.width - self.__border_line, self.__border_line,
+                     alloc.width - self.__border_line,
+                     self.__border_line + self.__line_curve)
+        ctx.line_to(alloc.width - self.__border_line, alloc.height)
+        ctx.stroke()
+
+    def draw_left_border(self, drawing_area, event):
+        """
+            Draw the left hand side of the window border
+        """
+
+        if build_gtk2:
+            ctx = drawing_area.window.cairo_create()
+            ctx.rectangle(event.area.x, event.area.y,
+                          event.area.width, event.area.height)
+            ctx.clip()
+        else:
+            ctx = event
+
+        alloc = drawing_area.get_allocation()
+
+        # fill with background colour
+        ctx.rectangle(0, 0, alloc.width, alloc.height)
+        ctx.set_source_rgb(self.__bgr / 255, self.__bgg / 255,
+                           self.__bgb / 255)
+        ctx.fill()
+
+        ctx.set_operator(cairo.OPERATOR_OVER)
+        ctx.set_line_width(self.__line_width)
+        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+        ctx.set_source_rgb(self.__fgr / 255, self.__fgg / 255,
+                           self.__fgb / 255)
+
+        ctx.move_to(self.__border_line, 0)
+        ctx.line_to(self.__border_line, alloc.height)
+        ctx.stroke()
+
+    def draw_right_border(self, drawing_area, event):
+        """
+            Draw the right hand side of the window border
+        """
+
+        if build_gtk2:
+            ctx = drawing_area.window.cairo_create()
+            ctx.rectangle(event.area.x, event.area.y,
+                          event.area.width, event.area.height)
+            ctx.clip()
+        else:
+            ctx = event
+        alloc = drawing_area.get_allocation()
+
+        ctx.rectangle(0, 0, alloc.width, alloc.height)
+        ctx.set_source_rgb(self.__bgr / 255, self.__bgg / 255,
+                           self.__bgb / 255)
+        ctx.fill()
+        ctx.set_operator(cairo.OPERATOR_OVER)
+        ctx.set_line_width(self.__line_width)
+        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+        ctx.set_source_rgb(self.__fgr / 255, self.__fgg / 255,
+                           self.__fgb / 255)
+
+        ctx.move_to(alloc.width - self.__border_line, 0)
+        ctx.line_to(alloc.width - self.__border_line, alloc.height)
+        ctx.stroke()
+
+    def draw_bottom_border(self, drawing_area, event):
+        """
+            Draw the bottom of the window border with rounded corners
+        """
+
+        if build_gtk2:
+            ctx = drawing_area.window.cairo_create()
+            ctx.rectangle(event.area.x, event.area.y,
+                          event.area.width, event.area.height)
+            ctx.clip()
+        else:
+            ctx = event
+
+        alloc = drawing_area.get_allocation()
+        ctx.rectangle(0, 0, alloc.width, alloc.height)
+        ctx.set_source_rgb(self.__bgr / 255, self.__bgg / 255,
+                           self.__bgb / 255)
+        ctx.fill()
+
+        ctx.set_operator(cairo.OPERATOR_OVER)
+        ctx.set_line_width(self.__line_width)
+        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+        ctx.set_source_rgb(self.__fgr / 255, self.__fgg / 255,
+                           self.__fgb / 255)
+        ctx.move_to(self.__border_line, 0)
+        ctx.line_to(self.__border_line,
+                           alloc.height - self.__border_line - self.__line_curve)
+        ctx.curve_to(self.__border_line,
+                     alloc.height - self.__border_line - self.__line_curve,
+                     self.__border_line, alloc.height - self.__border_line,
+                     self.__border_line + self.__line_curve,
+                     alloc.height - self.__border_line)
+
+        ctx.line_to(alloc.width - self.__border_line - self.__line_curve,
+                    alloc.height - self.__border_line)
+        ctx.curve_to(alloc.width - self.__border_line - self.__line_curve,
+                     alloc.height - self.__border_line,
+                     alloc.width - self.__border_line,
+                     alloc.height - self.__border_line,
+                     alloc.width - self.__border_line,
+                     alloc.height - self.__border_line - self.__line_curve)
+        ctx.line_to(alloc.width - self.__border_line, 0)
+        ctx.stroke()
 
     def win_hidden(self, widget):
         """ Event handler for the window's hide event
@@ -516,18 +836,19 @@ class DockWinList(Gtk.Window):
         if keyboard_mode:
             return False
 
-        path, col, xrel, yrel = self.__tree_view.get_path_at_pos(x, y)
+        return False
+#        path, col, xrel, yrel = self.__tree_view.get_path_at_pos(x, y)
 
-        if col == self.__col_close:
-            cell_area = self.__tree_view.get_cell_area(path, col)
-            if (x >= cell_area.x + cell_area.width  - CONST_CLOSE_ICON_SIZE) and \
-               (y <= cell_area.y + CONST_CLOSE_ICON_SIZE):
-                tooltip.set_text("Close window")
-                return True
-            else:
-                return False
-        else:
-            return False
+#        if col == self.__col_close:
+#            cell_area = self.__tree_view.get_cell_area(path, col)
+#            if (x >= cell_area.x + cell_area.width  - CONST_CLOSE_ICON_SIZE) and \
+#               (y <= cell_area.y + CONST_CLOSE_ICON_SIZE):
+#                tooltip.set_text("Close window")
+#                return True
+#            else:
+#                return False
+#        else:
+#            return False
 
     def button_release(self, widget, event):
         """ Handler for the button release event
@@ -557,7 +878,15 @@ class DockWinList(Gtk.Window):
         path, col, xrel, yrel = self.__tree_view.get_path_at_pos(event.x, event.y)
         sel_iter = self.__list_store.get_iter(path)
 
-        win = self.__list_store.get_value(sel_iter, 4)
+        win = self.__list_store.get_value(sel_iter, 3)
+        action = self.__list_store.get_value(sel_iter, 4)
+        if (win is None) and (action is None):
+            # this will allow e.g. an item to be added which just contains
+            # the name of app, which can then be clicked to launch the
+            # so launch the app
+            self.hide()
+            self.the_app.start_app()
+            return True
 
         if col == self.__col_close:
             cell_area = self.__tree_view.get_cell_area(path, col)
@@ -567,23 +896,38 @@ class DockWinList(Gtk.Window):
                 self.hide()
                 return True
 
-        self.hide()
+        if win is not None:
+            # if the window to be activated is not on the current workspace,
+            # switchto that workspace
+            wnck_aws = self.wnck_screen.get_active_workspace()
+            wnck_ws = win.get_workspace()
 
-        # if the window to be activated is not on the current workspace, switch
-        # to that workspace
+            # the windows's current workspace can be None if it is pinned to all
+            # workspaces or it is not on any at all...
+            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392 and
+            # https://bugs.launchpad.net/ubuntu-mate/+bug/1555336 (regarding software updater))
+            if (wnck_aws is not None) and (wnck_ws is not None) and \
+               (wnck_aws != wnck_ws):
+                    wnck_ws.activate(0)
+                    sleep(0.01)
+            win.activate(0)
 
-        wnck_aws = self.wnck_screen.get_active_workspace()
-        wnck_ws = win.get_workspace()
+            # set the active indicator on the newly activated window
+            # first, reset the current active indicator in the list store
+            for list_item in self.__list_store:
+                list_item[0] = ""
+                list_item[5] = None
 
-        # the windows's current workspace can be None if it is pinned to all
-        # workspaces or it is not on any at all...
-        # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392 and
-        # https://bugs.launchpad.net/ubuntu-mate/+bug/1555336 (regarding software updater))
-        if (wnck_aws is not None) and (wnck_ws is not None) and \
-           (wnck_aws != wnck_ws):
-                wnck_ws.activate(0)
-                sleep(0.01)
-        win.activate(0)
+            # now set active indicator on the current item
+            self.__list_store.set_value(sel_iter, 0, CONST__ACTIVE_TEXT)
+            self.__list_store.set_value(sel_iter, 5, self.__pb_active)
+
+            return True
+
+        if action is not None:
+            action.activate()
+            self.hide()
+
         return True
 
     def do_timer(self):
@@ -601,46 +945,63 @@ class DockWinList(Gtk.Window):
 
         return True
 
-    def add_to_list(self, icon, is_active, title, window):
+    def add_separator(self):
+        """ Convenience method to add a separator to the list
+
+        If there are no items currently in the list then the separator
+        won't be added
+        """
+
+        if len(self.__list_store) > 0:
+            self.add_to_list(False, CONST_SEP, None, None, None)
+
+    def add_to_list(self, is_active, title, window, action, show_icon):
         """ Add an item to the window list
 
         Args:
-            icon - the app's icon in pixbuf format
-            is_active - True if the window is active, False otherwise
-            title - the windows's title
-            window - the wnck window relating to the app
+            is_active - True if this is a window and it is active,
+                         False otherwise
+            title - the title of the window or the action
+            window - the wnck window relating to the app (can be None)
+            action - a GTK Action to be activated if the item is clicked
+                    (can be None)
+            show_icon - if True the app's icon will be shown alongside the
+                        item in the list
         """
 
         # set the active indicator
         if is_active:
-            active_text = "*"
+            active_text = CONST__ACTIVE_TEXT
         else:
             active_text = ""
 
-        if icon is None:
-            icon_pb = self.render_icon(Gtk.STOCK_EXECUTE,
-                                       Gtk.IconSize.MENU, None)
-        else:
-            icon_pb = icon
+#        if icon is None:
+#            icon_pb = self.render_icon(Gtk.STOCK_EXECUTE,
+#                                       Gtk.IconSize.MENU, None)
+#        else:
+#            icon_pb = icon
 
-        self.__list_store.append([icon_pb, active_text, title,
-                                  self.__pb_close, window])
+        if show_icon:
+            app_icon = self.__app_pb
+        else:
+            app_icon = None
+
+        if active_text != "":
+            app_icon = self.__pb_active
+
+        if window is None:
+            close_icon = None
+        else:
+            close_icon = self.__pb_close
+
+        self.__list_store.append([active_text, title,
+                                  close_icon, window, action,
+                                  app_icon])
 
     def clear_win_list(self):
         """ Clear the list of open windows """
 
         self.__list_store.clear()
-
-    def set_app_name(self, app_name):
-        """ Sets the app name in the window
-
-        Args - app name
-
-        """
-
-        # use pango markup to make the app name bold and large
-
-        self.__lbl_app_name.set_markup('<span size="larger"><b>%s</b></span>' % (app_name))
 
     def win_button_press(self, widget, event):
         """ this is for debug puposes only"""
@@ -665,6 +1026,7 @@ class DockWinList(Gtk.Window):
         """
 
         self.create_close_pixbuf()
+        self.create_active_pixbuf()
 
         # reduce the size of the window - it will autosize to fit the contents
         if build_gtk2:
@@ -673,7 +1035,6 @@ class DockWinList(Gtk.Window):
             self.resize(100, 10)
             self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
 
-        self.set_app_name(self.__the_app.app_name)
         win_list = self.__the_app.get_wnck_windows()
 
         wnck_aws = self.wnck_screen.get_active_workspace()
@@ -684,27 +1045,12 @@ class DockWinList(Gtk.Window):
                 add_to_list = win.is_on_workspace(wnck_aws)
             else:
                 add_to_list = True
+
             if add_to_list:
-                if self.__icontheme.has_icon(self.__the_app.icon_name):
-
-                    # draw the app icon at the size we want
-                    icon_info = self.__icontheme.choose_icon([self.__the_app.icon_name, None],
-                                                             self.__icon_size, 0)
-
-                    try:
-                        pixbuf = icon_info.load_icon()
-                    except GLib.GError:
-                        # default to a stock icon if we couldn't load the app
-                        # icon
-                        pixbuf = self.render_icon(Gtk.STOCK_EXECUTE,
-                                                  Gtk.IconSize.DND, None)
-                else:
-                    pixbuf = self.__the_app.app_pb.scale_simple(self.__icon_size,
-                                                            self.__icon_size,
-                                                            GdkPixbuf.InterpType.BILINEAR)
                 is_active = (len(win_list) == 1) or \
                             (win == self.__the_app.last_active_win)
-                self.add_to_list(pixbuf, is_active, win.get_name(), win)
+
+                self.add_to_list(is_active, win.get_name(), win, None, False)
 
     def mbutton_press(self, widget, event):
         """ this is for debug purposes only and demonstrates that menu.popup does
@@ -761,10 +1107,32 @@ class DockWinList(Gtk.Window):
     def set_app(self, app):
         """ Set the docked app the window list refers to
 
+            Draw the app icon at an appropriate size for the list
+
             Args : app - a docked_app
         """
 
         self.__the_app = app
+
+        if self.__icontheme.has_icon(self.__the_app.icon_name):
+
+            # draw the app icon at the size we want
+            icon_info = self.__icontheme.choose_icon([self.__the_app.icon_name, None],
+                                                     self.__icon_size, 0)
+
+            try:
+                pixbuf = icon_info.load_icon()
+            except GLib.GError:
+                # default to a stock icon if we couldn't load the app
+                # icon
+                pixbuf = self.render_icon(Gtk.STOCK_EXECUTE,
+                                          Gtk.IconSize.DND, None)
+        else:
+            pixbuf = self.the_app.app_pb.scale_simple(self.__icon_size,
+                                                self.__icon_size,
+                                                GdkPixbuf.InterpType.BILINEAR)
+
+        self.__app_pb = pixbuf
 
     the_app = property(get_app, set_app)
 
@@ -823,13 +1191,33 @@ class DockWinList(Gtk.Window):
         self.__applet_w = applet_w
         self.__applet_h = applet_h
 
+    def draw_title(self, column, cell_renderer, tree_model, tree_iter, data):
+        title = tree_model.get_value(tree_iter, 1)
+        if tree_model.get_value(tree_iter, 0) == CONST__ACTIVE_TEXT:
+            cell_renderer.set_property('markup', "<b><i>%s</i></b>" % title)
+        else:
+            # if there is no window of action associatied with this item
+            # it must be the name of a non running app. Format the title
+            # differently if so...
+            if (tree_model.get_value(tree_iter, 3) is None) and \
+               (tree_model.get_value(tree_iter, 4) is None):
+                cell_renderer.set_property('markup', "<b>%s</b>" % title)
+            else:
+                cell_renderer.set_property('markup', title)
 
-def draw_title(column, cell_renderer, tree_model, tree_iter, data):
-    title = tree_model.get_value(tree_iter, 2)
-    if tree_model.get_value(tree_iter, 1) == "*":
-        cell_renderer.set_property('markup', "<b><i>%s</i></b>" % title)
-    else:
-        cell_renderer.set_property('markup', title)
+    def check_sep(self, model, iter, data=None):
+        """ Check to see if the current row is to be displayed as a separator
+
+            Args :
+                model : the treeview model (will be self.__list_store)
+                iter : the roow in the model we're interested in
+
+            Returns:
+                Bool
+        """
+
+        title = model.get_value(iter, 1)
+        return (title == CONST_SEP)
 
 
 def main():
