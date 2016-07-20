@@ -84,6 +84,10 @@ From this point the instructions above for compiling from source should be follo
 
 ### Obligatory screen shots
 
+GTK3 version of the applet running on Ubuntu MATE 16.10 Alpha 1
+
+![GTK3 Ubunbtu Mate](https://github.com/robint99/screenshots/raw/master/16.10 win-list.png)
+
 Running on Arch with a Unity style layout
 
 ![Arch screenshot](https://github.com/robint99/screenshots/raw/master/arch_V0.6_ss.png)
