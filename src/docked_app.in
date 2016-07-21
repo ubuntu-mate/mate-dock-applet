@@ -735,9 +735,9 @@ class DockedApp(object):
                     # .desktop
                     de_exec = the_de.getExec()
                     exec_found = False
-                    if (de_exec is not None) and (de_exec != ""):
-                        de_exec = de_exec.split()
 
+                    if de_exec:
+                        de_exec = de_exec.split()
                         # now that we have the app command line we can simply
                         # check that it ends with the same command as the
                         # .desktop file contains. So...
