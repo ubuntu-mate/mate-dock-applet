@@ -19,7 +19,13 @@ def get_dom_color(filename):
     colour_tuple = [None, None, None]
     for channel in range(3):
         # Get data for one channel at a time
-        pixels = image.getdata(band=channel)
+
+        # in case of errors stop processing and return black as the
+        # dominant colour
+        try:
+            pixels = image.getdata(band=channel)
+        except ValueError:
+            return "000000"
 
         values = []
         for pixel in pixels:
