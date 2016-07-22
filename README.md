@@ -37,6 +37,10 @@ Note: this is GTK2 only
 
 For Arch users there's a [package](http://aur.archlinux.org/packages/mate-applet-dock-git) available in the AUR.
 
+### Gentoo based distributions
+
+An ebuild is available via the [mate-de-gentoo](https://github.com/oz123/mate-de-gentoo)
+
 ### Other distributions
 
 Users of other distros will need to install from source, so first install the required dependencies:
