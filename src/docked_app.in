@@ -71,6 +71,7 @@ import xdg.DesktopEntry as DesktopEntry
 import os
 import os.path
 import subprocess
+import re
 
 from collections import namedtuple
 
@@ -629,7 +630,6 @@ class DockedApp(object):
             True if the desktop file was found, False otherwise
 
         """
-
         for the_dir, dir_list, file_list in os.walk(srch_dir):
 
             dfname = the_dir + self.wm_class_name + ".desktop"
@@ -735,9 +735,9 @@ class DockedApp(object):
                     # .desktop
                     de_exec = the_de.getExec()
                     exec_found = False
-                    if (de_exec is not None) and (de_exec != ""):
-                        de_exec = de_exec.split()
 
+                    if de_exec:
+                        de_exec = de_exec.split()
                         # now that we have the app command line we can simply
                         # check that it ends with the same command as the
                         # .desktop file contains. So...
@@ -763,6 +763,14 @@ class DockedApp(object):
 
                                 if exec_found:
                                     break
+                        # try matching just the last part, removing -bin from the name
+                        if not exec_found:
+                            de_exec = de_exec[0]
+                            de_exec = re.sub("-bin", "", de_exec)
+
+                            if "/" in de_exec:
+                                if de_exec.split("/")[-1] in self.cmd_line:
+                                    exec_found = True
 
                     # check that the wm_classes match
                     wm_class_found = False
