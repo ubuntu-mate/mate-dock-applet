@@ -85,6 +85,9 @@ This is a little more involved. First download gir1.2-wnck-1.0 for arm architech
 
 From this point the instructions above for compiling from source should be followed.
 
+### Note for Compiz Users
+
+In order for window minimizing and maximizing to work correctly under Compiz, the Focus Prevention Level setting must be set to off in CompizConfig Settings Manager (General Options, Focus and Raise Behaviour)
 
 ### Obligatory screen shots
 
