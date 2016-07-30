@@ -184,7 +184,6 @@ def applet_enter_notify(widget, event, the_dock):
 
         # set up the available options for the app
         the_dock.set_actions_for_app(app)
-
         the_dock.reset_win_list_timer()
 
 
@@ -204,7 +203,7 @@ def applet_leave_notify(widget, event, the_dock):
         the_dock.app_with_mouse.queue_draw()
         the_dock.app_with_mouse = None
 
-    the_dock.stop_win_list_timer()
+        the_dock.stop_win_list_timer()
 
 
 def applet_motion_notify(widget, event, the_dock):

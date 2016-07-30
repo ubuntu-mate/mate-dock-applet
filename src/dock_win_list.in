@@ -440,6 +440,8 @@ class DockWinList(Gtk.Window):
             if len(self.__list_store) == 0:
                 self.set_win_position()
 
+        self.start_mouse_area_timer()
+
     def set_win_position(self):
         """
             Move the window so that it appears near the panel and centrered on
@@ -579,10 +581,22 @@ class DockWinList(Gtk.Window):
 
         self.move(win_x, win_y)
 
-        if self.__timer_id is not None:
-            GObject.source_remove(self.__timer_id)
+    def start_mouse_area_timer(self):
+        """ Start the timer that that monitors the mouse position
+        """
+
+        # remove any old timer...
+        self.stop_mouse_area_timer()
 
         self.__timer_id = GObject.timeout_add(CONST_TIMER_DELAY, self.do_timer)
+
+    def stop_mouse_area_timer(self):
+        """ Stop the timer that monitors the mouse position
+        """
+        #
+        if self.__timer_id is not None:
+            GObject.source_remove(self.__timer_id)
+            self.__timer_id = None
 
     def win_configure(self, widget, event):
         """ Event handler for the window's configure event
@@ -809,9 +823,7 @@ class DockWinList(Gtk.Window):
 
         """
 
-        if self.__timer_id is not None:
-            GObject.source_remove(self.__timer_id)
-            self.__timer_id = None
+        self.stop_mouse_area_timer()
 
     def query_tooltip(self, widget, x, y, keyboard_mode, tooltip):
         """ Handler for the query-tooltip event to determine whether or not
