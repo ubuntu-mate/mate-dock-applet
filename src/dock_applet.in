@@ -180,12 +180,11 @@ def applet_enter_notify(widget, event, the_dock):
     if app is not None:
         app.has_mouse = True
         app.queue_draw()
+
         the_dock.app_with_mouse = app
 
         # set up the available options for the app
         the_dock.set_actions_for_app(app)
-        the_dock.reset_win_list_timer()
-
 
 def applet_leave_notify(widget, event, the_dock):
     """Leave notifiy event handle for the applet
@@ -323,6 +322,10 @@ def applet_drag_begin(applet, context, the_dock):
         applet.drag_source_set_icon_pixbuf(the_dock.app_with_mouse.app_pb)
 
         the_dock.start_drag_motion_timer(the_dock.app_with_mouse)
+
+        # finally, hide the window list if it was being shown
+        the_dock.hide_win_list()
+
 
 def applet_drag_data_get(widget, drag_context, data, info, time):
     """
