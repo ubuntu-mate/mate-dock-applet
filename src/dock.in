@@ -805,9 +805,9 @@ class Dock(object):
             move_right_action.set_label("Move %s to the right on the dock" % app.app_name)
 
         if pin_action.is_visible():
-            pin_action.set_label("Pin %s to the dock" % app.app_name)
+            pin_action.set_label("Pin %s" % app.app_name)
         else:
-            unpin_action.set_label("Unpin %s from the dock" % app.app_name)
+            unpin_action.set_label("Unpin %s" % app.app_name)
 
         # set the actions for selecting specific windows
 
@@ -900,39 +900,63 @@ class Dock(object):
         """Perform the app's 1st .desktop file specified shortcut/action
         """
 
-        if self.right_clicked_app is not None:
-            self.right_clicked_app.run_rc_action(1)
+        # get the app in question
+        if self.app_win_list is None:
+            return # shouldn't ever happen...
+        the_app = self.app_win_list.the_app
+
+        if the_app is not None:
+            the_app.run_rc_action(1)
 
     def df_shortcut_2(self, data=None):
         """Perform the app's 1st .desktop file specified shortcut/action
         """
 
-        if self.right_clicked_app is not None:
-            self.right_clicked_app.run_rc_action(2)
+        # get the app we need in question
+        if self.app_win_list is None:
+            return  # shouldn't ever happen...
+        the_app = self.app_win_list.the_app
+
+        if the_app is not None:
+            the_app.run_rc_action(2)
 
     def df_shortcut_3(self, data=None):
         """Perform the app's 1st .desktop file specified shortcut/action
         """
+        # get the app in question
+        if self.app_win_list is None:
+            return  # shouldn't ever happen...
+        the_app = self.app_win_list.the_app
 
-        if self.right_clicked_app is not None:
-            self.right_clicked_app.run_rc_action(3)
+        if the_app is not None:
+            the_app.run_rc_action(3)
 
     def df_shortcut_4(self, data=None):
         """Perform the app's 1st .desktop file specified shortcut/action
-        """
 
-        if self.right_clicked_app is not None:
-            self.right_clicked_app.run_rc_action(4)
+        The app is specfied from the winwdow list
+        """
+        # get the app win quesion
+        if self.app_win_list is None:
+            return  # shouldn't ever happen.
+        the_app = self.app_win_list.the_app
+
+        if the_app is not None:
+            the_app.run_rc_action(4)
 
     def unpin_app(self, data=None):
         """Unpin an app from the dock
 
+        This action is performed from the window list
         Unpin the app and update the dock settings.
 
         If the app is not running, remove it from the dock also
         """
 
-        the_app = self.right_clicked_app
+        # get the app we need to unpin
+        if self.app_win_list is None:
+            return # shouldn't ever happen...
+        the_app = self.app_win_list.the_app
 
         if the_app is not None:
             the_app.is_pinned = False
@@ -946,7 +970,11 @@ class Dock(object):
 
         Pin the app and update the dock settings"""
 
-        the_app = self.right_clicked_app
+        # get the app we need to pin
+        if self.app_win_list is None:
+            return  # shouldn't ever happen...
+
+        the_app = self.app_win_list.the_app
         if the_app is not None:
             the_app.is_pinned = True
             self.write_settings()
@@ -2181,82 +2209,81 @@ class Dock(object):
             self.win_list_timer = None
             return False
 
-        if (self.app_win_list is None) or \
-           (self.app_win_list.the_app != highlighted_app):
+        # always recreate the window list e.g. to account for windows being
+        # opened/closed, the app being pinned/unpinned etc.
 
-            # we need to create the window list
-            if self.app_win_list is not None:
-                self.app_win_list.destroy()
+        if self.app_win_list is not None:
+            self.app_win_list.destroy()
 
-            self.set_actions_for_app(self.app_with_mouse)
+        self.set_actions_for_app(self.app_with_mouse)
 
-            # first of all, add any shortcut actions specifedd in the app's
-            # .desktop file
+        # first of all, add any shortcut actions specified in the app's
+        # .desktop file
 
-            df_shortcut_1_action = self.dock_action_group.get_action("df_shortcut_1_action")
-            df_shortcut_2_action = self.dock_action_group.get_action("df_shortcut_2_action")
-            df_shortcut_3_action = self.dock_action_group.get_action("df_shortcut_3_action")
-            df_shortcut_4_action = self.dock_action_group.get_action("df_shortcut_4_action")
-            pin_action = self.dock_action_group.get_action("pin_action")
-            unpin_action = self.dock_action_group.get_action("unpin_action")
+        df_shortcut_1_action = self.dock_action_group.get_action("df_shortcut_1_action")
+        df_shortcut_2_action = self.dock_action_group.get_action("df_shortcut_2_action")
+        df_shortcut_3_action = self.dock_action_group.get_action("df_shortcut_3_action")
+        df_shortcut_4_action = self.dock_action_group.get_action("df_shortcut_4_action")
+        pin_action = self.dock_action_group.get_action("pin_action")
+        unpin_action = self.dock_action_group.get_action("unpin_action")
 
-            self.app_win_list  = dock_win_list.DockWinList(self.wnck_screen)
-            self.app_win_list.icontheme = self.icontheme
+        self.app_win_list  = dock_win_list.DockWinList(self.wnck_screen)
+        self.app_win_list.icontheme = self.icontheme
 
-            # set the background colour of the window list to the
-            # colour of the panel : Note: not properly implemented yet
-            pr, pg, pb = self.get_applet_panel_rgb()
-            self.app_win_list.set_bg_col(pr, pg, pb)
+        # set the background colour of the window list to the
+        # colour of the panel : Note: not properly implemented yet
+        pr, pg, pb = self.get_applet_panel_rgb()
+        self.app_win_list.set_bg_col(pr, pg, pb)
 
-            self.app_win_list.the_app = highlighted_app
+        self.app_win_list.the_app = highlighted_app
 
-            if df_shortcut_1_action.is_visible():
+        if df_shortcut_1_action.is_visible():
+            self.app_win_list.add_to_list(False,
+                                          df_shortcut_1_action.get_label(),
+                                          None, df_shortcut_1_action,
+                                          True)
+            if df_shortcut_2_action.is_visible():
                 self.app_win_list.add_to_list(False,
-                                              df_shortcut_1_action.get_label(),
-                                              None, df_shortcut_1_action,
+                                              df_shortcut_2_action.get_label(),
+                                              None,
+                                              df_shortcut_2_action,
                                               True)
-                if df_shortcut_2_action.is_visible():
-                    self.app_win_list.add_to_list(False,
-                                                  df_shortcut_2_action.get_label(),
-                                                  None,
-                                                  df_shortcut_2_action,
-                                                  True)
-                if df_shortcut_3_action.is_visible():
-                    self.app_win_list.add_to_list(False,
-                                                  df_shortcut_3_action.get_label(),
-                                                  None,
-                                                  df_shortcut_3_action,
-                                                  True)
-                if df_shortcut_4_action.is_visible():
-                    self.app_win_list.add_to_list(False,
-                                                  df_shortcut_4_action.get_label(),
-                                                  None,
-                                                  df_shortcut_4_action,
-                                                  True)
-                self.app_win_list.add_separator()
+            if df_shortcut_3_action.is_visible():
+                self.app_win_list.add_to_list(False,
+                                              df_shortcut_3_action.get_label(),
+                                              None,
+                                              df_shortcut_3_action,
+                                              True)
+            if df_shortcut_4_action.is_visible():
+                self.app_win_list.add_to_list(False,
+                                              df_shortcut_4_action.get_label(),
+                                              None,
+                                              df_shortcut_4_action,
+                                              True)
+            self.app_win_list.add_separator()
 
-            # add any open windows
-            if highlighted_app.is_running():
-                self.app_win_list.setup_list(self.win_from_cur_ws_only)
-                self.app_win_list.add_separator()
+        # add any open windows
+        if highlighted_app.is_running():
+            self.app_win_list.setup_list(self.win_from_cur_ws_only)
+            self.app_win_list.add_separator()
 
-            if pin_action.is_visible():
-                self.app_win_list.add_to_list(False, pin_action.get_label(),
-                                              None, pin_action, False)
-            else:
-                self.app_win_list.add_to_list(False, unpin_action.get_label(),
-                                              None, unpin_action, False)
+        if pin_action.is_visible():
+            self.app_win_list.add_to_list(False, pin_action.get_label(),
+                                          None, pin_action, False)
+        else:
+            self.app_win_list.add_to_list(False, unpin_action.get_label(),
+                                          None, unpin_action, False)
 
-            self.app_win_list.clear_mouse_areas()
+        self.app_win_list.clear_mouse_areas()
 
-            applet_x, applet_y = self.get_dock_root_coords()
-            applet_w = applet_h = highlighted_app.drawing_area_size
+        applet_x, applet_y = self.get_dock_root_coords()
+        applet_w = applet_h = highlighted_app.drawing_area_size
 
-            self.app_win_list.set_applet_details(applet_x, applet_y,
-                                                 applet_w, applet_h)
-            self.app_win_list.set_panel_orient(self.applet.get_orient())
-            app_x, app_y = self.get_app_root_coords(highlighted_app)
-            self.app_win_list.set_app_root_coords(app_x, app_y)
+        self.app_win_list.set_applet_details(applet_x, applet_y,
+                                             applet_w, applet_h)
+        self.app_win_list.set_panel_orient(self.applet.get_orient())
+        app_x, app_y = self.get_app_root_coords(highlighted_app)
+        self.app_win_list.set_app_root_coords(app_x, app_y)
 
         self.app_win_list.show_all()
 
