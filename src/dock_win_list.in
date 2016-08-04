@@ -625,7 +625,9 @@ class DockWinList(Gtk.Window):
 
             self.set_win_position()
 
-    # TODO: investigate reason for shape_combine_region not working
+    # TODO: keep checking status of this bug:
+    # https://bugzilla.gnome.org/show_bug.cgi?id=667959
+    # and when a fix is available shape_combine_region for rounded windows...
     #def size_allocate(self, widget, allocation):
     #    def rounded_rectangle(cr, x, y, w, h, r=20):
     #        # Attribution:
