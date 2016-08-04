@@ -737,6 +737,12 @@ class DockedApp(object):
                     exec_found = False
 
                     if de_exec:
+                        # if the exec line specfies an environment variable to
+                        # set, we need to get rid of this part
+                        if de_exec.startswith("env"):
+                            cmd_parts = de_exec.split(" ", 2)
+                            de_exec = cmd_parts[2]
+
                         de_exec = de_exec.split()
                         # now that we have the app command line we can simply
                         # check that it ends with the same command as the
@@ -1260,9 +1266,36 @@ class DockedApp(object):
         cmd_line = bytearray(cmd_line, "UTF-8")
         cmd_line = cmd_line.decode("unicode-escape")
 
+
+        # if an environment variable is specified, extract its name an value
+        # Note: the .desktop file specification at
+        # https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
+        # does not mention this. Both Ubuntu
+        # https://help.ubuntu.com/community/EnvironmentVariables#Launching_desktop_application_with_an_environment_variable
+        # and Arch linux
+        # https://wiki.archlinux.org/index.php/Desktop_entries#Modify_environment_variables
+        # seem to indicate that only a single variable can be set and that
+        # there are no spaces between the variable name, the '=' character and
+        # variable's value .....
+
+        # so, if cmd_line begins with "env" it specifies an environment variable
+        # to set, follwed by the app e.g. env LANG=he_IL.UTF-8 /usr/bin/pluma
+        #
+        if cmd_line.startswith("env"):
+            cmd_parts = cmd_line.split(" ", 2)
+            var_parts = cmd_parts[1].split("=")
+            var_name = var_parts[0]
+            var_value = var_parts[1]
+
+            # now we need to get the app path and args and carry on...
+            cmd_line = cmd_parts[2]
+        else:
+            var_name = None
+            var_value = None
+
         # if any of the directories in cmd_line contain a " ", they need to be
         # escaped
-        head,tail = os.path.split(cmd_line)
+        head, tail = os.path.split(cmd_line)
         if " " in head:
             head = head.replace(" ", "\ ")
             cmd_line = head + "/" + tail
@@ -1271,7 +1304,11 @@ class DockedApp(object):
                                                        Gio.AppInfoCreateFlags.NONE)
         alc = Gdk.AppLaunchContext()
         alc.set_desktop(-1)                   # use default screen & desktop
-        app_info.launch()
+        # if the .desktop specfied an environment variable, set it
+        if (var_name is not None) and (var_value is not None):
+            alc.setenv(var_name, var_value)
+
+        app_info.launch(None, alc)
         # set the app icon pulsing
         throbber = PulseTimer(self)
 
