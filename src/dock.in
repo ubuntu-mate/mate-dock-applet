@@ -1873,7 +1873,33 @@ class Dock(object):
         """
 
         self.app_list.remove(app)
-        self.box.remove(app.drawing_area)
+        num_apps = len(self.box.get_children())
+
+        if build_gtk2:
+            self.box.remove(app.drawing_area)
+        else:
+            # the row/column which contains the app needs to be
+            # removed, so get the app's position in the grid
+            pos = 0
+            while pos < num_apps:
+                if self.box.orientation == Gtk.Orientation.VERTICAL:
+                    left = 0
+                    top = pos
+                else:
+                    left = pos
+                    top = 0
+
+                if self.box.get_child_at(left, top) == app.drawing_area:
+                    # we've found the app
+                    if self.box.orientation == Gtk.Orientation.VERTICAL:
+                        self.box.remove_row(pos)
+                    else:
+                        self.box.remove_column(pos)
+
+                    app = None
+                    return
+
+                pos += 1
 
         app = None
 
