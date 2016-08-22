@@ -334,6 +334,13 @@ class DockedApp(object):
 
         is_dragee  : boolean - indicates whether or not the app's icon is
                      being dragged to a new position on the dock
+
+        show_progress : boolean - indicates whether or not to display a
+                        progress indicator on the app's icon
+        progress_val  : the progress value( 0 to 1.0)
+        show_count   : boolean - indicates whether or not to display a
+                        count value on the app's icon
+        count_val   : the value of the count
     """
 
     def __init__(self):
@@ -396,6 +403,11 @@ class DockedApp(object):
             self.drawing_area.connect("draw", self.do_expose_event)
 
         self.is_dragee = False
+
+        self.show_progress = False
+        self.progress_val = 0.0
+        self.show_count = False
+        self.count_val = 0
 
     def has_wnck_app(self, wnck_app):
         """ see if this app has a process with the specified wnck_app
@@ -1190,6 +1202,13 @@ class DockedApp(object):
                 this_ind += 1
                 ctx.fill()
 
+        # do we need a count?
+        if self.show_count:
+            self.draw_count(ctx)
+
+        if self.show_progress:
+            self.draw_progress(ctx)
+
         # now draw to the screen
         if build_gtk2:
             screen_ctx = self.drawing_area.window.cairo_create()
@@ -1212,6 +1231,174 @@ class DockedApp(object):
             alloc = self.drawing_area.get_allocation()
 
         ctx = None
+
+    def draw_count(self, ctx):
+        """ Draw the app's counter value
+
+        Args: ctx - the cairo context where the counter is to be drawn
+        """
+
+        # drawing is done at a notional size  64x64 px, and then scaled
+        # appropriately according to self.drawing_area_size
+
+        draw_size = 64.0
+
+        # height of the counter = 2 pix border top and bottom + 16 pix
+        # internal height
+        height = 20
+
+        # work out the appropriate font size to use - has to fit within the
+        # borders and provide some space above and below the count_val
+        reqd_font_height = height - 8
+
+        # find a font size where the count can be shown with the required height
+        ctx.select_font_face("", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+        ctext = "%d" % self.count_val
+        for fsize in range(24, 2, -1):
+            ctx.set_font_size(fsize)
+            extents = ctx.text_extents(ctext)
+
+            if (extents[3]< reqd_font_height):
+                font_size = fsize
+                break
+
+        # work out an appropriate width for the counter
+        inset = height/2
+        radius = inset-1
+        if int(extents[2] + extents[0]) > int(radius):
+            width = extents[2] + extents[0] + radius
+        else:
+            width = height + inset
+
+        ctx.save()
+
+        # the background color of the count is the app's highlight colour
+        # convert the highlight values to their cairo equivalents
+        bred = self.highlight_color.r / 255
+        bgreen = self.highlight_color.g / 255
+        bblue = self.highlight_color.b / 255
+
+        # set an appropriate text and border color
+        if bred + bgreen + bblue > 1.5:  # mid-level grey
+            tred = tgreen = tblue = 0.0
+        else:
+            tred = tgreen = tblue = 1.0
+
+        # the count is placed in the upper right of the drawing area, and we need
+        # to calculate it's position based on the notional DA_SIZE
+        #
+
+        left = draw_size - width + inset
+
+        # do the drawing - attribution for the drawing code:
+        # https://bazaar.launchpad.net/~unity-team/unity/trunk/view/head:/launcher/LauncherIcon.cpp
+        ctx.scale(self.drawing_area_size/draw_size,
+                  self.drawing_area_size/draw_size)
+
+        ctx.move_to(left, height-1)
+        ctx.arc(left, inset, radius, 0.5 * math.pi, 1.5*math.pi)
+        ctx.arc(draw_size-inset, inset, radius, 1.5*math.pi, 0.5*math.pi)
+        ctx.line_to(left, height-1)
+        ctx.set_source_rgb(bred, bgreen, bblue)
+        ctx.fill_preserve()
+        ctx.set_source_rgb(tred, tgreen, tblue)
+        ctx.set_line_width(2)
+        ctx.stroke()
+
+        # draw the text
+        ctx.move_to(left - inset + width/2 - (extents[0]+extents[2]/2),
+                    (height/2)+extents[3]/2)
+        ctx.set_source_rgb(tred, tgreen, tblue)
+        ctx.show_text(ctext)
+
+        ctx.restore()
+
+    def draw_progress(self, ctx):
+        """ Draw a progress bar to show the app's progress value
+
+        Args: ctx - the cairo context where the counter is to be drawn
+        """
+
+        def rounded_rectangle(cr, x, y, w, h, r=20):
+            """ Convenience function to draw a rounded rectangle, really needs
+                to be in a library module somewhere, as its used bythe window
+                list
+
+                # Attribution:
+                # https://stackoverflow.com/questions/2384374/rounded-rectangle-in-pygtk
+                # This is just one of the samples from
+                # http://www.cairographics.org/cookbook/roundedrectangles/
+                #   A****BQ
+                #  H      C
+                #  *      *
+                #  G      D
+                #   F****E
+            """
+
+            cr.move_to(x + r, y)                      # Move to A
+            cr.line_to(x + w - r, y)                    # Straight line to B
+            cr.curve_to(x + w, y, x + w, y, x + w, y + r)
+            # Curve to C, Control points are both at Q
+            cr.line_to(x + w, y + h - r)                  # Move to D
+            cr.curve_to(x + w, y + h, x + w, y + h, x + w - r, y + h)  # Curve to E
+            cr.line_to(x + r, y + h)                    # Line to F
+            cr.curve_to(x, y + h, x, y + h, x, y + h - r)  # Curve to G
+            cr.line_to(x, y+r)                      # Line to H
+            cr.curve_to(x, y, x, y, x+r, y)             # Curve to A
+
+        # drawing is done on a to scale of 64x64 pixels and then scaled
+        # down to the fit the app's drawing area
+        draw_size = 64.0
+
+        # the foreground colour of the progress is the app's highlight colour
+        # convert the highlight values to their cairo equivalents
+        fred = self.highlight_color.r / 255
+        fgreen = self.highlight_color.g / 255
+        fblue = self.highlight_color.b / 255
+
+        # set an appropriate border color and also a background colour for
+        # the progress bar, based on the highlight colour
+        if fred + fgreen + fblue > 1.5:  # mid-level grey
+            brd_red = brd_green = brd_blue = 0.0
+            bk_red = bk_green = bk_blue = 1.0
+        else:
+            brd_red = brd_green = brd_blue = 1.0
+            bk_red = bk_green = bk_blue = 0.0
+
+        height = 8              # total height of the progress bar
+        line_width = 2          # border line width
+        int_height = height - line_width * 2  # interior height
+        left = 8
+        width  = draw_size - left * 2   # width of the progress bar
+
+        top = (draw_size/8) * 5
+
+        ctx.save()
+        ctx.scale(self.drawing_area_size/draw_size, self.drawing_area_size/draw_size)
+
+        # draw exterior of the progress bar
+        ctx.set_source_rgb(brd_red, brd_green, brd_blue)
+        ctx.set_line_width(2)
+        rounded_rectangle(ctx, left, top, width, height, 7)
+        ctx.stroke()
+
+        # fill the interior with the background colour
+        ctx.set_line_width(1)
+        ctx.set_source_rgb (bk_red, bk_green, bk_blue)
+        rounded_rectangle(ctx, left + line_width, top + line_width,
+                          width - line_width*2, height-line_width*2,
+                          2)
+
+        ctx.fill()
+
+        # fill part of the interior with a different colour, depending on
+        # the progress value
+        ctx.set_source_rgb(fred, fgreen, fblue)
+        rounded_rectangle(ctx, left + line_width, top + line_width,
+                          (width - line_width*2) * self.progress_val,
+                          height-line_width*2, 2)
+        ctx.fill()
+        ctx.restore()
 
     def set_pixbuf(self, pixbuf):
         """Set the app pixbuf and calculate its average colour.
@@ -1356,6 +1543,65 @@ class DockedApp(object):
 
         self.is_dragee = is_dragee
         self.queue_draw()
+
+    def set_progress_visible(self, is_visible):
+        """
+            Update the progress visibility and cause the app's icon to be
+            redrawn
+
+        Args:
+            is_visible : whether the progress is to be displayed
+        """
+
+        if (is_visible != self.show_progress):
+            self.show_progress = bool(is_visible)
+            self.queue_draw()
+
+    def set_progress_value(self, val):
+        """
+            Update the progress value and cause the app's icon to be
+            redrawn
+
+        Args:
+            val        : the counter value
+        """
+
+        # if the new progressvalue is the same as the old, then there's no need
+        # to do anything...
+        if val != self.progress_val:
+            self.progress_val = val
+            self.queue_draw()
+
+    def set_counter_visible(self, is_visible):
+        """
+            Update the counter visibility and cause the app's icon to be
+            redrawn
+
+        Args:
+            is_visible : whether the counter is to be displayed
+        """
+
+        # if the new value is the same as the old, then there's no need
+        # to do anything...
+        if is_visible != self.show_count:
+            self.show_count = bool(is_visible)
+            self.queue_draw()
+
+    def set_counter_value(self, val):
+        """
+            Update the counter value and cause the app's icon to be
+            redrawn
+
+        Args:
+            val        : the counter value
+        """
+
+        # if the new counter value is the same as the old, then there's no need
+        # to do anything...
+        if val != self.count_val:
+            self.count_val = val
+            self.queue_draw()
+
 
 def main():
     """Main function.
