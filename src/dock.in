@@ -8,6 +8,8 @@ Handle all mouse ui events for docked apps
 Respond to window opening and closing events from libwnck
 Respond to changes to the Gtk icon theme and update all docked apps
 Load and save dock settings (e.g. pinned apps and indicator type)
+Respond to Unity API DBus messages so that apps can display counts and
+progress meters on their icons
 
 respond to selections made in the applet right click menu, specifically
     : allow apps to be pinned to the dock
@@ -65,6 +67,8 @@ import os
 import os.path
 import sys
 from time import sleep
+import dbus
+from dbus.mainloop.glib import DBusGMainLoop
 
 import docked_app
 import dock_prefs
@@ -356,9 +360,30 @@ class Dock(object):
 
         self.panel_cc = dock_color_changer.PanelColorChanger()
 
+        # we need to monitor the Unity dbus interface
+        DBusGMainLoop(set_as_default=True)
+        self.session_bus = dbus.SessionBus()
+
+        # claim the Unity bus (Unity won't be using it...) so that clients know
+        # to start using it
+        self.session_bus.request_name("com.canonical.Unity",
+                                      dbus.bus.NAME_FLAG_ALLOW_REPLACEMENT)
+
+        # add a handler to listen in Unity dbus messages
+        self.session_bus.add_signal_receiver(self.unity_cb_handler,
+                        dbus_interface = "com.canonical.Unity.LauncherEntry",
+                        signal_name="Update")
+
         # instantiate a timer to perform further setup once the applet has been
         # fully created
         GObject.timeout_add(1000, self.do_delayed_setup)
+
+    def __del__(self):
+        """ Clean up ...
+        """
+
+        # release the unity bus
+        self.session_bus.release_name("com.canonical.Unity")
 
     def do_delayed_setup(self):
         """ Perform setup operations that we couldn't do until the dock was
@@ -2560,6 +2585,38 @@ class Dock(object):
         y = y - dy
 
         return self.get_app_at_mouse(x, y)
+
+    def unity_cb_handler(self, app_uri, args):
+        """ Handler for Unity API dbus messages
+
+        If the specified app is in the dock, forward the set the progress
+        and/or count, and redraw the app's icon
+
+        Args:
+            app_uri : the basename of the .desktop file of the app
+            args : the contents of the dbus message
+
+        """
+
+        # remove the leading part of the app uri
+        df = app_uri.split("://")[1]
+
+        # search for the an app which has the same desktop file name
+        for app in self.app_list:
+            app_df_path, app_df = os.path.split(app.desktop_file)
+            if app_df == df:
+                # we've found the app - update it...
+
+                if "count-visible" in args:
+                    app.set_counter_visible(args["count-visible"])
+                if "count" in args:
+                    app.set_counter_value(args["count"])
+
+                if "progress-visible" in args:
+                    app.set_progress_visible(args["progress-visible"])
+                if "progress" in args:
+                    app.set_progress_value(args["progress"])
+                break
 
 
 def win_activation_timer(args):
