@@ -376,7 +376,6 @@ def applet_drag_end (widget, context, the_dock):
         app.set_dragee(False)
         app.queue_draw()
 
-
 def applet_fill(applet):
     """
     Create the applet
@@ -472,6 +471,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-#timer object to check the mouse x and y as a substitute for drag-motion
-#need to convert root coords to applet window coords - use applet window.get_origin to get its root coords
