@@ -49,7 +49,6 @@ Users of other distros will need to install from source, so first install the re
 * gir1.2-wnck-1.0
 * libglib2-dev
 * Python Imaging Library
-* SciPy
 * Python 3 Cairo bindings
 
 then cd to the directory containing all of the development files and run:
