@@ -1,3 +1,21 @@
+V0.74  Fix for improved matching of binary packaged apps on Gentoo .
+    Amended README.me to include the availability of an overlay for the applet
+    on Gentoo.
+    Corrected position of window lists on non-expanded panels.
+    Fix for window list flickering on bottom aligned panels on MATE Gtk3
+    Increased the delay before window lists are shown when the mouse hovers over an
+    app icon. It was 0.5 seconds, and is now 1 second.
+    Shortened pin/unpin window list text. It now says 'Pin <app name>' rather than
+    'Pin <app name> to the dock', and the Unpin text is similarly shortened.
+    Fixed a bug that would cause Pin/Unpin actions to act upon previously highlighted app
+    icons, rather than the one that is currently highlighted.
+    When starting to drag an app icon, the window list is now hidden.
+    The applet can now display progress bars and counts on app icons for apps which
+    support this e.g. the Ubuntu software updater.
+
+V0.73   Added drag and drop rearranging ing of dock icons (Gtk3 only). Window list
+        reworked and prettified.
+
 V0.72   The applet now works on and can be built for both GTK2 and GTK3 versions of MATE.
     Aside from the changes to layout containers (i.e. GTK2 VBox & HBoxes become GTK3
     Boxes/Grids), underlying differences between the two toolkits meant that the code
