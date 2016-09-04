@@ -275,6 +275,7 @@ class Dock(object):
             panel_x : the panel's x position on screen
             panel_y : the panel's y position on screen
             panel_size : the size of the panel
+            panel_monitor : the monitor on which the panel is displayed (int)
             applet_pos : the position of the applet(in pixels) in the panel
             dm_timer : timer to monitor mouse movement during drag and drop
     """
@@ -548,6 +549,7 @@ class Dock(object):
         self.panel_x = self.panel_settings.get_int("x")
         self.panel_y = self.panel_settings.get_int("y")
         self.panel_size = self.panel_settings.get_int("size")
+        self.panel_monitor = self.panel_settings.get_int("monitor")
 
         # if this is left or right oriented panel we need to account for the
         # height of any top panel so that minimise locations are correctly
@@ -2333,6 +2335,7 @@ class Dock(object):
         self.app_win_list.set_applet_details(applet_x, applet_y,
                                              applet_w, applet_h)
         self.app_win_list.set_panel_orient(self.applet.get_orient())
+        self.app_win_list.set_monitor(self.panel_monitor)
         app_x, app_y = self.get_app_root_coords(highlighted_app)
         self.app_win_list.set_app_root_coords(app_x, app_y)
 

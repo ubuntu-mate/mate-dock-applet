@@ -115,6 +115,7 @@ class DockWinList(Gtk.Window):
             __applet_w : the width of the applet in pixels
             __applet_h : the height of the applet in pixels
             __panel_orient : the orienation of the MATE panel the applet is on
+            __monitor : the monitor on which the panel is displayed
 
     """
 
@@ -161,6 +162,7 @@ class DockWinList(Gtk.Window):
         self.__app_x = 0
         self.__app_y = 0
         self.__panel_orient = MatePanelApplet.AppletOrient.LEFT
+        self.__monitor = 0
 
         # create ui
         if build_gtk2:
@@ -479,6 +481,8 @@ class DockWinList(Gtk.Window):
                          # the window list will hide
 
         screen = self.get_screen()
+        mon_geom = screen.get_monitor_geometry(self.__monitor)
+        log_it("mx: %d, my=%d, mw=%d, mh=%d" %(mon_geom.x, mon_geom.y, mon_geom.width, mon_geom.height))
         screen_w = screen.get_width()
         screen_h = screen.get_height()
 
@@ -496,17 +500,18 @@ class DockWinList(Gtk.Window):
 
         if self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
             centre_pos = self.__app_y + app_alloc.height / 2
-            win_x = self.__applet_w + panel_space
+            win_x = self.__applet_x + self.__applet_w + panel_space
             win_y = centre_pos - (self.__win_h/2)
 
-            # adjust win_y in case we're off the top the screen...
-            if win_y < panel_space:
+            # adjust win_y in case we're off the top the screen, or the
+            # monitor ...
+            if win_y < mon_geom.y + panel_space:
                 win_y = panel_space
 
             # adjust win_y if case the window list extends beyound the end of
             # the panel ..
-            if (win_y + self.__win_h) > screen_h:
-                win_y = screen_h - self.__win_h - panel_space
+            if (win_y + self.__win_h) > mon_geom.y + mon_geom.height:
+                win_y = mon_geom.y + mon_geom.height - self.__win_h - panel_space
 
             # setup a new mouse area covering the window (minus a border) and
             # extending to the panel
@@ -521,13 +526,13 @@ class DockWinList(Gtk.Window):
             win_y = centre_pos - (self.__win_h/2)
 
             # adjust win_y in case we're off the top the screen...
-            if win_y < panel_space:
-                win_y = panel_space
+            if win_y < mon_geom.y + panel_space:
+                win_y = mon_geom.y + panel_space
 
             # adjust win_y if case the window list extends beyound the end of
             # the panel ..
-            if (win_y + self.__win_h) > screen_h:
-                win_y = screen_h - win_h - panel_space
+            if (win_y + self.__win_h) > mon_geom.y + mon_geom.height:
+                win_y = mon_geom.y + mon_geom.height - self.__win_h - panel_space
 
             # setup a new mouse area covering the window (minus a border) and
             # extending to the panel
@@ -540,16 +545,16 @@ class DockWinList(Gtk.Window):
         elif self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
             centre_pos = self.__app_x + app_alloc.width / 2
             win_x = centre_pos - (self.__win_w / 2)
-            win_y = self.__applet_h + panel_space
+            win_y = self.__applet_y + self.__applet_h + panel_space
 
             # adjust win_x in case we're off the left of the screen...
-            if win_x < panel_space:
-                win_x = panel_space
+            if win_x < mon_geom.x + panel_space:
+                win_x = mon_geom.x + panel_space
 
             # adjust win_x if case the window list extends beyond the end of
             # the panel ..
-            if (win_x + self.__win_w) > screen_w:
-                win_x = screen_w - self.__win_w - panel_space
+            if (win_x + self.__win_w) > mon_geom.x + mon_geom.width:
+                win_x = mon_geom.x + mon_geom.width - self.__win_w - panel_space
 
             # setup a new mouse area covering the window (minus a border) and
             # extending to the panel
@@ -563,13 +568,13 @@ class DockWinList(Gtk.Window):
             win_y = self.__applet_y - panel_space - self.__win_h
 
             # adjust win_x in case we're off the left of the screen...
-            if win_x < panel_space:
-                win_x = panel_space
+            if win_x < mon_geom.x + panel_space:
+                win_x = mon_geom.x + panel_space
 
             # adjust win_x if case the window list extends beyond the end of
             # the panel ..
-            if (win_x + self.__win_w) > screen_w:
-                win_x = screen_w - self.__win_w - panel_space
+            if (win_x + self.__win_w) > mon_geom.x + mon_geom.width:
+                win_x = mon_geom.x + mon_geom.width - self.__win_w - panel_space
 
             # setup a new mouse area covering the window (minus a border) and
             # extendingto the panel
@@ -1178,6 +1183,12 @@ class DockWinList(Gtk.Window):
         """
 
         self.__panel_orient = panel_orient
+
+    def set_monitor(self, monitor_num):
+        """ Sets the var which indicates which monitor the panel is on
+        """
+
+        self.__monitor = monitor_num
 
     def set_app_root_coords(self, x, y):
         """ Sets the x and y root coords of the app
