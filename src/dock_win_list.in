@@ -481,8 +481,12 @@ class DockWinList(Gtk.Window):
                          # the window list will hide
 
         screen = self.get_screen()
-        mon_geom = screen.get_monitor_geometry(self.__monitor)
-        log_it("mx: %d, my=%d, mw=%d, mh=%d" %(mon_geom.x, mon_geom.y, mon_geom.width, mon_geom.height))
+        if build_gtk2:
+            mon_geom = create_rect(0, 0, 0, 0)
+            screen.get_monitor_geometry(self.__monitor, mon_geom)
+        else:
+            mon_geom = screen.get_monitor_geometry(self.__monitor)
+
         screen_w = screen.get_width()
         screen_h = screen.get_height()
 
