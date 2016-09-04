@@ -1288,17 +1288,18 @@ class DockedApp(object):
         # to calculate it's position based on the notional DA_SIZE
         #
 
-        left = draw_size - width + inset
+        adj = 2
+        left = draw_size - width + inset - adj
 
         # do the drawing - attribution for the drawing code:
         # https://bazaar.launchpad.net/~unity-team/unity/trunk/view/head:/launcher/LauncherIcon.cpp
         ctx.scale(self.drawing_area_size/draw_size,
                   self.drawing_area_size/draw_size)
 
-        ctx.move_to(left, height-1)
-        ctx.arc(left, inset, radius, 0.5 * math.pi, 1.5*math.pi)
-        ctx.arc(draw_size-inset, inset, radius, 1.5*math.pi, 0.5*math.pi)
-        ctx.line_to(left, height-1)
+        ctx.move_to(left, height - 1+ adj)
+        ctx.arc(left, inset + adj, radius, 0.5 * math.pi, 1.5*math.pi)
+        ctx.arc(draw_size-inset-adj, inset + adj, radius, 1.5*math.pi, 0.5*math.pi)
+        ctx.line_to(left, height - 1 + adj)
         ctx.set_source_rgb(bred, bgreen, bblue)
         ctx.fill_preserve()
         ctx.set_source_rgb(tred, tgreen, tblue)
@@ -1307,7 +1308,7 @@ class DockedApp(object):
 
         # draw the text
         ctx.move_to(left - inset + width/2 - (extents[0]+extents[2]/2),
-                    (height/2)+extents[3]/2)
+                    (height/2) + adj +extents[3]/2)
         ctx.set_source_rgb(tred, tgreen, tblue)
         ctx.show_text(ctext)
 
