@@ -115,7 +115,6 @@ class DockWinList(Gtk.Window):
             __applet_w : the width of the applet in pixels
             __applet_h : the height of the applet in pixels
             __panel_orient : the orienation of the MATE panel the applet is on
-            __monitor : the monitor on which the panel is displayed
 
     """
 
@@ -162,7 +161,6 @@ class DockWinList(Gtk.Window):
         self.__app_x = 0
         self.__app_y = 0
         self.__panel_orient = MatePanelApplet.AppletOrient.LEFT
-        self.__monitor = 0
 
         # create ui
         if build_gtk2:
@@ -481,11 +479,16 @@ class DockWinList(Gtk.Window):
                          # the window list will hide
 
         screen = self.get_screen()
+
+        # get the monitor that the applet is on
+        # Note: we can't rely on the panel's dconf settings for this
+        # as the monitor setting there doesn't seem to work reliably
+        monitor = screen.get_monitor_at_point(self.__applet_x, self.__applet_y)
         if build_gtk2:
             mon_geom = create_rect(0, 0, 0, 0)
-            screen.get_monitor_geometry(self.__monitor, mon_geom)
+            screen.get_monitor_geometry(monitor, mon_geom)
         else:
-            mon_geom = screen.get_monitor_geometry(self.__monitor)
+            mon_geom = screen.get_monitor_geometry(monitor)
 
         screen_w = screen.get_width()
         screen_h = screen.get_height()
@@ -1187,12 +1190,6 @@ class DockWinList(Gtk.Window):
         """
 
         self.__panel_orient = panel_orient
-
-    def set_monitor(self, monitor_num):
-        """ Sets the var which indicates which monitor the panel is on
-        """
-
-        self.__monitor = monitor_num
 
     def set_app_root_coords(self, x, y):
         """ Sets the x and y root coords of the app
