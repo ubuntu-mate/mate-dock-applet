@@ -1,3 +1,29 @@
+V0.75 Fixed bug that caused window lists to sometimes span monitors on multi monitor
+    systems
+    Added Compiz support - the dock can now display window previews (via the Scale and
+    DBus plugins) when switching between app windows rather than using the built
+    in window list.
+    Mouse clicks on an app's dock icon now work differently:
+        If the app is not running, or if the Shift key is pressed while clicking, the
+        app will be started / a new instance will be started.
+        If the app has only 1 window open, the window will be activated.
+        If the app has multiple windows open, the window list will be shown or the
+        Compiz scale plugin will be activated, as appropriate.
+    The configuration option to restore all of app's windows or only the previously
+    active one on a mouse click has been removed, and replace with a new one which
+    allows to user to select between using the built in window list, or Compiz
+    window previews.
+    The window list no longer contains app actions, e.g. Pin/Unpin, or e.g. 'New Document'
+    for LibreOffice Writer).
+    App actions now appear in a separate popup window in the same way that the window
+    list used to, by hovering the mouse over the dock icon. The actions are also available
+    by right clicking on the app icon and selecting them from the panel popup menu.
+    A new configuration option has been added to prevent the popup windows appearing in case
+    users want to select actions from the right click menu only.
+    GTK3 only - The colour of window lists and action popups now match the panel which
+    contains the applet, whether the panel is set to use a colour from the current theme
+    or a custom colour.
+
 V0.74  Fix for improved matching of binary packaged apps on Gentoo .
     Amended README.me to include the availability of an overlay for the applet
     on Gentoo.
@@ -13,7 +39,7 @@ V0.74  Fix for improved matching of binary packaged apps on Gentoo .
     The applet can now display progress bars and counts on app icons for apps which
     support this e.g. the Ubuntu software updater.
 
-V0.73   Added drag and drop rearranging ing of dock icons (Gtk3 only). Window list
+V0.73   Added drag and drop rearranging of dock icons (Gtk3 only). Window list
         reworked and prettified.
 
 V0.72   The applet now works on and can be built for both GTK2 and GTK3 versions of MATE.
