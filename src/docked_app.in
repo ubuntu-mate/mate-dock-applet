@@ -311,6 +311,7 @@ class DockedApp(object):
         icon_filename : the filename of the app icon
         desktop_file : the filename of the app's .desktop file
         wm_class_name:
+        wm_class_group_name:
         applet_win  : the Gdk.Window of the panel applet
         applet_orient : the applet orientation
 
@@ -361,6 +362,7 @@ class DockedApp(object):
         self.icon_filename = ""
         self.desktop_file = ""
         self.wm_class_name = ""
+        self.wm_class_group_name = ""
         self.icon_geometry_set = False
         self.applet_win = None
         self.applet_orient = None
@@ -452,6 +454,8 @@ class DockedApp(object):
             win.connect("state-changed", self.win_state_changed)
             win_class = win.get_class_group()
             win_class_name = win_class.get_res_class()
+            #if self.wm_class_group_name == "":
+            #    self.wm_class_group_name = win.get_class_group_name()
 
             if ((win.get_window_type() == Wnck.WindowType.NORMAL) or
                     (win.get_window_type() == Wnck.WindowType.DIALOG)) and \
@@ -564,6 +568,18 @@ class DockedApp(object):
                     win_list.append(wnck_win)
 
         return win_list
+
+    def get_first_window(self):
+        """ Return the first window the app has open
+
+        Returns: a wnck.window, or None (if the app has no open windows)
+        """
+
+        if self.get_num_windows() == 0:
+            return None
+        else:
+            win_list = self.get_wnck_windows()
+            return win_list[0]
 
     def has_windows_on_workspace(self, wnck_workspace):
         """ test whether the app has at least one window open on a specified
