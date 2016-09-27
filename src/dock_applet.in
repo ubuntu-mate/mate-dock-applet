@@ -94,6 +94,7 @@ def applet_button_press(widget, event, the_dock):
         # because the right click menu is about to be shown, we need to hide
         # the window list
         the_dock.hide_win_list()
+        the_dock.hide_act_list()
 
 
 def applet_button_release(widget, event, the_dock):
@@ -106,9 +107,10 @@ def applet_button_release(widget, event, the_dock):
     If the button is released over a runnning app that isn't on the
     current workspace, change workspace
 
-    If the button is released over a running app on the current workspace:
-        if it is the active app minmize all of its windows
-        Otherwise, restore them all
+    If the button is released over a running app:
+        If the app has only a single window open, activate it
+        If window list is showing, hide it
+        If the window list is not visible, show it
 
     Args:
         widget : the widget that registered the release event
@@ -119,18 +121,11 @@ def applet_button_release(widget, event, the_dock):
 
     if event.button == 1:
 
-        # hide the window list window
-        the_dock.hide_win_list()
+        # hide popups
+        the_dock.hide_act_list()
 
         app = the_dock.get_app_at_mouse(event.x, event.y)
         if app is not None:
-
-            # TODO
-            # move this code into docked_app.in ...
-
-            # if the app is not running start the app
-            # if the app is running and the shift key is being pressed, start
-            # another instance of the app
 
             start_app = app.is_running() is False
             start_app = start_app | (event.state &
@@ -138,13 +133,21 @@ def applet_button_release(widget, event, the_dock):
             if start_app:
                 app.start_app()
             else:
-                the_dock.minimize_or_restore_windows(app, event)
+
+                # if the app only has a single window activate it, otherwise
+                # allow the user to select a window from a list
+                if app.get_num_windows() == 1:
+                    the_dock.activate_first_window(app)
+                else:
+                    the_dock.do_window_selection(app)
+
 
     # See https://bugs.launchpad.net/ubuntu-mate/+bug/1554128
     if event.button == 2:
         app = the_dock.get_app_at_mouse(event.x, event.y)
         if app is not None:
             the_dock.hide_win_list()
+            the_dock.hide_act_list()
             app.start_app()
 
 
@@ -202,7 +205,7 @@ def applet_leave_notify(widget, event, the_dock):
         the_dock.app_with_mouse.queue_draw()
         the_dock.app_with_mouse = None
 
-        the_dock.stop_win_list_timer()
+        the_dock.stop_act_list_timer()
 
 
 def applet_motion_notify(widget, event, the_dock):
@@ -231,9 +234,10 @@ def applet_motion_notify(widget, event, the_dock):
         widget.queue_draw()
 
         # because a new app is highlighted reset the window list timer and hide
-        # any currently open window list
+        # any currently open window list and action list
         the_dock.hide_win_list()
-        the_dock.reset_win_list_timer()
+        the_dock.reset_act_list_timer()
+        the_dock.hide_act_list()
 
         if not build_gtk2:
             # set the drag and drop cursor - needs to be done here as well
@@ -244,7 +248,7 @@ def applet_motion_notify(widget, event, the_dock):
     if (app is not None):
 
         # reset the window list timer
-        the_dock.reset_win_list_timer()
+        the_dock.reset_act_list_timer()
 
         if app.has_mouse is False:
             app.has_mouse = True
@@ -325,6 +329,7 @@ def applet_drag_begin(applet, context, the_dock):
 
         # finally, hide the window list if it was being shown
         the_dock.hide_win_list()
+        the_dock.hide_act_list()
 
 
 def applet_drag_data_get(widget, drag_context, data, info, time):
