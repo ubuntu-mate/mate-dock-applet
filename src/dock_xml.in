@@ -46,11 +46,11 @@ import platform
 
 
 def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
-              click_restore_last_active, win_from_cur_ws_only,
-              panel_change_color, dock_panel_change_only):
+              use_dock_win_list, win_from_cur_ws_only,
+              panel_change_color, dock_panel_change_only, use_panel_act_list):
     """ Write the xml file using the specified information
 
-    The xml file will be in the following format:
+    The xml file will be in e.g. the following format:
 
         <root>
             <pinned_apps>
@@ -77,9 +77,9 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
                         workspaces are to be shown
         multi_ind : Whether indicators for each of an app's open windows are to
                     be shown
-        click_restore_last_active: whether clicking a running app's dock icon
-                                   restores only the last active window or all
-                                   windows
+        use_dock_win_list: : boolean : whether to use the applet's own window list
+                                  for switching between an app's open windows,
+                                  or to use Compiz thumbnail previews
         win_from_cur_ws_only: boolean - If True, indicators and window list
                               items will only be shown for windows on the
                               current workspace (new with V0.67)
@@ -89,6 +89,9 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
         dock_panel_change_only : boolean - whether panel colour changes are to
                                  limited to only the panel containing the dock
                                  applet (new with V0.66)
+        use_panel_act_list:  boolean - whether to display an app's actions in
+                                 the panel right click menu, as opposed to
+                                 using the popup action list
 
     Returns:
         Boolean - True if the file was written successfully, False otherwise
@@ -105,22 +108,25 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
     ind_el = ET.Element("ind_type", light="%d" % light_ind)
     sa_el = ET.Element("show_all", show_all="%s" % show_all_apps)
     mi_el = ET.Element("multi_ind", show_multi="%s" % multi_ind)
-    crla_el = ET.Element("click_restore_last_active",
-                        restore_last_active_only="%s" % click_restore_last_active)
+    uwl_el = ET.Element("use_win_list",
+                        uwl="%s" % use_dock_win_list)
     wcw_el = ET.Element("win_from_cur_ws_only",
                         wcw="%s" % win_from_cur_ws_only)
-    pcc_el = ET.Element("panel_change_color", pcc= "%s" % panel_change_color)
+    pcc_el = ET.Element("panel_change_color", pcc = "%s" % panel_change_color)
     dcc_el = ET.Element("dock_panel_change_only",
                         dcc="%s" % dock_panel_change_only)
+    pal_el = ET.Element("panel_act_list",
+                        pal="%s" % use_panel_act_list)
 
     root.append(pa_el)
     root.append(ind_el)
     root.append(sa_el)
     root.append(mi_el)
-    root.append(crla_el)
+    root.append(uwl_el)
     root.append(wcw_el)
     root.append(pcc_el)
     root.append(dcc_el)
+    root.append(pal_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
@@ -144,11 +150,12 @@ def read_xml(filename):
             an integer - the indicator setting
             a boolean - the how_all_apps setting
             a boolean - the multiple indicators setting
-            a boolean - the restore last active settings
+            a boolean - the use window list setting
             a boolean - the show indicators and win list items from the current
                         workspace only setting
             a boolean - the change panel colour setting
             a boolean - the change dock panel color only setting
+            a boolean - the use panel action list setting
     """
 
     try:
@@ -184,11 +191,11 @@ def read_xml(filename):
     else:
         multi_ind = False
 
-    crla_el = root.find("click_restore_last_active")
-    if crla_el is not None:
-        click_restore_last_active = crla_el.get("restore_last_active_only") == "True"
+    uwl_el = root.find("use_win_list")
+    if uwl_el is not None:
+        use_win_list = uwl_el.get("uwl") == "True"
     else:
-        click_restore_last_active = True
+        use_win_list = True
 
     crla_el = root.find("win_from_cur_ws_only")
     if crla_el is not None:
@@ -208,9 +215,16 @@ def read_xml(filename):
     else:
         dock_panel_change_only = False
 
+    pal_el = root.find("panel_act_list")
+    if pal_el is not None:
+        use_panel_act_list = pal_el.get("pal") == "True"
+    else:
+        use_panel_act_list = False
+
     return [True, df_list, light_ind, show_all, multi_ind,
-            click_restore_last_active, win_from_cur_ws_only,
-            panel_change_color, dock_panel_change_only]
+            use_win_list, win_from_cur_ws_only,
+            panel_change_color, dock_panel_change_only,
+            use_panel_act_list]
 
 
 def read_app_xml(filename):

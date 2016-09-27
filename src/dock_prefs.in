@@ -135,7 +135,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__da_light_ind = Gtk.DrawingArea()
         self.__da_light_ind.set_size_request(self.DA_SIZE, self.DA_SIZE)
 
-        # connect an event handler to adraw the light indicator
+        # connect an event handler to draw the light indicator
         if build_gtk2:
             self.__da_light_ind.connect("expose-event", self.draw_light_ind)
         else:
@@ -259,40 +259,40 @@ class DockPrefsWindow(Gtk.Window):
         self.__ws_vbox.pack_start(self.__frame_unpinned_apps, False, False, 4)
         self.__ws_vbox.pack_start(self.__cb_win_cur_ws, False, False, 4)
 
-        self.__frame_click_action = self.create_frame("Click restoring windows")
-        self.__rb_restore_last_active = Gtk.RadioButton (label="Restore clicked app's last active window only")
-        self.__rb_restore_all = Gtk.RadioButton(group=self.__rb_restore_last_active, \
-                                                label="Restore all of clicked app's windows")
-        self.__table_click_action = Gtk.Table(rows=2, columns=1,
-                                              homogeneous=False)
-        self.__table_click_action.attach(self.__rb_restore_last_active,
-                                         0, 1, 0, 1,
-                                         Gtk.AttachOptions.FILL,
-                                         Gtk.AttachOptions.SHRINK,
-                                         2, 2)
-        self.__table_click_action.attach(self.__rb_restore_all,
-                                         0, 1, 1, 2,
-                                         Gtk.AttachOptions.FILL,
-                                         Gtk.AttachOptions.SHRINK,
-                                         2, 2)
+        self.__frame_win_sel = self.create_frame("Window selection")
+        self.__rb_win_list = Gtk.RadioButton (label="From applet's window list")
+        self.__rb_win_thumb = Gtk.RadioButton(group=self.__rb_win_list, \
+                                                label="From window thumbnail previews (requires Compiz)")
+        self.__table_win_sel = Gtk.Table(rows=2, columns=1,
+                                         homogeneous=False)
+        self.__table_win_sel.attach(self.__rb_win_list,
+                                    0, 1, 0, 1,
+                                    Gtk.AttachOptions.FILL,
+                                    Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+        self.__table_win_sel.attach(self.__rb_win_thumb,
+                                    0, 1, 1, 2,
+                                    Gtk.AttachOptions.FILL,
+                                    Gtk.AttachOptions.SHRINK,
+                                    2, 2)
 
-        self.__frame_click_action_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                        xscale=1.0, yscale=1.0)
-        self.__frame_click_action_align.set_padding(0, 0, 12, 0)
-        self.__frame_click_action_align.add(self.__table_click_action)
-        self.__frame_click_action.add(self.__frame_click_action_align)
+        self.__frame_win_sel_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                   xscale=1.0, yscale=1.0)
+        self.__frame_win_sel_align.set_padding(0, 0, 12, 0)
+        self.__frame_win_sel_align.add(self.__table_win_sel)
+        self.__frame_win_sel.add(self.__frame_win_sel_align)
         if build_gtk2:
-            self.__click_vbox = Gtk.VBox()
+            self.__win_sel_vbox = Gtk.VBox()
         else:
-            self.__click_vbox = Gtk.Box()
-            self.__click_vbox.set_orientation(Gtk.Orientation.VERTICAL)
+            self.__win_sel_vbox = Gtk.Box()
+            self.__win_sel_vbox.set_orientation(Gtk.Orientation.VERTICAL)
 
-        self.__click_vbox.set_spacing(2)
-        self.__click_vbox.pack_start(self.__frame_click_action, False,
-                                     False, 4)
+        self.__win_sel_vbox.set_spacing(2)
+        self.__win_sel_vbox.pack_start(self.__frame_win_sel, False,
+                                       False, 4)
 
-        self.__frame_color_change = self.create_frame("Change panel colour to match wallpaper")
-        self.__cb_panel_color_change = Gtk.CheckButton(label="Change panel colour")
+        self.__frame_color_change = self.create_frame("Panel colour")
+        self.__cb_panel_color_change = Gtk.CheckButton(label="Change panel colour to match wallpaper")
         self.__cb_panel_color_change.connect("toggled", self.color_change_toggled)
         self.__cb_dock_panel_only = Gtk.CheckButton(label="Change colour of dock's panel only")
 
@@ -315,22 +315,28 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_color_change_align.add(self.__table_color_change)
         self.__frame_color_change.add(self.__frame_color_change_align)
 
-        if build_gtk2:
-            self.__color_vbox = Gtk.VBox()
-        else:
-            self.__color_vbox = Gtk.Box()
-            self.__color_vbox.set_orientation(Gtk.Orientation.VERTICAL)
+        self.__cb_pan_act = Gtk.CheckButton(label="Disable popup action list " + \
+                                            "and show app actions\non panel " + \
+                                            "right click menu only")
 
-        self.__color_vbox.set_spacing(2)
-        self.__color_vbox.pack_start(self.__frame_color_change,
+        if build_gtk2:
+            self.__panel_vbox = Gtk.VBox()
+        else:
+            self.__panel_vbox = Gtk.Box()
+            self.__panel_vbox.set_orientation(Gtk.Orientation.VERTICAL)
+
+        self.__panel_vbox.set_spacing(2)
+        self.__panel_vbox.pack_start(self.__frame_color_change,
+                                     False, False, 4)
+        self.__panel_vbox.pack_start(self.__cb_pan_act,
                                      False, False, 4)
 
         self.__vbox.pack_start(self.__notebook, True, True, 4)
         self.__notebook.append_page(self.__ind_vbox, Gtk.Label("Indicators"))
         self.__notebook.append_page(self.__ws_vbox, Gtk.Label("Workspaces"))
-        self.__notebook.append_page(self.__click_vbox, Gtk.Label("Windows"))
-        self.__notebook.append_page(self.__color_vbox,
-                                    Gtk.Label("Panel Colour"))
+        self.__notebook.append_page(self.__win_sel_vbox, Gtk.Label("Windows"))
+        self.__notebook.append_page(self.__panel_vbox,
+                                    Gtk.Label("Panel Options"))
 
         self.__vbox.pack_start(Gtk.HSeparator(), True, True, 4)
         self.__vbox.pack_start(self.__hbbx, False, False, 0)
@@ -351,6 +357,7 @@ class DockPrefsWindow(Gtk.Window):
         lbl.set_use_markup(True)
         lbl.set_label("<b>%s</b>" % caption)
         frame.set_shadow_type(Gtk.ShadowType.NONE)
+        frame.set_border_width(4)
         return frame
 
     def win_delete_event(self, widget, event, data=None):
@@ -524,26 +531,45 @@ class DockPrefsWindow(Gtk.Window):
         else:
             self.__rb_pinned_cur_ws.set_active(True)
 
-    def get_click_restore_last_active(self):
-        """Gets whether to restore only a running app's last active window when
-        its dock icon is clicked and all windows are minimized
+    def get_pan_act(self):
+        """ Gets whether or not the show the action list on the panel
+            right click menu, rather than as a popup
 
-        Returns: boolean
+            Returns: boolean
         """
 
-        return self.__rb_restore_last_active.get_active()
+        return self.__cb_pan_act.get_active()
 
-    def set_click_restore_last_active(self, restore_last_active):
-        """Sets whether to restore only a running app's last active window when
-        its dock icon is clicked and all windows are minimized
+    def set_pan_act(self, pan_act):
+        """ Sets whether or not the show the action list on the panel
+            right click menu, rather than as a popup
 
-        Args: restore_last_active - boolean
+            Args:
+                pan_act: boolean
         """
 
-        if restore_last_active:
-            self.__rb_restore_last_active.set_active(True)
+        self.__cb_pan_act.set_active(pan_act)
+
+    def get_use_win_list(self):
+        """Gets whether to use the dock's window list to select windows
+        or whether to use Compiz thumbnail previews
+
+            Returns: boolean
+        """
+
+        return self.__rb_win_list.get_active()
+
+    def set_use_win_list(self, use_win_list):
+        """Sets whether to use the dock's window list to select windows
+        or whether to use Compiz thumbnail previews
+
+        Args: use_win_list - boolean
+        """
+
+        if use_win_list:
+            self.__rb_win_list.set_active(True)
         else:
-            self.__rb_restore_all.set_active(True)
+            self.__rb_win_thumb.set_active(True)
 
     def get_change_panel_color(self):
         """ Get whether the panel colour is to be changed according to the
@@ -598,6 +624,7 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         self.__cb_win_cur_ws.set_active(win_cur_ws_only)
+
 
 
 def main():
