@@ -2,7 +2,7 @@
 SUBDIRS =
 
 applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.py log_it.py dock_custom_launcher.py dock_win_list.py \
-		 dock_xml.py dock_color_changer.py dom_color.py dock_info.py
+		 dock_action_list.py dock_xml.py dock_color_changer.py dom_color.py dock_info.py dock_popup.py
 
 appletdir = $(libdir)/mate-applets/mate-dock-applet/
 
@@ -25,7 +25,7 @@ do_substitution = $(AM_V_GEN)sed \
 		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	  	-e 's,[@]VERSION[@],$(VERSION),g' \
 	    -e 's,[@]LOCATION[@],$(appletdir),g' \
-	    -e 's,[@]localedir[@],$(datadir)/locale,g' 
+	    -e 's,[@]localedir[@],$(datadir)/locale,g'
 else
 do_substitution = $(AM_V_GEN)sed \
 		-e 's,[@]pythondir[@],$(pythondir),g' \
@@ -122,6 +122,10 @@ dock_win_list.py: dock_win_list.in Makefile
 	$(do_substitution) < $(srcdir)/dock_win_list.in > dock_win_list.py
 	chmod +x dock_win_list.py
 
+dock_action_list.py: dock_action_list.in Makefile
+	$(do_substitution) < $(srcdir)/dock_action_list.in > dock_action_list.py
+	chmod +x dock_action_list.py
+
 dock_xml.py: dock_xml.in Makefile
 	$(do_substitution) < $(srcdir)/dock_xml.in > dock_xml.py
 	chmod +x dock_xml.py
@@ -138,6 +142,10 @@ dock_info.py: dock_info.in Makefile
 	$(do_substitution) < $(srcdir)/dock_info.in > dock_info.py
 	chmod +x dock_info.py
 
+dock_popup.py: dock_popup.in Makefile
+		$(do_substitution) < $(srcdir)/dock_popup.in > dock_popup.py
+		chmod +x dock_popup.py
+
 applet_PYTHON = \
 		     dock_applet.py \
 		     dock_about.py \
@@ -147,9 +155,11 @@ applet_PYTHON = \
 		     dock_custom_launcher.py \
 		     log_it.py \
 		     dock_win_list.py \
+				 dock_action_list.py \
 		     dock_xml.py \
 		     dock_color_changer.py \
 		     dom_color.py \
+				 dock_popup.py \
 		     dock_info.in
 
 CLEANFILES = $(applet_SCRIPTS) \
@@ -164,10 +174,12 @@ EXTRA_DIST = dock_applet.in \
 	     dock_custom_launcher.in \
 	     log_it.in \
 	     dock_win_list.in \
+			 dock_action_list.in \
 	     dock_xml.in \
 	     dock_color_changer.in \
 	     dom_color.in \
 	     dock_info.in \
+			 dock_popup.in \
 	     $(gsettings_SCHEMAS) \
 	     $(applets_in_files) \
 	     $(service_in_files) \
