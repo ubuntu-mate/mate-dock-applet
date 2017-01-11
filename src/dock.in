@@ -766,25 +766,25 @@ class Dock(object):
         df_shortcut_3_action = self.dock_action_group.get_action("df_shortcut_3_action")
         df_shortcut_4_action = self.dock_action_group.get_action("df_shortcut_4_action")
 
-        act_exists, act_name, act_cmd_line = app.get_rc_action(1)
+        act_exists, act_name = app.get_rc_action(1)
         df_shortcut_1_action.set_visible(act_exists)
         if act_exists is True:
             df_shortcut_1_action.set_label(act_name)
             df_shortcut_1_action.set_icon_name(app.icon_name)
 
-        act_exists, act_name, act_cmd_line = app.get_rc_action(2)
+        act_exists, act_name = app.get_rc_action(2)
         df_shortcut_2_action.set_visible(act_exists)
         if act_exists is True:
             df_shortcut_2_action.set_label(act_name)
             df_shortcut_2_action.set_icon_name(app.icon_name)
 
-        act_exists, act_name, act_cmd_line = app.get_rc_action(3)
+        act_exists, act_name = app.get_rc_action(3)
         df_shortcut_3_action.set_visible(act_exists)
         if act_exists is True:
             df_shortcut_3_action.set_label(act_name)
             df_shortcut_3_action.set_icon_name(app.icon_name)
 
-        act_exists, act_name, act_cmd_line = app.get_rc_action(4)
+        act_exists, act_name = app.get_rc_action(4)
         df_shortcut_4_action.set_visible(act_exists)
         if act_exists is True:
             df_shortcut_4_action.set_label(act_name)
@@ -1771,6 +1771,12 @@ class Dock(object):
                     # found it, so copy the running app's info to the pinned
                     # dock item
                     self.copy_wnck_info_to_app(app, dock_app, wnck_window)
+
+                    if app.startup_id is not None:
+                        # if we have a startup id set this means the dock started the app. Since the app has
+                        # now opened a new window we can now assume the app has started and end the notification
+                        # process
+                        app.cancel_startup_notification()
 
                     # set the minimize target for the new window
                     self.set_minimise_target(app)
