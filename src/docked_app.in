@@ -62,9 +62,10 @@ from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk
 from gi.repository import Wnck
-
 from gi.repository import Gio
 from gi.repository import GObject
+from gi.repository import GLib
+
 import cairo
 import math
 import xdg.DesktopEntry as DesktopEntry
@@ -81,8 +82,6 @@ from log_it import log_it as log_it
 
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
 AppInfoTup = namedtuple('AppInfoTup', ['app', 'pid', 'windows'])
-ActionTup = namedtuple('ActionTup', ['name', 'command'])
-
 
 def im_get_comp_color(filename):
     """Find the complimentary colour of the average colour of an image.
@@ -207,7 +206,7 @@ class PulseTimer(object):
 
     """
 
-    def __init__(self, app):
+    def __init__(self, app, once_only = False):
         """Init for the PulseTimer class.
 
         Sets everything up by creating the timer, setting a reference to the
@@ -215,11 +214,13 @@ class PulseTimer(object):
 
         Arguments:
             app : the DockedApp object
+            once_only : do only one iteration of pulsing, then stop
         """
 
         self.app = app
         self.app.pulse_step = 0
         self.app.is_pulsing = True
+        self.once_only = once_only
         self.timer_id = GObject.timeout_add(CONST_PULSE_DELAY, self.do_timer)
 
     def do_timer(self):
@@ -236,8 +237,18 @@ class PulseTimer(object):
         if self.app.pulse_step != CONST_PULSE_STEPS:
             self.app.pulse_step += 1
         else:
-            self.app.is_pulsing = False
-            GObject.source_remove(self.timer_id)
+            # if we're starting the app for the first time (with startup notification)
+            # and it still hasn't finished loading, carry on pulsing
+            if (self.app.startup_id is not None) and not self.once_only:
+                self.app.pulse_step = 0
+            else:
+                # we only want the icon to pulse one
+                # if we have a startup_id the notification needs to be cancelled
+                if self.app.startup_id is not None:
+                    self.app.cancel_startup_notification()
+
+                self.app.is_pulsing = False
+                GObject.source_remove(self.timer_id)
 
         self.app.queue_draw()
 
@@ -304,12 +315,14 @@ class DockedApp(object):
         wnck_class  : the WnckClass object relating to the app
         app_name    : e.g. Google Chrome, used for tooltips and the applet
                       right click menu etc
-        rc_actions  : list of ActionTups to hold details of right click actions
-                      the app supports
+        rc_actions  : A list of strings containing the names of the additional application
+                      actions suppported by the app
         cmd_line    : the command line and arguments used to start the app
         icon_name   : name of the app icon
         icon_filename : the filename of the app icon
         desktop_file : the filename of the app's .desktop file
+        desktop_ai   : a Gio.GDesktopAppInfo read from the .desktop file
+        startup_id   : id used for startup notifications
         wm_class_name:
         wm_class_group_name:
         applet_win  : the Gdk.Window of the panel applet
@@ -367,6 +380,7 @@ class DockedApp(object):
         self.applet_win = None
         self.applet_orient = None
         self.ind_ws = None
+        self.startup_id = None
 
         # all drawing is done to a Gtk.Label rather than e.g. a drawing area
         # or event box this allows panel transparency/custom backgrounds to be
@@ -725,6 +739,8 @@ class DockedApp(object):
 
         """
 
+        #TODO: replace DesktopEntry with Gio.DesktopAppInfo...
+
         # if the search dir doesn't exist, don't do anything
         if os.path.isdir(srch_dir) is False:
             return False
@@ -847,6 +863,9 @@ class DockedApp(object):
             True if a match was found, False otherwise
         """
 
+        #TODO: replace DesktopEntry with Gio.DesktopAppInfo... and then
+        #TODO: remove xdg.DesktopEntry from imports and list of dependecies
+
         # if the search dir doesn't exist, don't do anything
         if os.path.isdir(srch_dir) is False:
             return False
@@ -965,9 +984,13 @@ class DockedApp(object):
         """
 
         if self.desktop_file:
-            dfile = DesktopEntry.DesktopEntry(self.desktop_file)
-            self.app_name = dfile.getName()
-            self.icon_name = dfile.getIcon()
+            if os.path.isabs(self.desktop_file):
+                self.desktop_ai = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
+            else:
+                self.desktop_ai = Gio.DesktopAppInfo.new(self.desktop_file)
+
+            self.app_name = self.desktop_ai.get_string("Name")
+            self.icon_name = self.desktop_ai.get_string("Icon")
 
             # if the desktop file does not specify an icon name, use the app
             # name instead
@@ -979,33 +1002,12 @@ class DockedApp(object):
                 if self.icon_name == "application browser":
                     self.icon_name = "computer"
 
-            # the command specified in the .desktop should always be used to
-            # launch the app
-            self.cmd_line = dfile.getExec()
+            # get the command specified in the .desktop file used to launch the app
+            self.cmd_line = self.desktop_ai.get_string("Exec")
 
-            # now read the right click actions the app supports. These can be
-            # specified in two ways - by a key named
-            # 'X-Ayatana-Desktop-Shortcuts' or by an Actions key
-
-            xads = dfile.get('X-Ayatana-Desktop-Shortcuts')
-            if (xads is not None) and (xads != ""):
-                # the shortcut ids are in the the form of a semi-colon
-                # separated string
-                for rca in xads.split(";"):
-                    rcname = dfile.get("Name",
-                                       group="%s Shortcut Group" % rca)
-                    rcexec = dfile.get("Exec",
-                                       group="%s Shortcut Group" % rca)
-                    if (rcname != "") and (rcexec != ""):
-                        new_action = ActionTup(name=rcname, command=rcexec)
-                        self.rc_actions.append(new_action)
-
-            for action in dfile.getActions():
-                rcname = dfile.get("Name", group="Desktop Action %s" % action)
-                rcexec = dfile.get("Exec", group="Desktop Action %s" % action)
-                if (rcname != "") and (rcexec != ""):
-                    new_action = ActionTup(name=rcname, command=rcexec)
-                    self.rc_actions.append(new_action)
+            # get the list of addtional application actions (to be activated by right
+            # clicking the app's dock icon)
+            self.rc_actions=self.desktop_ai.list_actions()
 
             return True
 
@@ -1428,9 +1430,12 @@ class DockedApp(object):
 
     def start_app(self):
         """Start the app or open a new window if it's already running
+
+            Use Gio.DesktopAppinfo as it supports startup notfication
         """
-        the_de = DesktopEntry.DesktopEntry(self.desktop_file)
-        run_it = the_de.getExec()
+        # start the app
+        run_it = self.desktop_ai.get_string("Exec")
+
         if run_it is not None:
 
             # hack for Linux Mint:
@@ -1447,20 +1452,64 @@ class DockedApp(object):
             # expecting....
             if run_it == "/usr/bin/startcaja":
                 run_it = "caja"
+                self.run_cmd_line(run_it)
+                return
 
-            # remove any command line arguments beginning with ' %'
-            # TODO - check if still really necessary
-            if " %" in run_it:
-                i = run_it.rfind(" %")
-                run_it = run_it[0:i]
+        gdai = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
+        disp = Gdk.Display.get_default()
+        if build_gtk2:
+            alc = Gdk.AppLaunchContext()
+        else:
+            alc = disp.get_app_launch_context()
+    
+        alc.set_desktop(-1)  # use default screen & desktop
+        alc.set_timestamp(Gtk.get_current_event_time())
+        alc.connect("launch-failed", self.launch_failed)
 
-        # start the app
-        self.run_cmd_line(run_it)
+        # indicate we want startup notification
+        self.startup_id = alc.get_startup_notify_id(gdai, [])
+
+        gdai.launch_uris_as_manager([], alc, GLib.SpawnFlags.SEARCH_PATH,
+                                    None, None, None, None)
+
+        # make the app's icon pulse
+        if not self.is_running():
+            throbber = PulseTimer(self)
+        else:
+            # if the app is already running, we want the icon to pulse at most once only
+            # For apps which don't open a new window, the pulse timer will end up cancelling
+            # the unneeded startup notification
+            throbber = PulseTimer(self, True)
+
+    def cancel_startup_notification(self):
+        """
+            Cancel any startup notification
+        """
+        if build_gtk2:
+            Gdk.notify_startup_complete_with_id(self.startup_id)
+        else:
+            display = Gdk.Display.get_default()
+            display.notify_startup_complete(self.startup_id)
+           
+        self.startup_id = None
+
+    def launch_failed(self, app_launch_context, startup_id):
+        """Handler for app launch failure events
+
+        Cancel the satartup notification
+
+            Args:
+                app_launch_context : the Gdk.AppLaunchContext that failed
+                startup_id : the startup notification id
+        """
+
+        self.cancel_startup_notification()
+
+        display = Gdk.Display.get_default()
+        display.notify_startup_complete(startup_id)
 
     def run_cmd_line(self, cmd_line):
-        """Run a command line. To be used when starting an app for the first
-           time or when running an action/shortcut specfied in the app's
-           .desktop file
+        """Run a command line.
 
             Args:
                 cmd_line - the command to run
@@ -1470,6 +1519,7 @@ class DockedApp(object):
         cmd_line = bytearray(cmd_line, "UTF-8")
         cmd_line = cmd_line.decode("unicode-escape")
 
+        return
 
         # if an environment variable is specified, extract its name an value
         # Note: the .desktop file specification at
@@ -1505,16 +1555,25 @@ class DockedApp(object):
             cmd_line = head + "/" + tail
         app_info = Gio.AppInfo.create_from_commandline(cmd_line,
                                                        None,
-                                                       Gio.AppInfoCreateFlags.NONE)
+                                                       Gio.AppInfoCreateFlags.SUPPORTS_STARTUP_NOTIFICATION)
         alc = Gdk.AppLaunchContext()
         alc.set_desktop(-1)                   # use default screen & desktop
+        alc.set_timestamp(Gtk.get_current_event_time())
+
         # if the .desktop specfied an environment variable, set it
         if (var_name is not None) and (var_value is not None):
             alc.setenv(var_name, var_value)
 
-        app_info.launch(None, alc)
-        # set the app icon pulsing
+        file_list = GLib.List()
+
+       # app_info.launch(None, alc)
+        self.startup_id = alc.get_startup_notify_id(app_info, [])
+
         throbber = PulseTimer(self)
+
+        watch = Gdk.Cursor(Gdk.CursorType.WATCH)
+        self.applet_win.set_cursor(watch)
+
 
     def run_rc_action(self, act_no):
         """ run the right click action specified by act_no
@@ -1524,7 +1583,21 @@ class DockedApp(object):
         """
 
         if len(self.rc_actions) >= act_no:
-            self.run_cmd_line(self.rc_actions[act_no-1].command)
+            if build_gtk2:
+                alc = Gdk.AppLaunchContext()
+            else:
+                disp = Gdk.Display.get_default()
+                alc = disp.get_app_launch_context()
+
+            alc.set_desktop(-1)  # use default screen & desktop
+            alc.set_timestamp(Gtk.get_current_event_time())
+            alc.connect("launch-failed", self.launch_failed)
+
+            # indicate we want startup notification
+            self.startup_id = alc.get_startup_notify_id(self.desktop_ai, [])
+
+            self.desktop_ai.launch_action(self.rc_actions[act_no-1], alc)
+            self.start_pulsing()
 
     def get_rc_action(self, act_no):
         """ return a specified right click action's details
@@ -1536,14 +1609,12 @@ class DockedApp(object):
                 bool - True if the action exists, False otherwise
                 string - the name of the action (i.e. the text to appear in the
                 right click menu)
-                string - the command line to the be run
         """
 
         if len(self.rc_actions) >= act_no:
-            return (True, self.rc_actions[act_no-1].name,
-                    self.rc_actions[act_no-1].command)
+            return True, self.desktop_ai.get_action_name(self.rc_actions[act_no-1])
         else:
-            return (False, "", "")
+            return (False, "")
 
     def start_pulsing(self):
         """ start the dock icon pulsing
