@@ -254,7 +254,7 @@ class DockPopup(Gtk.Window):
                 context = self.get_style_context()
                 state = Gtk.StateType.NORMAL
                 # we want the colors for the MATE panel (preferably), or the
-                # Gnome
+                # Gnome menu bar
                 #context.add_class("gnome-panel-menu-bar")
                 #context.add_class("mate-panel-menu-bar")
 
