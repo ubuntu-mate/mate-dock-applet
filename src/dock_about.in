@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Provide an about dialog for the MATE dock applet
+Provide an about dialog for the MATE dock applet applet
 
-The applet displays the following:
+The dialog displays the following:
     applet name and version number
-    licensing info (GPL3) with a clickable link for the full version
+    licensing info (GPL3)
+    hints and tips
     a close button
 """
 
@@ -42,15 +43,12 @@ else:
 
 import sys
 
-from gi.repository import Gtk
-import dock_info
+from gi.repository import Gtk, Pango
 
 
 class AboutWindow(Gtk.Window):
     """Provides the About window
 
-    Also includes a 'Hints & Tips' Button which displays a dialog
-    containing useful info about the applet
     """
 
     def __init__(self):
@@ -59,27 +57,45 @@ class AboutWindow(Gtk.Window):
         Create the window and its contents
         """
 
-        super().__init__(title="Dock Applet")
+        super().__init__(title="About Dock Applet")
 
-        self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
-        self.__button.connect("button-press-event", self.win_button_press)
+        self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
 
-        self.__button_hints = Gtk.Button(label="Hints & Tips")
-        img_hint = Gtk.Image()
-        img_hint.set_from_stock(Gtk.STOCK_INFO, Gtk.IconSize.BUTTON)
-        self.__button_hints.set_image(img_hint)
-        self.__button_hints.connect("button-press-event",
-                                    self.hint_button_press)
+        self.__btn_close = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
+        self.__btn_close.connect("button-press-event", self.close_button_press)
+        self.__btn_hints = Gtk.ToggleButton.new_with_label("Hints & Tips")
+        self.__btn_hints.connect("toggled", self.hints_button_toggled)
+        self.__btn_license = Gtk.ToggleButton.new_with_label("License")
+        self.__btn_license.connect("toggled", self.license_button_toggled)
 
         self.connect("delete-event", self.win_delete_event)
         self.set_border_width(5)
+
+        # use a notebook widget to display the various pages of info
+        self.__nb = Gtk.Notebook()
+        self.__nb.set_show_tabs(False)
+        self.__nb.set_show_border(False)
+
+        # create a container for the dialog and others for the pages of the notebook
         if build_gtk2:
             self.__vbox = Gtk.VBox()
             self.__vbox.set_spacing(2)
+            self.__vbox_dflt = Gtk.VBox()
+            self.__vbox_dflt.set_spacing(8)
+            self.__vbox_license = Gtk.VBox()
+            self.__vbox_license.set_spacing(8)
         else:
-            self.__vbox = Gtk.Grid()
-            self.__vbox.set_column_spacing(2)
-            self.__vbox.set_row_spacing(4)
+            self.__vbox = Gtk.Box()
+            self.__vbox.set_orientation(Gtk.Orientation.VERTICAL)
+            self.__vbox.set_spacing(4)
+
+            self.__vbox_dflt = Gtk.Box()
+            self.__vbox_dflt.set_orientation(Gtk.Orientation.VERTICAL)
+            self.__vbox_dflt.set_spacing(8)
+
+            self.__vbox_license = Gtk.Box()
+            self.__vbox_license.set_orientation(Gtk.Orientation.VERTICAL)
+            self.__vbox_license.set_spacing(8)
 
         if build_gtk2:
             self.__hbx = Gtk.HButtonBox()
@@ -88,62 +104,151 @@ class AboutWindow(Gtk.Window):
             self.__hbx.orientation = Gtk.Orientation.HORIZONTAL
 
         self.__hbx.set_layout(Gtk.ButtonBoxStyle.END)
-        self.__hbx.pack_start(self.__button_hints, False, False, 4)
-        self.__hbx.pack_start(self.__button, False, False, 4)
-        self.__hbx.set_child_secondary(self.__button_hints, True)
+        self.__hbx.set_spacing(4)
+        self.__hbx.pack_start(self.__btn_hints, False, False, 4)
+        self.__hbx.pack_start(self.__btn_license, False, False, 4)
+        self.__hbx.pack_start(self.__btn_close, False, False, 4)
 
+        self.__lbl_blank1 = Gtk.Label()
         self.__image = Gtk.Image()
         self.__image.set_from_stock(Gtk.STOCK_ABOUT, Gtk.IconSize.DIALOG)
         self.__lbl_title = Gtk.Label()
         self.__lbl_title.set_use_markup(True)
-
         if build_gtk2:
             gtk_ver = "GTK2"
         else:
             gtk_ver = "GTK3"
 
-        self.__lbl_title.set_markup('<b><span size="17408">' + 'Dock Applet ' +
-                                    'V' + "@VERSION@ (" + gtk_ver +
-                                    ')</span></b>')
+        self.__lbl_title.set_markup("<b>MATE Dock Applet</b>")
+        self.__lbl_ver = Gtk.Label("V" + "@VERSION@ (" + gtk_ver+ ")")
+        self.__lbl_blank2 = Gtk.Label()
+
+        self.__tb_gpl = Gtk.TextBuffer()
+        self.__tag_size = self.__tb_gpl.create_tag("size")
+        self.__tag_size.set_property("size-points", 9)
+        iter_start = self.__tb_gpl.get_start_iter()
+
+        self.__tb_gpl.insert_with_tags(iter_start,
+                                       "MATE Dock Applet is free software; you can redistribute it and/or modify it " +
+                                       "under the terms of the GNU General Public Licence as published by the Free " +
+                                       "Software Foundation; either version 3 of the Licence, or (at your option) " +
+                                       "any later version. \n\nMATE Dock Applet is distributed in the hope that it " +
+                                       "will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty "+
+                                       "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General " +
+                                       "Public Licence for more details.\n\nYou should have received a copy of the " +
+                                       "GNU General Public Licence along with the applet; if not, write to the Free " +
+                                       "Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA " +
+                                       "02110-1301 USA\n",
+                                       self.__tag_size)
+
+        self.__tv_gpl = Gtk.TextView.new_with_buffer(self.__tb_gpl)
+        self.__tv_gpl.set_wrap_mode(Gtk.WrapMode.WORD)
+        self.__scrolled_win = Gtk.ScrolledWindow()
+
+        self.__scrolled_win.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.__scrolled_win.add(self.__tv_gpl)
 
         self.__lbl_blurb1 = \
-            Gtk.Label("An applet to provide an application dock for the MATE panel.")
+            Gtk.Label("A dock applet for the MATE desktop")
         self.__lbl_blurb2 = \
-            Gtk.Label("This program comes with ABSOLUTELY NO WARRENTY.")
+            Gtk.Label("This program comes with ABSOLUTELY NO WARRENTY")
+        self.__lbl_blurb3 = Gtk.Label("and is distributed under the GNU General")
+        self.__lbl_blurb4 = Gtk.Label("Public License, version 3 or later")
 
         if build_gtk2:
             self.__hbx_gpl = Gtk.HBox()
         else:
             self.__hbx_gpl = Gtk.Box()
             self.__hbx_gpl.set_orientation(Gtk.Orientation.HORIZONTAL)
+            self.__hbx_gpl.set_spacing(0)
 
-        self.__lbl_gpl1 = Gtk.Label("See the")
+        self.__lbl_gpl1 = Gtk.Label("For details click")
         self.__lb_gpl = \
-            Gtk.LinkButton("http://www.gnu.org/licenses/gpl-3.0.html",
-                           "GNU General Public License, version 3 or later")
-        self.__lbl_gpl = Gtk.Label("for details")
+            Gtk.LinkButton.new_with_label("http://www.gnu.org/licenses/gpl-3.0.html",
+                                          "here")
 
-        self.__hbx_gpl.pack_start(self.__lbl_gpl1, False, False, 2)
-        self.__hbx_gpl.pack_start(self.__lb_gpl, False, False, 1)
-        self.__hbx_gpl.pack_start(self.__lbl_gpl, False, False, 0)
+        self.__hbx_gpl.pack_start(self.__lbl_gpl1, False, False, 0)
+        self.__hbx_gpl.pack_start(self.__lb_gpl, False, False, 0)
 
         if build_gtk2:
-            self.__vbox.pack_start(self.__image, False, False, 2)
-            self.__vbox.pack_start(self.__lbl_title, False, False, 0)
-            self.__vbox.pack_start(self.__lbl_blurb1, False, False, 8)
-            self.__vbox.pack_start(self.__lbl_blurb2, False, False, 0)
-            self.__vbox.pack_start(self.__hbx_gpl, False, False, 0)
-            self.__vbox.pack_end(self.__hbx, False, False, 5)
-
+            self.__vbox_hints = Gtk.VBox()
         else:
-            self.__vbox.attach(self.__image, 0, 0, 1, 1)
-            self.__vbox.attach(self.__lbl_title, 0, 1, 1, 1)
-            self.__vbox.attach(self.__lbl_blurb1, 0, 2, 1, 1)
-            self.__vbox.attach(self.__lbl_blurb2, 0, 3, 1, 1)
-            self.__vbox.attach(self.__hbx_gpl, 0, 4, 1, 1)
-            self.__vbox.attach(self.__hbx, 0, 5, 1, 1)
+            self.__vbox_hints = Gtk.Box()
+            self.__vbox_hints.set_orientation(Gtk.Orientation.VERTICAL)
+
+        # create widgets where where the hints text can be displayed...
+        self.__hints_scrolled_win = Gtk.ScrolledWindow()
+        self.__hints_scrolled_win.set_policy(Gtk.PolicyType.NEVER,
+                                             Gtk.PolicyType.AUTOMATIC)
+        self.__tv_hints = Gtk.TextView()
+        self.__tv_hints.set_wrap_mode(Gtk.WrapMode.WORD)
+        self.__tv_hints.set_editable(False)
+        self.__hints_text_buf = Gtk.TextBuffer()
+        self.__tag_hint_bold = self.__hints_text_buf.create_tag("bold",
+                                                                weight=Pango.Weight.BOLD,
+                                                                scale=1.0,
+                                                                justification=Gtk.Justification.CENTER)
+        self.__tag_hint_normal = self.__hints_text_buf.create_tag("normal")
+        self.__tag_hint_normal.set_property("size-points", 9)
+
+        self.__tv_hints.set_buffer(self.__hints_text_buf)
+        self.set_hints_text()
+        self.__hints_scrolled_win.add(self.__tv_hints)
+
+        self.__vbox_dflt.pack_start(self.__lbl_ver, False, False, 0)
+        self.__vbox_dflt.pack_start(self.__lbl_blank2, False, False, 0)
+        self.__vbox_license.pack_start(self.__scrolled_win, True, True, 2)
+
+        self.__vbox_hints.pack_start(self.__hints_scrolled_win, True, True, 0)
+
+        self.__pg_dflt = self.__nb.append_page(self.__vbox_dflt)
+        self.__pg_license = self.__nb.append_page(self.__vbox_license)
+        self.__pg_hints = self.__nb.append_page(self.__vbox_hints)
+
+        self.__vbox.pack_start(self.__lbl_blank1, False, False, 2)
+        self.__vbox.pack_start(self.__image, False, False, 2)
+        self.__vbox.pack_start(self.__lbl_title, False, False, 2)
+        self.__vbox.pack_start(self.__nb, True, True, 2)
+        self.__vbox.pack_end(self.__hbx, False, False, 2)
 
         self.add(self.__vbox)
+
+        self.set_size_request(-1, 300)
+  
+    def set_hints_text(self):
+        """ Sets the text which is to be displayed
+        """
+
+        the_iter = self.__hints_text_buf.get_end_iter()
+        self.__hints_text_buf.insert_with_tags(the_iter,
+                                              "Opening a new instance of a running application\n",
+                                              self.__tag_hint_bold)
+        self.__hints_text_buf.insert_with_tags(the_iter, "\nTo quickly open a new instance of a running " +
+                        "application either hold down the <shift> key while clicking the " +
+                        "application's dock icon, or middle click on the icon." +
+                         "\n\nNote: this works for most, but not all, apps.\n\n",
+                                               self.__tag_hint_normal)
+
+        self.__hints_text_buf.insert_with_tags(the_iter,
+                                              "\nWindow switching using the mouse wheel\n",
+                                              self.__tag_hint_bold)
+        self.__hints_text_buf.insert_with_tags(the_iter,
+                        "\nTo quickly switch between an application's open windows, move " +
+                        "the mouse cursor over the apps's dock icon and use the mouse " +
+                        "scroll wheel. This will activate and display each window in " +
+                        "turn, changing workspaces as necessary.\n\n",
+                                                self.__tag_hint_normal)
+
+        self.__hints_text_buf.insert_with_tags(the_iter,
+                                              "\nPanel colour changing\n",
+                                              self.__tag_hint_bold)
+        self.__hints_text_buf.insert_with_tags(the_iter, "\nWhen the applet sets the panel colour for the " +
+                        "first time, the result may not look exactly as expected. This is " +
+                        "because the default opacity of custom coloured MATE panels is set " +
+                        "extremely low, so that the panel appears almost transparent.\n\nTo remedy " +
+                        "this, simply right click the panel, select Properties and adjust the " +
+                        "panel opacity as required.",
+                                                self.__tag_hint_normal)
 
     def win_delete_event(self, widget, event, data=None):
         """Callback for the about window delete event
@@ -155,26 +260,55 @@ class AboutWindow(Gtk.Window):
         self.hide()
         return True
 
-    def win_button_press(self, widget, event):
+    def close_button_press(self, widget, event):
         """
-        callback for the Ok button on the About dialog
+        callback for the Close button on the About dialog
 
         The window is hidden so that it can be shown again
         """
 
         self.hide()
 
-    def hint_button_press(self, widget, event):
+    def license_button_toggled(self, widget):
         """
-        callback for the Hint button on the About dialog
+        callback for when the license button is toggled
 
-        Show the Hints and Tips dialog and hide the About dialog
+        Show the license info if the license button is active, otherwise
+        restore the main or credits info as appropriate
+
+        Params:
+            widget: the togglebuton
+
         """
 
-        info_win = dock_info.InfoWindow(running_from_about=True)
-        info_win.show_all()
+        if self.__btn_license.get_active():
 
-        self.hide()
+            self.__nb.set_current_page(self.__pg_license)
+        else:
+            if self.__btn_hints.get_active():
+                self.__nb.set_current_page(self.__pg_hints)
+            else:
+                self.__nb.set_current_page(self.__pg_dflt)
+
+    def hints_button_toggled(self, widget):
+        """
+        callback for when the credits button is toggled
+
+        Show the credits info if the credits button is active, otherwise
+        restore the main or license info as appropriate
+
+        Params:
+            widget: the togglebuton
+
+        """
+
+        if self.__btn_hints.get_active():
+            self.__nb.set_current_page(self.__pg_hints)
+        else:
+            if self.__btn_license.get_active():
+                self.__nb.set_current_page(self.__pg_license)
+            else:
+                self.__nb.set_current_page(self.__pg_dflt)
 
 
 def main():
@@ -182,8 +316,8 @@ def main():
     main function - debugging code goes here
     """
 
-    about_win = AboutWindow()
-    about_win.show_all()
+    about_dlg = AboutDialog()
+    about_dlg.show_all()
     Gtk.main()
 
     return
