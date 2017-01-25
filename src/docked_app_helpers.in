@@ -1,0 +1,425 @@
+#!/usr/bin/env python3
+
+""" Helper classes for apps in the dock
+
+    Provide a base class and descendents which will allow various types
+    of indicators to be drawn onto a Cairo canvas provided by an app
+    in the dock
+
+    Provide a base class and descendents which will allow various types
+    of backgrounds (e.g. gradient fill) to be drawn onto a Cairo canvas
+    provided by an app in the dock
+
+"""
+
+# Copyright (C) 1997-2003 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Author:
+#     Robin Thompson
+
+# do not change the value of this variable - it will be set during build
+# according to the value of the --with-gtk3 option used with .configure
+build_gtk2 = False
+
+import gi
+
+if build_gtk2:
+    gi.require_version("Gtk", "2.0")
+    gi.require_version("Wnck", "1.0")
+else:
+    gi.require_version("Gtk", "3.0")
+
+gi.require_version("MatePanelApplet", "4.0")
+
+from gi.repository import Gtk
+from gi.repository import Gdk
+from gi.repository import MatePanelApplet
+import cairo
+
+import math
+
+
+class IndicatorDrawer(object):
+    """ Base class for drawing indicators
+
+     Provide a base class which can be used for drawing various type of
+     app indicators onto Cairo surfaces
+
+     This class must not be instantiated and it will be an error to try
+     and use this to draw indicators. Descendant classes will be implement
+     their own drawing functions
+
+     Attributes:
+        _context : the cairo context to draw onto
+        _size    : the size (width and height - assumes is square...) of the size
+        _orient  : the orientation of the dock applet e.g. MatePanelApplet.AppletOrient.RIGHT
+        _num_ind : the number of indicators to draw, may not be applicable to all indicators
+
+    Descendent classes can implement their own properties as necessary if they need more control
+    over the drawing process (e.g. to set a specific indicator colour)
+
+    """
+
+    def __init__(self, context, size, orient, num_ind=0):
+        """ Constructor
+
+        Set attributes according to the constructor parameters
+
+        """
+
+        super().__init__()
+
+        self._context = context
+        self._size = size
+        self._orient = orient
+        self._num_ind = num_ind
+
+    def draw(self):
+        """
+            Abstract method - descendents will implement this as required and return
+                              _surface when drawing is completed
+        """
+
+        raise NotImplementedError("Must be implemented by Indicator sublasses")
+
+
+class DefaultInd(IndicatorDrawer):
+    """
+        Base class for the two variants (light and dark) of the default indicator
+    """
+
+    def __init__(self, context, size, orient, num_ind):
+        """
+            Constructor - call the inherited constructor and do additional
+            bits of setup
+        """
+        super().__init__(context, size, orient, num_ind)
+
+        # set the cairo colour values of the inner and outer areas of the indicator
+        self._col1 = [0.0, 0.0, 0.0]
+        self._col2 = [0.0, 0.0, 0.0]
+
+    def draw(self):
+        """
+                  Draw up to 4 indicators
+
+              """
+
+        if self._orient == MatePanelApplet.AppletOrient.RIGHT:
+            ind_x = 2
+            ind_y = (self._size - 4) / (self._num_ind + 1) + 2
+
+        elif self._orient == MatePanelApplet.AppletOrient.LEFT:
+            ind_x = self._size - 1
+            ind_y = (self._size - 4) / (self._num_ind + 1) + 2
+
+        elif self._orient == MatePanelApplet.AppletOrient.DOWN:
+            ind_x = (self._size - 4) / (self._num_ind + 1) + 2
+            ind_y = 2
+        else:
+            ind_x = (self._size - 4) / (self._num_ind + 1) + 2
+            ind_y = self._size - 1
+
+        this_ind = 1
+        while this_ind <= self._num_ind:
+            rad_patt = cairo.RadialGradient(ind_x, ind_y, 2,
+                                            ind_x, ind_y, 4)
+
+            rad_patt.add_color_stop_rgba(0, self._col1[0], self._col1[1],
+                                         self._col1[2], 1)
+            rad_patt.add_color_stop_rgba(1, self._col2[0], self._col2[1],
+                                         self._col2[2], 0)
+
+            self._context.set_source(rad_patt)
+            self._context.arc(ind_x, ind_y, 6, 0, 2 * math.pi)
+
+            if self._num_ind > 1:
+                if (self._orient == MatePanelApplet.AppletOrient.RIGHT) or \
+                        (self._orient == MatePanelApplet.AppletOrient.LEFT):
+                    ind_y += (self._size - 6) / (self._num_ind + 1)
+                else:
+                    ind_x += (self._size - 6) / (self._num_ind + 1)
+
+            this_ind += 1
+
+            self._context.fill()
+
+
+class DefaultLightInd(DefaultInd):
+    """
+        Class to draw the dock applet's default light indicator
+
+    """
+
+    def __init__(self, context, size, orient, num_ind):
+        """
+                 Constructor - call the inherited constructor and do additional
+                 bits of setup
+        """
+
+        super().__init__(context, size, orient, num_ind)
+
+        # cairo colour values of the inner and outer areas of the indicator
+        self._col1 = [0.9, 0.9, 0.9]
+        self._col2 = [0.0, 0.0, 0.0]
+
+
+class DefaultDarkInd(DefaultInd):
+    """
+        Class to draw the dock applet's default dark indicator
+    """
+
+    def __init__(self, context, size, orient, num_ind):
+        """
+                 Constructor - call the inherited constructor and do additional
+                 bits of setup
+        """
+
+        super().__init__(context, size, orient, num_ind)
+
+        # cairo colour values of the inner and outer areas of the indicator
+        self._col1 = [0.0, 0.0, 0.0]
+        self._col2 = [0.9, 0.9, 0.9]
+
+
+class BarInd(IndicatorDrawer):
+    """
+        Base class for the bar indicator, a filled rectangle
+
+        Multiple indicators are not supported - the bar runs the full width
+        (or height, depending on the applet orientation) of the context
+        and merely indicates that an app is running, not how many windows
+        it has open...
+
+    """
+
+    def __init__(self, context, size, orient):
+        """
+
+        """
+        super().__init__(context, size, orient)
+
+        # cairo colour values of the bar, will be overridden by descendent classes
+        self._barcol = [0.0, 0.0, 0.0]
+
+    def draw(self):
+        """
+            Draw the bar along the edge of the panel adjoining the screen
+
+        """
+
+        line_size = 2.75
+        self._context.set_line_cap(cairo.LINE_CAP_ROUND)
+        self._context.set_line_width(line_size)
+
+        self._context.set_source_rgb(self._barcol[0], self._barcol[1], self._barcol[2])
+        if self._orient == MatePanelApplet.AppletOrient.RIGHT:
+            self._context.move_to(line_size / 2, 1)
+            self._context.line_to(line_size / 2, self._size - 2)
+
+        elif self._orient == MatePanelApplet.AppletOrient.LEFT:
+            self._context.move_to(self._size-line_size/2, 1)
+            self._context.line_to(self._size-2/2, self._size - 2)
+
+        elif self._orient == MatePanelApplet.AppletOrient.DOWN:
+            self._context.move_to(1, line_size / 2)
+            self._context.line_to(self._size - 2, line_size / 2)
+
+        else:
+            self._context.move_to(1, self._size - line_size / 2)
+            self._context.line_to(self._size-2, self._size - line_size / 2)
+
+        self._context.stroke()
+
+
+class ThemeBarInd(BarInd):
+    """
+        A bar indicator in which the bar is drawn in the current theme's
+        highlight colour (Gtk3) or using a fallback colour (Gtk2)
+    """
+
+    # static list to hold the rgb colour elements to use when drawing
+    # the bar and we can't get the theme highlight colour i.e. when
+    # using gtk2
+    fallback_barcol = [0.9, 0.9, 0.9]
+
+    def __init__(self, context, size, orient, applet):
+        """
+            Constructor - call the inherited constructor and do additional
+            bits of setup
+
+        Args (in addition to those specfied in the base class)
+            applet : the applet
+
+        """
+        super().__init__(context, size, orient)
+
+        # set the bar color - for gtk2 we assume a white value unless othwse set
+        # for gtk3 try and get the highlight colour from the current theme
+        # and use that, otherwise assume a value based on the theme
+        # background colour
+        if build_gtk2:
+            self._barcol = ThemeBarInd.fallback_barcol
+        else:
+
+            context = applet.get_style_context()
+
+            c_info = context.lookup_color("dark_bg_color")
+            if c_info[0]:
+                bgcol = c_info[1]
+
+            sel_bg = context.lookup_color("theme_selected_bg_color")
+            if sel_bg[0]:
+                hcol = sel_bg[1]
+                self._barcol = [hcol.red, hcol.green, hcol.blue]
+            else:
+                # assume what is hopefully a decent looking highlight
+                # colour - something a bit brighter (or maybe a lot darker)
+                # than the background
+                if c_info[0]:
+                    self._barcol = [(bgcol.red + 0.25) % 1,
+                                    (bgcol.green + 0.25) % 1,
+                                    (bgcol.blue + 0.25) % 1]
+                else:
+                    # we don't even have a background colour, so....
+                    self._barcol = ThemeBarInd.fallback_barcol
+
+###########################################################################################
+
+
+class ActiveBackgroundDrawer(object):
+    """ Base class for drawing the backgound of active dock apps
+
+     Provide a base class which can be used for drawing various type of
+     backgrounds onto Cairo surfaces
+
+     This class must not be instantiated and it will be an error to try
+     and use this to draw indicators. Descendant classes will implement
+     their own drawing functions
+
+     Attributes:
+        _context : the cairo context to draw onto
+        _size    : the size (width and height - assumes is square...) of the size
+        _orient  : the orientation of the dock applet e.g. MatePanelApplet.AppletOrient.RIGHT
+
+
+    Descendent classes can implement their own properties as necessary if they need more control
+    over the drawing process (e.g. to set a specific indicator colour)
+
+    """
+
+    def __init__(self, context, size, orient):
+        """ Constructor
+
+        Set attributes according to the constructor parameters
+
+        """
+
+        super().__init__()
+
+        self._context = context
+        self._size = size
+        self._orient = orient
+
+    def draw(self):
+        """
+            Abstract method - descendents will implement this as required and return
+                              _surface when drawing is completed
+        """
+
+        raise NotImplementedError("Must be implemented by ActiveBackgroundDrawer descendents")
+
+
+class DefaultBackgroundDrawer(ActiveBackgroundDrawer):
+    """
+        Class to draw the default active background, a colour gradient based on the
+        the average colour of the app's icon
+    """
+    def __init__(self, context, size, orient, r, g, b):
+        """ Constructor ...
+
+        Args (in addition to those of the base class):
+            r : the red component of the average colour
+            g : the green component of the average colour
+            b : the blue component of the average colour
+
+        """
+        super().__init__(context, size, orient)
+
+        self._red = r
+        self._green = g
+        self._blue = b
+
+    def draw(self):
+        """
+            Do the actual drawing, based on the panel orientation
+        """
+
+        # draw a background gradient according to the applet orientation
+        if self._orient == MatePanelApplet.AppletOrient.RIGHT:
+            pattern = cairo.LinearGradient(0, 0, self._size, 0)
+            pattern.add_color_stop_rgba(0.0, self._red, self._green, self._blue, 1)
+            pattern.add_color_stop_rgba(1.0, self._red, self._green, self._blue, 0)
+        elif self._orient == MatePanelApplet.AppletOrient.LEFT:
+            pattern = cairo.LinearGradient(self._size, 0, 0, 0)
+            pattern.add_color_stop_rgba(0.0, self._red, self._green, self._blue, 1)
+            pattern.add_color_stop_rgba(1.0, self._red, self._green, self._blue, 0)
+        elif self._orient == MatePanelApplet.AppletOrient.DOWN:
+            pattern = cairo.LinearGradient(0, 0, 0, self._size)
+            pattern.add_color_stop_rgba(0.0, self._red, self._green, self._blue, 1)
+            pattern.add_color_stop_rgba(1.0, self._red, self._green, self._blue, 0)
+        else:
+            pattern = cairo.LinearGradient(0, self._size, 0, 0)
+            pattern.add_color_stop_rgba(0.0, self._red, self._green, self._blue, 1)
+            pattern.add_color_stop_rgba(1.0, self._red, self._green, self._blue, 0)
+
+        self._context.rectangle(0, 0, self._size, self._size)
+        self._context.set_source(pattern)
+        self._context.fill()
+
+
+class AlphaFillBackgroundDrawer(ActiveBackgroundDrawer):
+    """
+        Fills the background with a specfied colour and opactiy
+    """
+
+    def __init__(self, context, size, orient, r, g, b, a):
+        """ Constructor ...
+
+        Args (in addition to those of the base class):
+            r : the red component of the bg colour
+            g : the green component of the bg colour
+            b : the blue component of the bg colour
+            a : the alpha component
+
+        """
+        super().__init__(context, size, orient)
+
+        self._red = r
+        self._green = g
+        self._blue = b
+        self.alpha = a
+
+    def draw(self):
+        """
+            Do the actual drawing
+        """
+
+        self._context.rectangle(0, 0, self._size, self._size)
+        self._context.set_source_rgba(self._red, self._green, self._blue, self.alpha)
+        self._context.fill()
