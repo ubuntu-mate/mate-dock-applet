@@ -47,7 +47,8 @@ import platform
 
 def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
               use_dock_win_list, win_from_cur_ws_only,
-              panel_change_color, dock_panel_change_only, use_panel_act_list):
+              panel_change_color, dock_panel_change_only, use_panel_act_list,
+              active_icon_bg, fallback_bar_col):
     """ Write the xml file using the specified information
 
     The xml file will be in e.g. the following format:
@@ -72,7 +73,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
                    overwritten.
         desktop_files: a list containing the names of the applet's pinned app's
                        .desktop files e.g. ['pluma.desktop']
-        light_ind : boolean - Whether or not a light indicator is to be used
+        light_ind : int - the indicator type e.g. light, dark, bar to be used
         show_all_apps : boolean - Whether or not unpinned apps from all
                         workspaces are to be shown
         multi_ind : Whether indicators for each of an app's open windows are to
@@ -92,6 +93,11 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
         use_panel_act_list:  boolean - whether to display an app's actions in
                                  the panel right click menu, as opposed to
                                  using the popup action list
+        active_icon_bg:      int - the type of active icon background e.g.
+                                   gradient or fill
+        fallback_bar_col:   a list of the rgb elements of a color to be used
+                            for bar indicators when the theme highlight colour
+                            cannot be read
 
     Returns:
         Boolean - True if the file was written successfully, False otherwise
@@ -117,6 +123,12 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
                         dcc="%s" % dock_panel_change_only)
     pal_el = ET.Element("panel_act_list",
                         pal="%s" % use_panel_act_list)
+    abg_el = ET.Element("bg_type", type="%d" % active_icon_bg)
+
+    fbc_el = ET.Element("fallback_bar_col")
+    for col in fallback_bar_col:
+        col_el = ET.Element("col", value = "%s" % col)
+        fbc_el.append(col_el)
 
     root.append(pa_el)
     root.append(ind_el)
@@ -127,6 +139,8 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
     root.append(pcc_el)
     root.append(dcc_el)
     root.append(pal_el)
+    root.append(abg_el)
+    root.append(fbc_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
@@ -148,7 +162,7 @@ def read_xml(filename):
         A tuple containing the following:
             a list of the .desktop files in the file (i.e. the pinned apps)
             an integer - the indicator setting
-            a boolean - the how_all_apps setting
+            a boolean - the show_all_apps setting
             a boolean - the multiple indicators setting
             a boolean - the use window list setting
             a boolean - the show indicators and win list items from the current
@@ -156,6 +170,8 @@ def read_xml(filename):
             a boolean - the change panel colour setting
             a boolean - the change dock panel color only setting
             a boolean - the use panel action list setting
+            an integer - the active icon background type
+            a list of the r,g and b values (as strings) of the fallback bar indicator colour
     """
 
     try:
@@ -221,11 +237,24 @@ def read_xml(filename):
     else:
         use_panel_act_list = False
 
+    abg_el = root.find("bg_type")
+    if abg_el is not None:
+        bg_type = int(abg_el.get("type"))
+    else:
+        bg_type = 0
+
+    fallback_bar_col = []
+    fbc_col = root.find("fallback_bar_col")
+    if fbc_col is not None and (len(fbc_col)==3):
+        for col in fbc_col:
+            fallback_bar_col.append(col.get("value"))
+    else:
+        fallback_bar_col = ["128", "128", "128"]
+
     return [True, df_list, light_ind, show_all, multi_ind,
             use_win_list, win_from_cur_ws_only,
             panel_change_color, dock_panel_change_only,
-            use_panel_act_list]
-
+            use_panel_act_list, bg_type, fallback_bar_col]
 
 def read_app_xml(filename):
     """ Reads the xml file containing the list of hard to match apps
