@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
     Provide a window showing a list of an app's actions and allow the
-    user select
+    user to select one
 
     In addition to the actions defined in the app's .desktop file, a
     Pin/Unpin action will also be added as appropriate
