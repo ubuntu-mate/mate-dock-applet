@@ -1,3 +1,16 @@
+V0.76 Added support for startup notification when launching apps.
+      Added new indicator type - a single solid bar. On Gtk3 this uses the active
+      theme's highlight colour. This is not possible with Gtk2, therefore the
+      applet will draw a gray bar, although the user can override this colour
+      and choose a new one to fit in with whichever theme they are using
+      Added new types of indicators and active icon backgrounds, and reworked code
+      so that adding new types in the future will be easier.
+      Added new preferences options to allow the select the type of indicator
+      and active icon background, along with with a live preview.
+      Added a new preference item allowing the user to select a colour to
+      use when drawing bar indicators.
+      About dialog reworked to be hopefully less ugly....
+
 V0.75 Fixed bug that caused window lists to sometimes span monitors on multi monitor
     systems
     Added Compiz support - the dock can now display window previews (via the Scale and
