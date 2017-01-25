@@ -80,8 +80,10 @@ import dock_action_list
 import dock_xml
 import dock_color_changer
 import dock_info
+import docked_app_helpers
 
 from log_it import log_it as log_it
+
 
 class DragMotionTimer(object):
     """Timer to allow us to track mouse motion during a drag and drop
@@ -106,11 +108,11 @@ class DragMotionTimer(object):
     def __init__(self, dragee, the_dock):
         """Init for the DragMotionTimer class.
 
-        Sets everything up by creating the timer and  setting a reference to
+        Sets everything up by creating the timer and setting a reference to
         the DockedApp being dragged
 
         Arguments:
-            app : the DockedApp object
+            dragee : the DockedApp that is being dragged
             the_dock : the dock...
         """
 
@@ -164,7 +166,7 @@ class DragMotionTimer(object):
             return True
 
         if app_with_mouse == self.dragee:
-            return (True)
+            return True
 
         # get the coordinates within the applet of the app that has the
         # mouse
@@ -190,7 +192,7 @@ class DragMotionTimer(object):
             else:
                 # moving right to left
                 trig_val = ax + self.dragee.drawing_area_size - \
-                           (self.dragee.drawing_area_size *40) / 100
+                           (self.dragee.drawing_area_size * 40) / 100
                 if (self.old_drag_pos > trig_val) and (x <= trig_val):
                     new_pos = self.the_dock.get_app_position_in_dock(app_with_mouse)
                     self.the_dock.move_app(self.dragee, new_pos)
@@ -247,7 +249,13 @@ class Dock(object):
             right_clicked_app: the app that was most recently right clicked
             settings_path : the GIO.Settings path for the applet
             settings : GIO.Settings - the settings for the applet
-            indicator : the indicator type (light or dark, or None)
+            indicator : the indicator type (e.g. light, dark, bar or None)
+            fallback_bar_col : a list of the r,g,b elements of the colour to be
+                               used when drawing bar indicators and the
+                               current theme highlight colour can't be determined
+                               (will be mainly of use in gtk2)
+            active_bg : the type of background to use for the currently active app's
+                        icon background (e.g. gradient fill or solid fill)
             multi_ind : whether or not multiple indicators are to be used
             show_all_apps : whether or not unpinned apps from all workspaces
                                      are displayed in the dock
@@ -305,14 +313,12 @@ class Dock(object):
 
         self.wnck_screen = Wnck.Screen.get_default()
 
-        self.app_with_mouse = None      # the dock app that mouse is currently
-                                        # over
+        self.app_with_mouse = None      # the dock app that mouse is currently over
         self.active_app = None          # the currently active app
-        self.right_clicked_app = None   # the app that most recently had a
-                                        # right click
+        self.right_clicked_app = None   # the app that most recently had a right click
 
         self.settings_path = self.applet.get_preferences_path()
-        self.settings = Gio.Settings.new_with_path("org.mate.panel.applet.dock", \
+        self.settings = Gio.Settings.new_with_path("org.mate.panel.applet.dock",
                                                    self.settings_path)
 
         # instantiate these - will be set up later
@@ -329,14 +335,18 @@ class Dock(object):
         self.about_win = None
         self.ccl_win = None
         self.indicator = 0
+        self.fallback_bar_col = None
         self.multi_ind = False
+        self.click_restore_last_active = True
         self.show_all_apps = True
         self.win_from_cur_ws_only = False
         self.use_win_list = True
         self.panel_act_list = False
         self.change_panel_color = False
         self.change_dock_color_only = False
+        self.active_bg = 0
         self.read_settings()
+        self.set_fallback_bar_colour()
 
         # read the list of apps which are difficult to match with their
         # .desktop files
@@ -352,6 +362,7 @@ class Dock(object):
 
         self.panel_x = 0
         self.panel_y = 0
+        self.panel_size = 0
         self.panel_orient = "top"
         self.applet_pos = 0
 
@@ -379,8 +390,8 @@ class Dock(object):
 
         # add a handler to listen in Unity dbus messages
         self.session_bus.add_signal_receiver(self.unity_cb_handler,
-                        dbus_interface = "com.canonical.Unity.LauncherEntry",
-                        signal_name="Update")
+                                             dbus_interface="com.canonical.Unity.LauncherEntry",
+                                             signal_name="Update")
 
         # instantiate a timer to perform further setup once the applet has been
         # fully created
@@ -415,9 +426,8 @@ class Dock(object):
         # enable panel colour changing?
         if self.change_panel_color:
             self.panel_cc.enable_color_change()
-            self.panel_cc.do_change_panel_color()   # we're starting up so need
-                                                    # to do an initial panel
-                                                    # colour change
+            # we're starting up so need to do an initial panel colour change
+            self.panel_cc.do_change_panel_color()
 
         # get info about the panel the applet is on
         self.get_applet_panel_info()
@@ -444,14 +454,10 @@ class Dock(object):
             colour is not being used
         """
 
-        # for now we just specify a black panel - until the bug that
-        # prevents StyleContext.get_property returning the r and g components
-        # of theme colours is FIXED
-
         settings_path = "/org/mate/panel/toplevels/%s/background/" % self.panel_id
 
         # get this panel's background settings
-        psettings = Gio.Settings.new_with_path("org.mate.panel.toplevel.background", \
+        psettings = Gio.Settings.new_with_path("org.mate.panel.toplevel.background",
                                                settings_path)
 
         if psettings.get_string("type") == "none":
@@ -623,6 +629,11 @@ class Dock(object):
                 self.change_panel_color = xml_settings[7]
                 self.change_dock_color_only = xml_settings[8]
                 self.panel_act_list = xml_settings[9]
+                self.active_bg = xml_settings[10]
+
+                self.fallback_bar_col = []
+                for col in xml_settings[11]:
+                    self.fallback_bar_col.append(col)
 
                 # now, immediately write the settings to dconf and back to the
                 # config file so the dock can access them
@@ -644,14 +655,18 @@ class Dock(object):
                                           self.change_dock_color_only)
                 self.settings.set_boolean("panel-act-list",
                                           self.panel_act_list)
+                self.settings.set_int("bg-type", self.active_bg)
+                self.settings.set_value("fallback-bar-col", GLib.Variant('as',
+                                        self.fallback_bar_col))
 
                 dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
-                        self.show_all_apps, self.multi_ind,
-                        self.use_win_list,
-                        self.win_from_cur_ws_only,
-                        self.change_panel_color, self.change_dock_color_only,
-                        self.panel_act_list)
-
+                                   self.show_all_apps, self.multi_ind,
+                                   self.use_win_list,
+                                   self.win_from_cur_ws_only,
+                                   self.change_panel_color, self.change_dock_color_only,
+                                   self.panel_act_list,
+                                   self.active_bg,
+                                   self.fallback_bar_col)
                 return
 
         # we get here if there was no previous configuration, or the
@@ -668,6 +683,8 @@ class Dock(object):
         self.change_panel_color = self.settings.get_boolean("change-panel-color")
         self.change_dock_color_only = self.settings.get_boolean("change-panel-color-dock-only")
         self.panel_act_list = self.settings.get_boolean("panel-act-list")
+        self.active_bg = self.settings.get_int("bg-type")
+        self.fallback_bar_col = self.settings.get_value("fallback-bar-col").unpack()
 
     def write_settings(self):
         """Write the current dock settings.
@@ -682,7 +699,7 @@ class Dock(object):
         pinned_apps = []
         for dock_app in self.app_list:
 
-            if (dock_app.desktop_file is not None) and (dock_app.is_pinned):
+            if dock_app.desktop_file is not None and dock_app.is_pinned:
                 pinned_apps.append(os.path.basename(dock_app.desktop_file))
 
         if self.settings:
@@ -700,7 +717,9 @@ class Dock(object):
             self.settings.set_boolean("change-panel-color-dock-only",
                                       self.change_dock_color_only)
             self.settings.set_boolean("panel-act-list", self.panel_act_list)
+            self.settings.set_int("bg-type", self.active_bg)
             self.settings.set_boolean("first-run", False)
+            self.settings.set_value("fallback-bar-col", GLib.Variant('as', self.fallback_bar_col))
 
         dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                            self.show_all_apps, self.multi_ind,
@@ -708,7 +727,9 @@ class Dock(object):
                            self.win_from_cur_ws_only,
                            self.change_panel_color,
                            self.change_dock_color_only,
-                           self.panel_act_list)
+                           self.panel_act_list,
+                           self.active_bg,
+                           self.fallback_bar_col)
 
     def read_app_match(self):
         """ Read an xml file which contains a list of apps which are difficult
@@ -729,6 +750,17 @@ class Dock(object):
             return results[1]
         else:
             return []
+
+    def set_fallback_bar_colour(self):
+        """ Set the colour to be used for drawing bar indicators when we the highlight colour
+            from the theme can't be determined
+        """
+
+        r = int(self.fallback_bar_col[0]) / 255
+        g = int(self.fallback_bar_col[1]) / 255
+        b = int(self.fallback_bar_col[2]) / 255
+
+        docked_app_helpers.ThemeBarInd.fallback_barcol = [r, g, b]
 
     def set_actions_for_app(self, app):
         """Show or hide actions in the context menu so that only relevant ones
@@ -861,37 +893,36 @@ class Dock(object):
                              self.df_shortcut_3),
                             ("df_shortcut_4_action", None,
                              "df_shortcut_4_action", None, "df_shortcut_4_action",
-                             self.df_shortcut_4),
+                              self.df_shortcut_4),
                              ("pin_action", Gtk.STOCK_ADD,
                               "_Pin app to the dock", None, "Pin app to the dock",
                               self.pin_app),
                              ("unpin_action", Gtk.STOCK_REMOVE,
                               "_Unpin app from the dock", None, "Unpin app from the dock",
                               self.unpin_app),
-                             ("move_up_action", Gtk.STOCK_GO_UP,\
-                             "Move app _up the dock", None, "Move app up the dock",
-                             self.move_app_up),
+                             ("move_up_action", Gtk.STOCK_GO_UP,
+                              "Move app _up the dock", None, "Move app up the dock",
+                              self.move_app_up),
                              ("move_down_action", Gtk.STOCK_GO_DOWN,
-                             "Move app _down the dock", None, "Move app down the dock",
-                             self.move_app_down),
+                              "Move app _down the dock", None, "Move app down the dock",
+                              self.move_app_down),
                              ("move_left_action", Gtk.STOCK_GO_BACK,
-                             "Move app _left in the dock", None, "Move app left in the dock",
-                             self.move_app_up),
+                              "Move app _left in the dock", None, "Move app left in the dock",
+                              self.move_app_up),
                              ("move_right_action", Gtk.STOCK_GO_FORWARD,
-                             "Move app _right in the dock", None, "Move app right in the dock",
-                             self.move_app_down),
+                              "Move app _right in the dock", None, "Move app right in the dock",
+                              self.move_app_down),
                              ("prefs_action", Gtk.STOCK_PREFERENCES,
-                             "Dock P_references", None, "Dock Preferences",
-                             self.show_prefs_win),
+                              "Dock P_references", None, "Dock Preferences",
+                              self.show_prefs_win),
                              ("ccl_action", Gtk.STOCK_EXECUTE,
-                             "Create custo_m launcher for this app", None, "Create custom launcher for this app",
-                             self.show_ccl_win),
+                              "Create custo_m launcher for this app", None, "Create custom launcher for this app",
+                              self.show_ccl_win),
                              ("about_action", Gtk.STOCK_ABOUT,
-                             "About...", None, "About...", self.show_about_win),
+                              "About...", None, "About...", self.show_about_win),
                              ("close_win_action", Gtk.STOCK_CLOSE,
                               "_Close", None, "Close", self.close_win)
                              ])
-
 
         menu_xml = '<menuitem name="df_shortcut_1_action" action="df_shortcut_1_action"/><separator/>'
         menu_xml += '<menuitem name="df_shortcut_2_action" action="df_shortcut_2_action"/><separator/>'
@@ -930,7 +961,7 @@ class Dock(object):
             else:
                 the_app = self.right_clicked_app
 
-        print("app name = %s" %the_app.app_name)
+        print("app name = %s" % the_app.app_name)
         if the_app is not None:
             the_app.run_rc_action(1)
 
@@ -1093,7 +1124,7 @@ class Dock(object):
 
                 self.write_settings()
 
-    def move_app (self, the_app, new_pos):
+    def move_app(self, the_app, new_pos):
         """ Move a docked app to a new position in the dock, adjusting the
             the positions of other apps as necessary
 
@@ -1268,7 +1299,8 @@ class Dock(object):
         """
 
         if self.prefs_win is None:
-            self.prefs_win = dock_prefs.DockPrefsWindow(self.prefs_win_ok_cb)
+            self.prefs_win = dock_prefs.DockPrefsWindow(self.prefs_win_ok_cb,
+                                                        self.app_list[0])
             self.prefs_win.set_indicator(self.indicator)
             self.prefs_win.set_multi_ind(self.multi_ind)
             self.prefs_win.set_show_unpinned_apps_on_all_ws(self.show_all_apps)
@@ -1276,6 +1308,8 @@ class Dock(object):
             self.prefs_win.set_change_panel_color(self.change_panel_color)
             self.prefs_win.set_change_dock_color_only(self.change_dock_color_only)
             self.prefs_win.set_pan_act(self.panel_act_list)
+            self.prefs_win.set_bg(self.active_bg)
+            self.prefs_win.set_fallback_bar_col(self.fallback_bar_col)
         else:
             self.prefs_win.show_all()
 
@@ -1309,7 +1343,9 @@ class Dock(object):
            (self.use_win_list != self.prefs_win.get_use_win_list()) or \
            (self.change_panel_color != self.prefs_win.get_change_panel_color()) or \
            (self.change_dock_color_only != self.prefs_win.get_change_dock_color_only()) or \
-           (self.panel_act_list != self.prefs_win.get_pan_act()):
+           (self.panel_act_list != self.prefs_win.get_pan_act()) or \
+           (self.active_bg != self.prefs_win.get_bg()) or \
+           (self.fallback_bar_col != self.prefs_win.get_fallback_bar_col()):
 
             self.indicator = self.prefs_win.get_indicator_type()
             self.multi_ind = self.prefs_win.get_multi_ind()
@@ -1329,12 +1365,17 @@ class Dock(object):
             if self.panel_act_list != self.prefs_win.get_pan_act():
                 self.panel_act_list = self.prefs_win.get_pan_act()
 
+            self.active_bg = self.prefs_win.get_bg()
+
+            self.fallback_bar_col = self.prefs_win.get_fallback_bar_col()
+            self.set_fallback_bar_colour()
             self.write_settings()
 
             # redraw everything here
             for app in self.app_list:
                 app.set_indicator(self.indicator)
                 app.set_multi_ind(self.multi_ind)
+                app.set_active_bg(self.active_bg)
                 if app.is_running():
                     app.queue_draw()
             self.show_or_hide_app_icons()
@@ -1403,7 +1444,7 @@ class Dock(object):
                                    Gtk.MessageType.ERROR,
                                    Gtk.ButtonsType.OK,
                                    None)
-            md.set_markup ('<span size="x-large"><b>Cannot create launcher</b></span>')
+            md.set_markup('<span size="x-large"><b>Cannot create launcher</b></span>')
             md.format_secondary_text(error_text)
             md.run()
             md.destroy()
@@ -1421,7 +1462,7 @@ class Dock(object):
             if not os.path.exists(local_apps):
                 # ~/.local/share/applications doesn't exist, so create it
                 os.mkdir(local_apps)
-            dfname = os.path.expanduser("%s/mda-%s.desktop" % (local_apps,dfname))
+            dfname = os.path.expanduser("%s/mda-%s.desktop" % (local_apps, dfname))
 
             dfile = open(dfname, "w")
             dfile.write("[Desktop Entry]\n")
@@ -1434,8 +1475,8 @@ class Dock(object):
 
             # Code below can be uncommented if adding terminal apps to the dock
             # everbecomes a needed thing
-            #term_app = "%s" %self.ccl_win.is_terminal_app
-            #dfile.write("Terminal=%s\n" %term_app.lower())
+            # term_app = "%s" %self.ccl_win.is_terminal_app
+            # dfile.write("Terminal=%s\n" %term_app.lower())
 
             # we don't want this launcher displayed in the MATe menu
             dfile.write("NoDisplay=true\n")
@@ -1454,9 +1495,12 @@ class Dock(object):
             else:
                 dock_app.applet_win = self.applet.window.get_window()
 
+            dock_app.applet = self.applet
+
             dock_app.applet_orient = self.applet.get_orient()
             dock_app.set_indicator(self.indicator)
             dock_app.set_multi_ind(self.multi_ind)
+            dock_app.set_active_bg(self.active_bg)
 
             size = self.applet.get_size()
             self.set_app_icon(dock_app, size)
@@ -1484,8 +1528,9 @@ class Dock(object):
 
         win_list = self.right_clicked_app.get_wnck_windows()
         for wnck_win in win_list:
-            wnck_win.close(0)   # have to send 0 as the event time because we
-                                # have no event time to send
+            # have to send 0 as the event time because we have no event time to send
+            wnck_win.close(0)
+
 
     def icon_theme_changed(self, icontheme):
         """ Callback for when the Gtk icon theme changes
@@ -1641,6 +1686,8 @@ class Dock(object):
                 else:
                     dock_app.applet_win = self.applet.get_window()
 
+                dock_app.applet = self.applet
+
                 dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match)
 
                 # if this is a pinned app, merge the running app details with
@@ -1703,7 +1750,7 @@ class Dock(object):
             # the desktop itself can be the new active window. we need to
             # ignore it if so....
             # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392
-            if new_win.get_name().lower()!="x-caja-desktop":
+            if new_win.get_name().lower() != "x-caja-desktop":
                 new_cg = new_win.get_class_group()
                 new_wm_class_name = new_cg.get_res_class()
                 new_app = new_win.get_application()
@@ -1746,10 +1793,12 @@ class Dock(object):
                 dock_app.applet_win = self.applet.window
             else:
                 dock_app.applet_win = self.applet.get_window()
+            dock_app.applet = self.applet
 
             dock_app.applet_orient = self.applet.get_orient()
             dock_app.set_indicator(self.indicator)
             dock_app.set_multi_ind(self.multi_ind)
+            dock_app.set_active_bg(self.active_bg)
             got_desktop = dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match)
 
             # look for the app relating to the window in the dock
@@ -1762,10 +1811,10 @@ class Dock(object):
                 #  more complicated
                 elif app.has_wnck_app(wnck_app) or \
                      ((app.wnck_class == dock_app.wnck_class or
-                     app.wm_class_name.upper() == dock_app.wm_class_name.upper() and
-                     # test below is fix for https://bugs.launchpad.net/ubuntu-mate/+bug/1555324
-                     app.wm_class_name.strip() != "")):
-                         in_dock = True
+                       app.wm_class_name.upper() == dock_app.wm_class_name.upper() and
+                       # test below is fix for https://bugs.launchpad.net/ubuntu-mate/+bug/1555324
+                       app.wm_class_name.strip() != "")):
+                        in_dock = True
 
                 if in_dock is True:
                     # found it, so copy the running app's info to the pinned
@@ -2076,7 +2125,7 @@ class Dock(object):
         # scale the icon to the size that is available
         # Note - we're allowing for a 3 pixel border all around the icon,
         # hence using size-6
-        pixbuf = pixbuf.scale_simple(size -6, size - 6,
+        pixbuf = pixbuf.scale_simple(size - 6, size - 6,
                                      GdkPixbuf.InterpType.BILINEAR)
 
         dock_app.set_drawing_area_size(size)
@@ -2154,6 +2203,8 @@ class Dock(object):
         for dock_app in self.app_list:
             dock_app.applet_orient = orientation
 
+            dock_app.applet = self.applet
+
             if build_gtk2:
                 dock_app.applet_win = self.applet.window
             else:
@@ -2162,6 +2213,7 @@ class Dock(object):
             self.set_app_icon(dock_app, applet_size)
             dock_app.set_indicator(self.indicator)
             dock_app.set_multi_ind(self.multi_ind)
+            dock_app.set_active_bg(self.active_bg)
             self.add_app(dock_app)
 
         self.show_or_hide_app_icons()
@@ -2293,11 +2345,10 @@ class Dock(object):
 
         highlighted_app = self.app_with_mouse
 
-        self.right_clicked_app = highlighted_app  # needed so that actions
-                                                  # invoked from the window
-                                                  # list work correctly
+        self.right_clicked_app = highlighted_app
+        # above is needed so that actions ivoked from the window list work correctly
 
-        if (highlighted_app is None):
+        if highlighted_app is None:
             return
 
         # is the app being launched?
@@ -2323,7 +2374,7 @@ class Dock(object):
         pin_action = self.dock_action_group.get_action("pin_action")
         unpin_action = self.dock_action_group.get_action("unpin_action")
 
-        self.app_act_list  = dock_action_list.DockActionList(self.wnck_screen)
+        self.app_act_list = dock_action_list.DockActionList(self.wnck_screen)
         self.app_act_list.icontheme = self.icontheme
 
         # get the panel custom background colour (if any) and then set the
@@ -2400,9 +2451,9 @@ class Dock(object):
 
             try:
                 compiz_service = self.session_bus.get_object('org.freedesktop.compiz',
-                         '/org/freedesktop/compiz/scale/screen0/initiate_key')
+                                '/org/freedesktop/compiz/scale/screen0/initiate_key')
                 activate = compiz_service.get_dbus_method('activate',
-                                                      'org.freedesktop.compiz')
+                                                          'org.freedesktop.compiz')
                 activate("root", rwin, "match",
                          "class=%s" % app.wm_class_name)
             except dbus.exceptions.DBusException:
@@ -2436,11 +2487,10 @@ class Dock(object):
 
         highlighted_app = self.app_with_mouse
 
-        self.right_clicked_app = highlighted_app  # needed so that actions
-                                                  # invoked from the window
-                                                  # list work correctly
+        self.right_clicked_app = highlighted_app
+        # abive is needed so that actions invoked from the window list work correctly
 
-        if (highlighted_app is None):
+        if highlighted_app is None:
             return
 
         # is the app being launched?
@@ -2456,7 +2506,7 @@ class Dock(object):
 
         self.set_actions_for_app(self.app_with_mouse)
 
-        self.app_win_list  = dock_win_list.DockWinList(self.wnck_screen)
+        self.app_win_list = dock_win_list.DockWinList(self.wnck_screen)
         self.app_win_list.icontheme = self.icontheme
 
         # get the panel custom background colour (if any) and then set the
@@ -2564,8 +2614,7 @@ class Dock(object):
                             (not window.is_skip_tasklist()) and \
                             (window != last_active_win):
                         window.activate(0)
-                        sleep(0.01)     # allow the window manager time to
-                                        # activate the window
+                        sleep(0.01)     # allow the window manager time to  activate the window
 
                 app.last_active_win = last_active_win
 
@@ -2715,7 +2764,7 @@ class Dock(object):
             wnck_ws.activate(0)
             sleep(0.01)
 
-        #activate the new window
+        # activate the new window
         windows[new_index].activate(0)
 
     def get_dragee(self):
@@ -2820,4 +2869,4 @@ def win_activation_timer(args):
     # to the window to activate properly
     args[0].activate(0)
     sleep(0.01)
-    return (False)
+    return False
