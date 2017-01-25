@@ -62,7 +62,7 @@
       <description>The type of icon background (e.g. gradient or solid fill) which is displayed under the active app.</description>
     </key>
     <key type="as" name="fallback-bar-col">
-      <default>["0.9","0.9","0.9"]</default>
+      <default>["128","128","128"]</default>
       <summary>The rgb elements of the fallback bar indicator</summary>
       <description>A colour to be when drawing bar indicators and the highlight colour of the current theme cannot be determind. Mainly intended for use with Gtk2.</description>
     </key>
