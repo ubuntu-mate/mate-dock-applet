@@ -21,7 +21,7 @@ The applet is available in Debian testing (currently GTK2 only):
 
 `apt-get install mate-dock-applet`
 
-### Ubuntu MATE 16.04
+### Ubuntu MATE 16.04 and 16.10
 
 The applet is included by default in Ubuntu MATE 16.04. It can be used by selecting the 'Mutiny' desktop layout in the MATE Tweak application, or by simply adding it to any panel.
 
@@ -35,7 +35,7 @@ Note: this is GTK2 only
 
 ### Arch Linux
 
-For Arch users there's a [package](http://aur.archlinux.org/packages/mate-applet-dock-git) available in the AUR.
+For Arch users there are two packages available in the AUR, a [Gtk2](http://aur.archlinux.org/packages/mate-applet-dock-git) version of the applet, and a [Gtk3](http://aur.archlinux.org/packages/mate-applet-dock-gtk3-git) version.
 
 ### Gentoo based distributions
 
@@ -90,9 +90,13 @@ In order for window minimizing and maximizing to work correctly under Compiz, th
 
 ### Obligatory screen shots
 
+V0.76 of the applet running on Ubuntu MATE 16.10, showing the new indicator style and active icon background. Note: the Gtk3 theme is Arc Darker (hence the blue indicators), and the icon theme is [La Capitaine](https://www.gnome-look.org/p/1148695/) 
+ 
+![New indicators and icon backgrounds](https://github.com/robint99/screenshots/raw/master/new%20indicators%20and%20icon%20background.png)
+
 GTK3 version of the applet running on Ubuntu MATE 16.10 Alpha 1
 
-![GTK3 Ubunbtu Mate](https://github.com/robint99/screenshots/raw/master/16.10 win-list.png)
+![GTK3 Ubunbtu Mate](https://github.com/robint99/screenshots/raw/master/16.10%20win-list.png)
 
 Running on Arch with a Unity style layout
 
