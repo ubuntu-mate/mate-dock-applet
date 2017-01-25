@@ -9,9 +9,9 @@
     can be drawn
 
     Ensure that the app's icon and indicator are always drawn correctly
-    according to the size and orienation of the panel
+    according to the size and orientation of the panel
 
-    Provide visual feedback to the user when an app is lauched by pulsating
+    Provide visual feedback to the user when an app is launched by pulsating
     the app's icon
 
     Draw a highlight around the app's icon if it is the foreground app
@@ -77,11 +77,15 @@ import re
 from collections import namedtuple
 
 import dock_prefs
+from docked_app_helpers import DefaultBackgroundDrawer, AlphaFillBackgroundDrawer, DefaultLightInd,\
+     DefaultDarkInd, ThemeBarInd
+
 
 from log_it import log_it as log_it
 
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
 AppInfoTup = namedtuple('AppInfoTup', ['app', 'pid', 'windows'])
+
 
 def im_get_comp_color(filename):
     """Find the complimentary colour of the average colour of an image.
@@ -206,7 +210,7 @@ class PulseTimer(object):
 
     """
 
-    def __init__(self, app, once_only = False):
+    def __init__(self, app, once_only=False):
         """Init for the PulseTimer class.
 
         Sets everything up by creating the timer, setting a reference to the
@@ -326,6 +330,7 @@ class DockedApp(object):
         wm_class_name:
         wm_class_group_name:
         applet_win  : the Gdk.Window of the panel applet
+        applet      : the panel applet
         applet_orient : the applet orientation
 
         drawing_area: Gtk.Label- provides a surface on which the app icon can
@@ -340,8 +345,10 @@ class DockedApp(object):
         is_active   : boolean - True = the app is the foreground app
         has_mouse   : boolean - True = the mouse is over the app's icon
         is_pinned   : boolean - Whether or not the app is pinned to the dock
-        indicator   : the type of indictor (light or dark) to draw under
+        indicator   : the type of indictor (e.g. light or dark) to draw under
                       running apps
+        active_bg   : the type of background (e.g. gradient or solid fill) to
+                      be drawn when the app is the active app
         ind_ws      : wnck_workspace or None - if set, indicators are to be
                       drawn for windows on the specified workspace
         last_active_win : the wnck_window of the app's last active window
@@ -374,6 +381,7 @@ class DockedApp(object):
         self.icon_name = ""
         self.icon_filename = ""
         self.desktop_file = ""
+        self.desktop_ai = None
         self.wm_class_name = ""
         self.wm_class_group_name = ""
         self.icon_geometry_set = False
@@ -381,6 +389,7 @@ class DockedApp(object):
         self.applet_orient = None
         self.ind_ws = None
         self.startup_id = None
+        self.applet = None
 
         # all drawing is done to a Gtk.Label rather than e.g. a drawing area
         # or event box this allows panel transparency/custom backgrounds to be
@@ -410,6 +419,8 @@ class DockedApp(object):
         # set defaults
         self.indicator = dock_prefs.IndicatorType.LIGHT     # light indicator
         self.multi_ind = False                              # single indicator
+        self.active_bg = dock_prefs.ActiveBgType.GRADIENT
+
         self.last_active_win = None
 
         # set up event handler for the draw/expose event
@@ -468,7 +479,7 @@ class DockedApp(object):
             win.connect("state-changed", self.win_state_changed)
             win_class = win.get_class_group()
             win_class_name = win_class.get_res_class()
-            #if self.wm_class_group_name == "":
+            # if self.wm_class_group_name == "":
             #    self.wm_class_group_name = win.get_class_group_name()
 
             if ((win.get_window_type() == Wnck.WindowType.NORMAL) or
@@ -488,7 +499,7 @@ class DockedApp(object):
         for app in app_match_list:
             if (wnck_app.get_name() == app[0]) or (win_class_name == app[1]):
                 desktop_file = "/usr/share/applications/%s.desktop" % app[2]
-                if (os.path.exists(desktop_file)):
+                if os.path.exists(desktop_file):
                     self.desktop_file = desktop_file
                     return self.read_info_from_desktop_file()
 
@@ -497,13 +508,13 @@ class DockedApp(object):
             if not self.get_desktop_from_app_info(os.path.expanduser("~/.local/share/applications/")):
                 if not self.brute_force_find_desktop_file(os.path.expanduser("~/.local/share/applications/")):
                     if not self.get_desktop_from_app_info("/usr/share/applications/"):
-                      if not self.get_desktop_from_app_info("/usr/local/share/applications/"):
+                        if not self.get_desktop_from_app_info("/usr/local/share/applications/"):
                             if not self.brute_force_find_desktop_file("/usr/share/applications/"):
                                 if not self.brute_force_find_desktop_file("/usr/local/share/applications/"):
                                     log_it("Unable to match app")
-                                    log_it("App name: %s" %wnck_app.get_name())
-                                    log_it("Wm class: %s" %win_class_name)
-                                    log_it("cmd line: %s" %self.cmd_line)
+                                    log_it("App name: %s" % wnck_app.get_name())
+                                    log_it("Wm class: %s" % win_class_name)
+                                    log_it("cmd line: %s" % self.cmd_line)
                                     return False
 
         # now that we have the .desktop file, we can get the icon etc
@@ -739,7 +750,7 @@ class DockedApp(object):
 
         """
 
-        #TODO: replace DesktopEntry with Gio.DesktopAppInfo...
+        # TODO: replace DesktopEntry with Gio.DesktopAppInfo...
 
         # if the search dir doesn't exist, don't do anything
         if os.path.isdir(srch_dir) is False:
@@ -832,7 +843,7 @@ class DockedApp(object):
                         # they MUST match for the app to be found, and
                         # nm_part_found and exec_found become irrelevant
 
-                        if (de_wm_class.lower() == self.wm_class_name.lower()):
+                        if de_wm_class.lower() == self.wm_class_name.lower():
                             wm_class_found = True
 
                         exec_found = wm_class_found
@@ -863,8 +874,8 @@ class DockedApp(object):
             True if a match was found, False otherwise
         """
 
-        #TODO: replace DesktopEntry with Gio.DesktopAppInfo... and then
-        #TODO: remove xdg.DesktopEntry from imports and list of dependecies
+        # TODO: replace DesktopEntry with Gio.DesktopAppInfo... and then
+        # TODO: remove xdg.DesktopEntry from imports and list of dependecies
 
         # if the search dir doesn't exist, don't do anything
         if os.path.isdir(srch_dir) is False:
@@ -879,8 +890,7 @@ class DockedApp(object):
                 de_exec = the_de.getExec().split(None, 1)[0]
 
                 if (self.cmd_line.find(de_exec) != -1) and \
-                   (self.wm_class_name.upper() ==
-                    the_de.getStartupWMClass().upper()):
+                   (self.wm_class_name.upper() == the_de.getStartupWMClass().upper()):
                     self.desktop_file = srch_dir+the_file
                     return True
 
@@ -902,7 +912,7 @@ class DockedApp(object):
             win_type = window.get_window_type()
             if ((win_type == Wnck.WindowType.NORMAL) or
                 (win_type == Wnck.WindowType.DIALOG)) and \
-                (window.is_skip_tasklist() == False):
+               (window.is_skip_tasklist() is False):
 
                 window.set_icon_geometry(x, y, width, height)
 
@@ -939,6 +949,16 @@ class DockedApp(object):
             indicator - the indicator type
         """
         self.indicator = indicator
+
+    def set_active_bg (self, active_bg):
+        """Set the active background type to the value specified
+
+        Args:
+            active_bg - the background type
+
+        """
+
+        self.active_bg = active_bg
 
     def set_multi_ind(self, multi_ind):
         """ Set whether to use an indicator for each open window
@@ -1007,7 +1027,7 @@ class DockedApp(object):
 
             # get the list of addtional application actions (to be activated by right
             # clicking the app's dock icon)
-            self.rc_actions=self.desktop_ai.list_actions()
+            self.rc_actions = self.desktop_ai.list_actions()
 
             return True
 
@@ -1042,7 +1062,7 @@ class DockedApp(object):
             if not self.is_flashing:
                 self.is_flashing = True
                 self.flash_on = False  # initial flash state = off
-                Flasher = FlashTimer(self)
+                flasher = FlashTimer(self)
 
                 if not self.is_visible():
                     self.show_icon()
@@ -1089,37 +1109,24 @@ class DockedApp(object):
                                                self.drawing_area_size)
         ctx = cairo.Context(offscreen_surface)
 
-        # convert the highlight values to their cairo equivalents
-        red = self.highlight_color.r / 255
-        green = self.highlight_color.g / 255
-        blue = self.highlight_color.b / 255
-
         if self.is_active and (self.is_dragee is False):
-            # draw a background gradient according to the applet orientation
-            if self.applet_orient == MatePanelApplet.AppletOrient.RIGHT:
-                pattern = cairo.LinearGradient(0, 0, self.drawing_area_size, 0)
-                pattern.add_color_stop_rgba(0.0, red, green, blue, 1)
-                pattern.add_color_stop_rgba(1.0, red, green, blue, 0)
-            elif self.applet_orient == MatePanelApplet.AppletOrient.LEFT:
-                pattern = cairo.LinearGradient(self.drawing_area_size, 0, 0, 0)
-                pattern.add_color_stop_rgba(0.0, red, green, blue, 1)
-                pattern.add_color_stop_rgba(1.0, red, green, blue, 0)
-            elif self.applet_orient == MatePanelApplet.AppletOrient.DOWN:
-                pattern = cairo.LinearGradient(0, 0, 0, self.drawing_area_size)
-                pattern.add_color_stop_rgba(0.0, red, green, blue, 1)
-                pattern.add_color_stop_rgba(1.0, red, green, blue, 0)
-            else:
-                pattern = cairo.LinearGradient(0, self.drawing_area_size, 0, 0)
-                pattern.add_color_stop_rgba(0.0, red, green, blue, 1)
-                pattern.add_color_stop_rgba(1.0, red, green, blue, 0)
 
-            ctx.rectangle(0, 0, self.drawing_area_size, self.drawing_area_size)
-            ctx.set_source(pattern)
-            ctx.fill()
+            # convert the highlight values to their cairo equivalents
+            red = self.highlight_color.r / 255
+            green = self.highlight_color.g / 255
+            blue = self.highlight_color.b / 255
+
+            if self.active_bg == dock_prefs.ActiveBgType.GRADIENT:
+                dbgd = DefaultBackgroundDrawer(ctx, self.drawing_area_size,
+                                               self.applet_orient, red, green, blue)
+            else:
+                dbgd = AlphaFillBackgroundDrawer(ctx, self.drawing_area_size,
+                                                 self.applet_orient, red, green, blue, 0.5)
+
+            dbgd.draw()
 
         # draw the app icon
         Gdk.cairo_set_source_pixbuf(ctx, self.app_pb, 3, 3)
-        ctx.rectangle(0, 0, self.drawing_area_size, self.drawing_area_size)
 
         if self.is_pulsing:
             # draw the icon semi-transparently according to how far through the
@@ -1179,46 +1186,18 @@ class DockedApp(object):
                     if num_ind > 4:
                         num_ind = 4
 
-            if self.applet_orient == MatePanelApplet.AppletOrient.RIGHT:
-                ind_x = 2
-                ind_y = (self.drawing_area_size-4)/(num_ind+1) + 2
+            ind = None
+            if self.indicator == dock_prefs.IndicatorType.LIGHT:
+                ind = DefaultLightInd(ctx, self.drawing_area_size,
+                                      self.applet_orient, num_ind)
+            elif self.indicator == dock_prefs.IndicatorType.DARK:
+                ind = DefaultDarkInd(ctx, self.drawing_area_size,
+                                      self.applet_orient, num_ind)
+            elif self.indicator == dock_prefs.IndicatorType.TBAR:
+                ind = ThemeBarInd(ctx, self.drawing_area_size, self.applet_orient, self.applet)
 
-            elif self.applet_orient == MatePanelApplet.AppletOrient.LEFT:
-                ind_x = self.drawing_area_size - 1
-                ind_y = (self.drawing_area_size - 4)/(num_ind+1) + 2
-
-            elif self.applet_orient == MatePanelApplet.AppletOrient.DOWN:
-                ind_x = (self.drawing_area_size - 4)/(num_ind+1) + 2
-                ind_y = 2
-            else:
-                ind_x = (self.drawing_area_size - 4)/(num_ind+1) + 2
-                ind_y = self.drawing_area_size - 1
-
-            this_ind = 1
-            while this_ind <= num_ind:
-                rad_patt = cairo.RadialGradient(ind_x, ind_y, 2,
-                                                ind_x, ind_y, 4)
-
-                # do a light or dark indicator as necessary
-                if self.indicator == dock_prefs.IndicatorType.LIGHT:
-                    rad_patt.add_color_stop_rgba(0, 0.9, 0.9, 0.9, 1)
-                    rad_patt.add_color_stop_rgba(1, 0.0, 0.0, 0.0, 0)
-                else:
-                    rad_patt.add_color_stop_rgba(0, 0.0, 0.0, 0.0, 1)
-                    rad_patt.add_color_stop_rgba(1, 0.9, 0.9, 0.9, 0)
-
-                ctx.set_source(rad_patt)
-                ctx.arc(ind_x, ind_y, 6, 0, 2*math.pi)
-
-                if num_ind > 1:
-                    if (self.applet_orient == MatePanelApplet.AppletOrient.RIGHT) or \
-                       (self.applet_orient == MatePanelApplet.AppletOrient.LEFT):
-                        ind_y += (self.drawing_area_size - 6)/(num_ind+1)
-                    else:
-                        ind_x += (self.drawing_area_size - 6)/(num_ind+1)
-
-                this_ind += 1
-                ctx.fill()
+            if ind is not None:
+                ind.draw()
 
         # do we need a count?
         if self.show_count:
@@ -1276,7 +1255,7 @@ class DockedApp(object):
             ctx.set_font_size(fsize)
             extents = ctx.text_extents(ctext)
 
-            if (extents[3]< reqd_font_height):
+            if extents[3] < reqd_font_height:
                 font_size = fsize
                 break
 
@@ -1314,7 +1293,7 @@ class DockedApp(object):
         ctx.scale(self.drawing_area_size/draw_size,
                   self.drawing_area_size/draw_size)
 
-        ctx.move_to(left, height - 1+ adj)
+        ctx.move_to(left, height - 1 + adj)
         ctx.arc(left, inset + adj, radius, 0.5 * math.pi, 1.5*math.pi)
         ctx.arc(draw_size-inset-adj, inset + adj, radius, 1.5*math.pi, 0.5*math.pi)
         ctx.line_to(left, height - 1 + adj)
@@ -1326,7 +1305,7 @@ class DockedApp(object):
 
         # draw the text
         ctx.move_to(left - inset + width/2 - (extents[0]+extents[2]/2),
-                    (height/2) + adj +extents[3]/2)
+                    (height/2) + adj + extents[3]/2)
         ctx.set_source_rgb(tred, tgreen, tblue)
         ctx.show_text(ctext)
 
@@ -1388,7 +1367,7 @@ class DockedApp(object):
         line_width = 2          # border line width
         int_height = height - line_width * 2  # interior height
         left = 8
-        width  = draw_size - left * 2   # width of the progress bar
+        width = draw_size - left * 2   # width of the progress bar
 
         top = (draw_size/8) * 5
 
@@ -1403,7 +1382,7 @@ class DockedApp(object):
 
         # fill the interior with the background colour
         ctx.set_line_width(1)
-        ctx.set_source_rgb (bk_red, bk_green, bk_blue)
+        ctx.set_source_rgb(bk_red, bk_green, bk_blue)
         rounded_rectangle(ctx, left + line_width, top + line_width,
                           width - line_width*2, height-line_width*2,
                           2)
@@ -1515,11 +1494,11 @@ class DockedApp(object):
                 cmd_line - the command to run
         """
 
+        # TODO: this is old code and needs to be removed
+
         # the command line may contain escape sequences, so unescape them....
         cmd_line = bytearray(cmd_line, "UTF-8")
         cmd_line = cmd_line.decode("unicode-escape")
-
-        return
 
         # if an environment variable is specified, extract its name an value
         # Note: the .desktop file specification at
@@ -1566,14 +1545,10 @@ class DockedApp(object):
 
         file_list = GLib.List()
 
-       # app_info.launch(None, alc)
+        # app_info.launch(None, alc)
         self.startup_id = alc.get_startup_notify_id(app_info, [])
 
         throbber = PulseTimer(self)
-
-        watch = Gdk.Cursor(Gdk.CursorType.WATCH)
-        self.applet_win.set_cursor(watch)
-
 
     def run_rc_action(self, act_no):
         """ run the right click action specified by act_no
@@ -1614,7 +1589,7 @@ class DockedApp(object):
         if len(self.rc_actions) >= act_no:
             return True, self.desktop_ai.get_action_name(self.rc_actions[act_no-1])
         else:
-            return (False, "")
+            return False, ""
 
     def start_pulsing(self):
         """ start the dock icon pulsing
@@ -1641,7 +1616,7 @@ class DockedApp(object):
             is_visible : whether the progress is to be displayed
         """
 
-        if (is_visible != self.show_progress):
+        if is_visible != self.show_progress:
             self.show_progress = bool(is_visible)
             self.queue_draw()
 
