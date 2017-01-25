@@ -60,7 +60,7 @@ class DockCLWindow(Gtk.Window):
 
     Create and display the create custom launcher dialog
 
-    Provide properties to get and set the custom laucher name,
+    Provide properties to get and set the custom launcher name,
     command, comment and icon
     """
     def __init__(self, ok_callback):
@@ -227,12 +227,12 @@ class DockCLWindow(Gtk.Window):
                                        2, 2)
 
         # Code below can be uncommented if adding terminal apps to the dock
-        # everbecomes a needed thing
-        #self.__table_layout.attach(self.__lbl_term, 0, 1, 2, 3,
+        # ever becomes a needed thing
+        # self.__table_layout.attach(self.__lbl_term, 0, 1, 2, 3,
         #                           Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
         #                           2, 2)
         #
-        #self.__table_layout.attach(self.__cbtn_term, 1, 2, 2, 3,
+        # self.__table_layout.attach(self.__cbtn_term, 1, 2, 2, 3,
         #                           Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.SHRINK,
         #                           2, 2)
 
@@ -380,7 +380,7 @@ class DockCLWindow(Gtk.Window):
     def img_button_press(self, widget, event):
         """ Callback for the icon button press
 
-        Show a FileChooerDialog allowing the user to select an icon for the
+        Show a FileChooserDialog allowing the user to select an icon for the
         launcher
         """
 
@@ -499,7 +499,7 @@ class DockCLWindow(Gtk.Window):
         md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL,
                                Gtk.MessageType.INFO, Gtk.ButtonsType.OK,
                                None)
-        md.set_markup ('<span size="x-large"><b>Custom Launchers</b></span>')
+        md.set_markup('<span size="x-large"><b>Custom Launchers</b></span>')
         info_text = "Custom launchers are an advanced feature meant to be used only with apps " +\
                     "that the dock does not recognise (i.e. they display the wrong name or icon). \n\n" + \
                     "Normally, this will only happen when the apps have been installed " + \

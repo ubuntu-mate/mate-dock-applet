@@ -54,6 +54,7 @@ from log_it import log_it as log_it
 ChangeTup = namedtuple('ChangeTup', ['settings', 'ored', 'ogreen', 'oblue',
                                      'step_red', 'step_green', 'step_blue'])
 
+
 class PanelColorChanger(object):
     """ Class to change the color of the MATE panel(s) to the dominant color of
         the wallpaper image
@@ -63,10 +64,6 @@ class PanelColorChanger(object):
     Change the panel color whenever the wallpaper image is changed
     Allow only a specific panel's color to be changed, rather than all panels
 
-    Attributes:
-
-        single_panel : the toplevel id of a panel which is the only one whose
-                       colour is to be changed
     """
 
     def __init__(self, update_callback=None):
@@ -83,9 +80,8 @@ class PanelColorChanger(object):
 
         self.update_cb = update_callback
 
-        self.__red = self.__green = self.__blue = 0  # will hold rgb of the
-                                                     # dom color
-                                                     # of the wallpaper
+        self.__red = self.__green = self.__blue = 0
+        # will hold rgb of the dom color of the wallpaper
 
         self.__bg_settings = Gio.Settings.new("org.mate.background")
 
@@ -167,8 +163,7 @@ class PanelColorChanger(object):
 
         self.get_dom_color()
 
-        change_list = []  # initialise list of panels & settings we neee
-                          # to change
+        change_list = []  # initialise list of panels & settings we need to change
 
         # get the list of panels
         panel_list = self.__panel_settings.get_value("toplevel-id-list").unpack()
@@ -183,7 +178,7 @@ class PanelColorChanger(object):
                 settings_path = "/org/mate/panel/toplevels/%s/background/" % panel
 
                 # get this panel's settings
-                psettings = Gio.Settings.new_with_path("org.mate.panel.toplevel.background", \
+                psettings = Gio.Settings.new_with_path("org.mate.panel.toplevel.background",
                                                        settings_path)
 
                 # get the panel's original colour rgb components
@@ -322,7 +317,7 @@ class TestWindow(Gtk.Window):
         self.__button.connect("button-press-event", self.win_button_press)
         self.connect("delete-event", self.win_delete_event)
 
-        self.pcc = PanelColorChanger(self.RefreshUi)
+        self.pcc = PanelColorChanger(self.refresh_ui)
 
         self.set_border_width(5)
         self.__vbox = Gtk.VBox()
@@ -396,7 +391,7 @@ class TestWindow(Gtk.Window):
         ctx = None
         screen_ctx = None
 
-    def RefreshUi(self):
+    def refresh_ui(self):
         self.__da.queue_draw()
 
     def win_delete_event(self, widget, event, data=None):

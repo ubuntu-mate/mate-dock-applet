@@ -79,7 +79,6 @@ import dock_win_list
 import dock_action_list
 import dock_xml
 import dock_color_changer
-import dock_info
 import docked_app_helpers
 
 from log_it import log_it as log_it

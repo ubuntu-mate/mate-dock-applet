@@ -41,8 +41,6 @@ if build_gtk2:
 else:
     gi.require_version("Gtk", "3.0")
 
-import sys
-
 from gi.repository import Gtk, Pango
 
 

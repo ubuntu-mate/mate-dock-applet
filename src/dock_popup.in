@@ -7,11 +7,11 @@
     will disappear if the mouse moves away from the window or
     the dock applet.
 
-    The window's foregound/background colours will be set from the current
+    The window's foreground/background colours will be set from the current
     theme or if the dock applet is setting the panel colour, the panel colours
 
     The will use a grid/table to display a border around the window contents,
-    and descendent classes will need to create and set the window's
+    and descendant classes will need to create and set the window's
     main widget/container
 
 """
@@ -67,6 +67,7 @@ import docked_app
 CONST_TIMER_DELAY = 1000
 CONST_ICON_SIZE = 16
 
+
 class DockPopup(Gtk.Window):
     """
 
@@ -77,7 +78,7 @@ class DockPopup(Gtk.Window):
                      should therefore include the applet, the area between
                      the window and the applet, and the window itself with a
                      suitable buffer area around it
-            __timer_id : a ref to a timer used for priodically checking the
+            __timer_id : a ref to a timer used for periodically checking the
                          mouse cursor position to see if it is within the areas
                          specified in __mouse_areas
             __the_app : the docked_app to which the window list relates
@@ -93,7 +94,7 @@ class DockPopup(Gtk.Window):
             __fgr, __fgg, __fgb : the r,g,b foreground colour components
             __hlr, __hlg, __hlb : the r,g,b highlight colour components
 
-            The atrributes below are used for positioning this window relative
+            The attributes below are used for positioning this window relative
             to the applet and it's panel:
             __app_x : the x position of the docked app in root coordinates
             __app_y : the y position of the docked app in root coordinates
@@ -132,7 +133,7 @@ class DockPopup(Gtk.Window):
         self.set_keep_above(True)
 
         self.__icontheme = None
-        self.__icon_size = 16 # small default icon size
+        self.__icon_size = 16  # small default icon size
         self.__timer_id = None
         self.__dismissed = False
 
@@ -144,7 +145,22 @@ class DockPopup(Gtk.Window):
 
         self.__app_x = 0
         self.__app_y = 0
-        self.__panel_orient = MatePanelApplet.AppletOrient.LEFT # default value
+        self.__panel_orient = MatePanelApplet.AppletOrient.LEFT  # default value
+
+        self.__bgr = 0
+        self.__bgg = 0
+        self.__bgb = 0
+        self.__fgr = 0
+        self.__fgg = 0
+        self.__fgb = 0
+        self.__hlr = 0
+        self.__hlg = 0
+        self.__hlb = 0
+        self.__applet_x = 0
+        self.__applet_y = 0
+        self.__applet_w = 0
+        self.__applet_y = 0
+        self.__applet_h = 0
 
         # create ui
         if build_gtk2:
@@ -255,8 +271,8 @@ class DockPopup(Gtk.Window):
                 state = Gtk.StateType.NORMAL
                 # we want the colors for the MATE panel (preferably), or the
                 # Gnome menu bar
-                #context.add_class("gnome-panel-menu-bar")
-                #context.add_class("mate-panel-menu-bar")
+                # context.add_class("gnome-panel-menu-bar")
+                # context.add_class("mate-panel-menu-bar")
 
                 # background
                 c_info = context.lookup_color("dark_bg_color")
@@ -305,7 +321,7 @@ class DockPopup(Gtk.Window):
             self.__hlg = (self.__bgg + 64) % 256
             self.__hlb = (self.__bgb + 64) % 256
 
-    def set_bg_col (self, bgr, bgg, bgb):
+    def set_bg_col(self, bgr, bgg, bgb):
         """ Sets the background colour of the window
 
         Also, set a foreground colour that will contrast with the background
@@ -321,9 +337,9 @@ class DockPopup(Gtk.Window):
         self.__bgb = bgb
 
         # set foreground colour according to the background colour
-        if (bgr + bgg + bgb) > 384:  # 384 equates to average rgb values of 128
-                                     # per colour component and therefore
-                                     # represents a mid value
+        if (bgr + bgg + bgb) > 384:     # 384 equates to average rgb values of 128
+                                        # per colour component and therefore
+                                        # represents a mid value
             self.__fgr = self.__fgg = self.__fgb = 0  # dark fg colour
         else:
             self.__fgr = self.__fgg = self.__fgb = 255  # light fg color
@@ -381,12 +397,12 @@ class DockPopup(Gtk.Window):
 
             return rect
 
-        panel_space = 10 # how many pixels away from the panel the window list
-                         # will appear
+        panel_space = 10    # how many pixels away from the panel the window list
+                            # will appear
 
-        win_border = 15  # size of the border (in pixels) around the window
-                         # list where the mouse must remain, outside of which
-                         # the window list will hide
+        win_border = 15     # size of the border (in pixels) around the window
+                            # list where the mouse must remain, outside of which
+                            # the window list will hide
 
         screen = self.get_screen()
 
@@ -399,9 +415,6 @@ class DockPopup(Gtk.Window):
             screen.get_monitor_geometry(monitor, mon_geom)
         else:
             mon_geom = screen.get_monitor_geometry(monitor)
-
-        screen_w = screen.get_width()
-        screen_h = screen.get_height()
 
         # if the size of the window hasnt been set (because the configure-event
         # doesn't always fire if the window list is empty) use an alternative
@@ -534,11 +547,6 @@ class DockPopup(Gtk.Window):
         # to recaclulate the window position and mouse areas
 
         return
-        if (event.width != self.__win_w) or (event.height != self.__win_h):
-            self.__win_w = event.width
-            self.__win_h = event.height
-
-            self.set_win_position()
 
     def size_allocate(self, widget, event):
         if (event.width != self.__win_w) or (event.height != self.__win_h):
@@ -549,7 +557,7 @@ class DockPopup(Gtk.Window):
     # TODO: keep checking status of this bug:
     # https://bugzilla.gnome.org/show_bug.cgi?id=667959
     # and when a fix is available shape_combine_region for rounded windows...
-    #def size_allocate(self, widget, allocation):
+    # def size_allocate(self, widget, allocation):
     #    def rounded_rectangle(cr, x, y, w, h, r=20):
     #        # Attribution:
     #        # https://stackoverflow.com/questions/2384374/rounded-rectangle-in-pygtk
@@ -721,7 +729,7 @@ class DockPopup(Gtk.Window):
                            self.__fgb / 255)
         ctx.move_to(self.__border_line, 0)
         ctx.line_to(self.__border_line,
-                           alloc.height - self.__border_line - self.__line_curve)
+                    alloc.height - self.__border_line - self.__line_curve)
         ctx.curve_to(self.__border_line,
                      alloc.height - self.__border_line - self.__line_curve,
                      self.__border_line, alloc.height - self.__border_line,
@@ -841,7 +849,7 @@ class DockPopup(Gtk.Window):
         else:
             pixbuf = self.the_app.app_pb.scale_simple(self.__icon_size,
                                                       self.__icon_size,
-                                         GdkPixbuf.InterpType.BILINEAR)
+                                                      GdkPixbuf.InterpType.BILINEAR)
 
         self.__app_pb = pixbuf
 

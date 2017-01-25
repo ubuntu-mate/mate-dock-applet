@@ -55,30 +55,25 @@ from gi.repository import Wnck
 from gi.repository import GdkPixbuf
 from gi.repository import Gio
 from gi.repository import Gdk
-from gi.repository import GObject
-from gi.repository import Pango
-from gi.repository import MatePanelApplet
 
 import os
 import cairo
 import tempfile
 from time import sleep
 
-import docked_app
 from dock_popup import DockPopup
 
 from log_it import log_it as log_it
 
 CONST_CLOSE_ICON_SIZE = 16
-CONST_SEP = "--------------------"  # text which denotes tree view item is a
-                                    # separator
-CONST_MAX_TITLE_WIDTH = 400         # max width of the title column
-                                    # in pixels
+CONST_SEP = "--------------------"  # text which denotes tree view item is a separator
+CONST_MAX_TITLE_WIDTH = 400         # max width of the title column in pixels
 CONST__ACTIVE_TEXT = "•"
+
 
 class DockWinList(DockPopup):
 
-    """ Descendent of Dockup to provide a list of a running app's
+    """ Descendant of Dockup to provide a list of a running app's
         open windows
 
     """
@@ -94,6 +89,8 @@ class DockWinList(DockPopup):
         # call the base classes constructor
         DockPopup.__init__(self, wnck_screen)
 
+        self.__bg_str = ""
+        self.__fg_str = ""
 
         # we use a treeview to list each window, so initialise it and its
         # liststore
@@ -126,8 +123,7 @@ class DockWinList(DockPopup):
         self.__icon_renderer = Gtk.CellRendererPixbuf()
         self.__title_renderer = Gtk.CellRendererText()
         self.__close_renderer = Gtk.CellRendererPixbuf()
-        self.__close_renderer.set_alignment(1, 0.0)   # align to to topright of
-                                                      # the cell
+        self.__close_renderer.set_alignment(1, 0.0)   # align to to topright of the cell
 
         # set default cell colours and padding
         self.__title_renderer.set_padding(2, 6)
@@ -255,8 +251,7 @@ class DockWinList(DockPopup):
 
         self.__tree_view.get_selection().unselect_all()
 
-
-    def set_colours (self, panel_colour):
+    def set_colours(self, panel_colour):
         """ Sets the treeview colours (background, foreground and
             highlight) to match the window colours.
 
@@ -358,7 +353,7 @@ class DockWinList(DockPopup):
 
         if col == self.__col_close:
             cell_area = self.__tree_view.get_cell_area(path, col)
-            if (event.x >= cell_area.x + cell_area.width  - CONST_CLOSE_ICON_SIZE) and \
+            if (event.x >= cell_area.x + cell_area.width - CONST_CLOSE_ICON_SIZE) and \
                (event.y <= cell_area.y + CONST_CLOSE_ICON_SIZE):
                 win.close(event.time)
                 self.hide()
@@ -394,7 +389,6 @@ class DockWinList(DockPopup):
 
         return True
 
-
     def add_separator(self):
         """ Convenience method to add a separator to the list
 
@@ -403,7 +397,7 @@ class DockWinList(DockPopup):
         """
 
         if len(self.__list_store) > 0:
-            self.add_to_list(False, CONST_SEP, None, None, None)
+            self.add_to_list(False, CONST_SEP, None)
 
     def add_to_list(self, is_active, title, window):
         """ Add an item to the window list
@@ -521,13 +515,14 @@ class DockWinList(DockPopup):
             Args :
                 model : the treeview model (will be self.__list_store)
                 iter : the roow in the model we're interested in
+                data : user defined data
 
             Returns:
                 Bool
         """
 
         title = model.get_value(iter, 1)
-        return (title == CONST_SEP)
+        return title == CONST_SEP
 
 
 def main():

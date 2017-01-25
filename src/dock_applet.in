@@ -61,7 +61,6 @@ import xdg.DesktopEntry as DesktopEntry
 
 import docked_app
 import dock
-from dock_win_list import DockWinList
 
 from log_it import log_it as log_it
 
@@ -104,7 +103,7 @@ def applet_button_release(widget, event, the_dock):
 
     If the button is released over a non-running app, start the app
 
-    If the button is released over a runnning app that isn't on the
+    If the button is released over a running app that isn't on the
     current workspace, change workspace
 
     If the button is released over a running app:
@@ -140,7 +139,6 @@ def applet_button_release(widget, event, the_dock):
                     the_dock.activate_first_window(app)
                 else:
                     the_dock.do_window_selection(app)
-
 
     # See https://bugs.launchpad.net/ubuntu-mate/+bug/1554128
     if event.button == 2:
@@ -189,10 +187,11 @@ def applet_enter_notify(widget, event, the_dock):
         # set up the available options for the app
         the_dock.set_actions_for_app(app)
 
-def applet_leave_notify(widget, event, the_dock):
-    """Leave notifiy event handle for the applet
 
-    Unbrighten any brightened app icon
+def applet_leave_notify(widget, event, the_dock):
+    """Leave notify event handle for the applet
+
+    Unbright any brightened app icon
 
     Args:
         widget : the widget that registered the event i.e. the applet
@@ -245,7 +244,7 @@ def applet_motion_notify(widget, event, the_dock):
             # app icon is set correctly
             widget.drag_source_set_icon_pixbuf(the_dock.app_with_mouse.app_pb)
 
-    if (app is not None):
+    if app is not None:
 
         # reset the window list timer
         the_dock.reset_act_list_timer()
@@ -263,8 +262,8 @@ def applet_change_orient(applet, orient, the_dock):
     Set the dock to the new orientation and re-show the applet
 
     Args:
-        widget : the widget that registered the event i.e. the applet
-        event : the event args
+        applet : the widget that registered the event i.e. the applet
+        orient : the new orientation
         the_dock : the Dock object
     """
 
@@ -280,8 +279,8 @@ def applet_change_size(applet, size, the_dock):
     dock
 
     Args:
-        widget : the widget that registered the event i.e. the applet
-        event : the event args
+        applet : the widget that registered the event i.e. the applet
+        size : the new applet size
         the_dock : the Dock object
     """
 
@@ -289,7 +288,7 @@ def applet_change_size(applet, size, the_dock):
         the_dock.set_app_icon(app, size)
 
 
-def applet_scroll_event (applet, event, the_dock):
+def applet_scroll_event(applet, event, the_dock):
     """ Handler for the scroll event
 
     Call the dock's  function to move forward/backward through the active app's
@@ -313,9 +312,9 @@ def applet_drag_begin(applet, context, the_dock):
 
     """
 
-    # we can sometimes get surious applet-leave events just before a drag
+    # we can sometimes get spurious applet-leave events just before a drag
     # commences. This causes app_with_mouse to be set to None. Therefore we
-    # may need to identify the app under the mouse outselves...
+    # may need to identify the app under the mouse ourselves...
 
     if the_dock.app_with_mouse is None:
         the_dock.app_with_mouse = the_dock.get_app_under_mouse()
@@ -363,7 +362,7 @@ def applet_drag_drop(widget, context, x, y, time, the_dock):
         app.queue_draw()
 
 
-def applet_drag_end (widget, context, the_dock):
+def applet_drag_end(widget, context, the_dock):
     """
     Handler for the drag-end event
 
@@ -381,6 +380,7 @@ def applet_drag_end (widget, context, the_dock):
         app.set_dragee(False)
         app.queue_draw()
 
+
 def applet_fill(applet):
     """
     Create the applet
@@ -396,15 +396,13 @@ def applet_fill(applet):
     """
 
     os.chdir(os.path.expanduser("~"))
-    applet.set_events(applet.get_events() | Gdk.EventMask.BUTTON_PRESS_MASK \
-                                          | Gdk.EventMask.BUTTON_RELEASE_MASK \
-                                          | Gdk.EventMask.POINTER_MOTION_MASK \
-                                          | Gdk.EventMask.KEY_PRESS_MASK \
-                                          | Gdk.EventMask.KEY_RELEASE_MASK \
-                                          | Gdk.EventMask.SCROLL_MASK \
+    applet.set_events(applet.get_events() | Gdk.EventMask.BUTTON_PRESS_MASK
+                                          | Gdk.EventMask.BUTTON_RELEASE_MASK
+                                          | Gdk.EventMask.POINTER_MOTION_MASK
+                                          | Gdk.EventMask.KEY_PRESS_MASK
+                                          | Gdk.EventMask.KEY_RELEASE_MASK
+                                          | Gdk.EventMask.SCROLL_MASK
                                           | Gdk.EventMask.STRUCTURE_MASK)
-
-                                          #| Gdk.EventMask.BUTTON1_MOTION_MASK)
 
     the_dock = dock.Dock(applet)
     the_dock.setup_dock()
@@ -426,7 +424,7 @@ def applet_fill(applet):
         # NOTE: drag-motion events never seem to trigger on applets, which
         # makes it difficult to tell where the mouse pointer is.....
         # To get around this, dock.py now contains a timer to monitor the
-        # mouse x.y during drang and drops, but if drag-motion events
+        # mouse x.y during drag and drops, but if drag-motion events
         # ever start working, the code from the dock.py timer can be moved
         # to drag-motion event handler
         applet.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, None,
@@ -451,6 +449,7 @@ def applet_factory(applet, iid, data):
     Args:
         applet : the applet
         iid    : the id of the applet that needs to be created
+        data   :
     Returns:
         True if we created a dock applet, False otherwise
     """
@@ -466,6 +465,7 @@ def applet_factory(applet, iid, data):
 MatePanelApplet.Applet.factory_main("DockAppletFactory", True,
                                     MatePanelApplet.Applet.__gtype__,
                                     applet_factory, None)
+
 
 def main():
     """Main function.

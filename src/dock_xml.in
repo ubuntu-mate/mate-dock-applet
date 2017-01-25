@@ -118,7 +118,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
                         uwl="%s" % use_dock_win_list)
     wcw_el = ET.Element("win_from_cur_ws_only",
                         wcw="%s" % win_from_cur_ws_only)
-    pcc_el = ET.Element("panel_change_color", pcc = "%s" % panel_change_color)
+    pcc_el = ET.Element("panel_change_color", pcc="%s" % panel_change_color)
     dcc_el = ET.Element("dock_panel_change_only",
                         dcc="%s" % dock_panel_change_only)
     pal_el = ET.Element("panel_act_list",
@@ -127,7 +127,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
 
     fbc_el = ET.Element("fallback_bar_col")
     for col in fallback_bar_col:
-        col_el = ET.Element("col", value = "%s" % col)
+        col_el = ET.Element("col", value="%s" % col)
         fbc_el.append(col_el)
 
     root.append(pa_el)
@@ -245,7 +245,7 @@ def read_xml(filename):
 
     fallback_bar_col = []
     fbc_col = root.find("fallback_bar_col")
-    if fbc_col is not None and (len(fbc_col)==3):
+    if fbc_col is not None and (len(fbc_col) == 3):
         for col in fbc_col:
             fallback_bar_col.append(col.get("value"))
     else:
@@ -255,6 +255,7 @@ def read_xml(filename):
             use_win_list, win_from_cur_ws_only,
             panel_change_color, dock_panel_change_only,
             use_panel_act_list, bg_type, fallback_bar_col]
+
 
 def read_app_xml(filename):
     """ Reads the xml file containing the list of hard to match apps
@@ -296,8 +297,8 @@ def read_app_xml(filename):
 
                     target_rel = entry.find("release").text
                     if target_rel is None:
-                        add_it = True  # if we specify a release but the distro
-                                       # doesn't have one, just assume a match
+                        # if we specify a release but the distro doesn't have one, just assume a match
+                        add_it = True
                     else:
                         add_it = release in target_rel
 

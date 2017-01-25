@@ -44,8 +44,6 @@ from gi.repository import Gdk
 from gi.repository import MatePanelApplet
 from gi.repository import GdkPixbuf
 
-import cairo
-import math
 from random import randint
 
 from docked_app_helpers import DefaultBackgroundDrawer, AlphaFillBackgroundDrawer, DefaultLightInd,\
@@ -59,10 +57,12 @@ class IndicatorType:
     NONE = 2
     TBAR = 3    # Theme Bar
 
+
 class ActiveBgType:
     """Class to define the active icon background types"""
     GRADIENT = 0
-    ALPHAFILL =1
+    ALPHAFILL = 1
+
 
 def create_frame(caption):
     """ Convenience function to create a Gtk.Frame with a desired caption
@@ -814,7 +814,7 @@ class DockPrefsWindow(Gtk.Window):
             colrgb : a list containing the r,g and b colour components(0-255) as strings
         """
 
-        colstr = "#%0.2X%0.2X%0.2X" %(int(colrgb[0]), int(colrgb[1]), int(colrgb[2]))
+        colstr = "#%0.2X%0.2X%0.2X" % (int(colrgb[0]), int(colrgb[1]), int(colrgb[2]))
 
         if build_gtk2:
             cbrgba = Gdk.color_parse(colstr)
@@ -839,7 +839,7 @@ class DockPrefsWindow(Gtk.Window):
         else:
             cbrgba = self.__cbtn_fb_bar_col.get_rgba().to_color()
 
-        return ["%s" %int(cbrgba.red / 256), "%s" %int(cbrgba.green / 256), "%s" %int(cbrgba.blue / 256)]
+        return ["%s" % int(cbrgba.red / 256), "%s" % int(cbrgba.green / 256), "%s" % int(cbrgba.blue / 256)]
 
 
 def main():

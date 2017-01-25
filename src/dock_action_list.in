@@ -66,8 +66,8 @@ from dock_popup import DockPopup
 from log_it import log_it as log_it
 
 CONST_MAX_TITLE_WIDTH = 300         # Max width of the action text
-CONST_SEP = "--------------------"  # text which denotes tree view item is a
-                                    # separator
+CONST_SEP = "--------------------"  # text which denotes tree view item is a separator
+
 
 class DockActionList(DockPopup):
 
@@ -157,7 +157,7 @@ class DockActionList(DockPopup):
 
         self.__tree_view.get_selection().unselect_all()
 
-    def set_colours (self, panel_colour):
+    def set_colours(self, panel_colour):
         """ Sets the treeview colours (background, foreground and
             highlight) to match the window colours.
 
@@ -170,9 +170,9 @@ class DockActionList(DockPopup):
         # set strings used to set widget colours - we can't change
         # the highlight colour, only foreground and background
         r, g, b = self.bg_col
-        self.__bg_str = "#%.2x%.2x%.2x" % (r, g, b)
+        bg_str = "#%.2x%.2x%.2x" % (r, g, b)
         r, g, b = self.fg_col
-        self.__fg_str = "#%.2x%.2x%.2x" % (r, g, b)
+        fg_str = "#%.2x%.2x%.2x" % (r, g, b)
 
         # now set the treeview colours
         self.__title_renderer.set_property("cell-background", self.__bg_str)
@@ -253,14 +253,15 @@ class DockActionList(DockPopup):
 
             Args :
                 model : the treeview model (will be self.__list_store)
-                iter : the roow in the model we're interested in
+                iter : the row in the model we're interested in
+                data : user defined data
 
             Returns:
                 Bool
         """
 
         title = model.get_value(iter, 0)
-        return (title == CONST_SEP)
+        return title == CONST_SEP
 
 
 def main():

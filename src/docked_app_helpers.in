@@ -2,11 +2,11 @@
 
 """ Helper classes for apps in the dock
 
-    Provide a base class and descendents which will allow various types
+    Provide a base class and descendants which will allow various types
     of indicators to be drawn onto a Cairo canvas provided by an app
     in the dock
 
-    Provide a base class and descendents which will allow various types
+    Provide a base class and descendants which will allow various types
     of backgrounds (e.g. gradient fill) to be drawn onto a Cairo canvas
     provided by an app in the dock
 
@@ -47,7 +47,6 @@ else:
 gi.require_version("MatePanelApplet", "4.0")
 
 from gi.repository import Gtk
-from gi.repository import Gdk
 from gi.repository import MatePanelApplet
 import cairo
 
@@ -70,7 +69,7 @@ class IndicatorDrawer(object):
         _orient  : the orientation of the dock applet e.g. MatePanelApplet.AppletOrient.RIGHT
         _num_ind : the number of indicators to draw, may not be applicable to all indicators
 
-    Descendent classes can implement their own properties as necessary if they need more control
+    Descendant classes can implement their own properties as necessary if they need more control
     over the drawing process (e.g. to set a specific indicator colour)
 
     """
@@ -91,11 +90,11 @@ class IndicatorDrawer(object):
 
     def draw(self):
         """
-            Abstract method - descendents will implement this as required and return
+            Abstract method - descendants will implement this as required and return
                               _surface when drawing is completed
         """
 
-        raise NotImplementedError("Must be implemented by Indicator sublasses")
+        raise NotImplementedError("Must be implemented by Indicator subclasses")
 
 
 class DefaultInd(IndicatorDrawer):
@@ -214,7 +213,7 @@ class BarInd(IndicatorDrawer):
         """
         super().__init__(context, size, orient)
 
-        # cairo colour values of the bar, will be overridden by descendent classes
+        # cairo colour values of the bar, will be overridden by descendant classes
         self._barcol = [0.0, 0.0, 0.0]
 
     def draw(self):
@@ -263,13 +262,13 @@ class ThemeBarInd(BarInd):
             Constructor - call the inherited constructor and do additional
             bits of setup
 
-        Args (in addition to those specfied in the base class)
+        Args (in addition to those specified in the base class)
             applet : the applet
 
         """
         super().__init__(context, size, orient)
 
-        # set the bar color - for gtk2 we assume a white value unless othwse set
+        # set the bar color - for gtk2 we assume a white value unless otherwise set
         # for gtk3 try and get the highlight colour from the current theme
         # and use that, otherwise assume a value based on the theme
         # background colour
@@ -303,7 +302,7 @@ class ThemeBarInd(BarInd):
 
 
 class ActiveBackgroundDrawer(object):
-    """ Base class for drawing the backgound of active dock apps
+    """ Base class for drawing the background of active dock apps
 
      Provide a base class which can be used for drawing various type of
      backgrounds onto Cairo surfaces
@@ -318,7 +317,7 @@ class ActiveBackgroundDrawer(object):
         _orient  : the orientation of the dock applet e.g. MatePanelApplet.AppletOrient.RIGHT
 
 
-    Descendent classes can implement their own properties as necessary if they need more control
+    Descendant classes can implement their own properties as necessary if they need more control
     over the drawing process (e.g. to set a specific indicator colour)
 
     """
@@ -338,11 +337,11 @@ class ActiveBackgroundDrawer(object):
 
     def draw(self):
         """
-            Abstract method - descendents will implement this as required and return
+            Abstract method - descendants will implement this as required and return
                               _surface when drawing is completed
         """
 
-        raise NotImplementedError("Must be implemented by ActiveBackgroundDrawer descendents")
+        raise NotImplementedError("Must be implemented by ActiveBackgroundDrawer descandents")
 
 
 class DefaultBackgroundDrawer(ActiveBackgroundDrawer):
@@ -395,7 +394,7 @@ class DefaultBackgroundDrawer(ActiveBackgroundDrawer):
 
 class AlphaFillBackgroundDrawer(ActiveBackgroundDrawer):
     """
-        Fills the background with a specfied colour and opactiy
+        Fills the background with a specified colour and opacity
     """
 
     def __init__(self, context, size, orient, r, g, b, a):
