@@ -89,9 +89,9 @@ class DragMotionTimer(object):
        operation.
 
     Required because:
-        applets (for some reason) do not receive drag-motion events
-        we need to track the mouse x,y so that we can rearrange dock icons
-        on the fly
+        we don't get drag-motion events when dragging app icons
+        within the applet and we need to track the mouse x,y so that
+        we can rearrange dock icons on the fly
 
     Instantiates a timer which periodically gets the root x,y position of
     the mouse and translates these to applet x,y coordinate
@@ -224,6 +224,52 @@ class DragMotionTimer(object):
         return True
 
 
+class DragActivateTimer(object):
+    """ Timer used when something other than a .desktop file is dragged onto the
+        dock
+
+    Instantiates a timer which will wait for a short interval and then activate
+    a specified app's window. This will allow apps to drag data onto the dock,
+    activate an app's window and then drop the data there. The short delay between
+    the user dragging data onto the dock and the app activating provides a better
+    user experience ....
+
+    Attributes:
+        the_app : the app whose window is to be acticvated
+        timer_id = the id of the timer that is instantiated
+
+    """
+
+    def __init__(self, the_dock, the_app):
+        """Init for the DragActionTimer class.
+
+        Sets everything up by creating the timer and setting a reference to
+        the DockedApp to be activated
+
+        Arguments:
+            the_dock : the dock...
+            the_app  : the app to be activated
+
+        """
+
+        self.the_app = the_app
+        self.the_dock = the_dock
+        # wait .3 of a second ...
+        # tion 50 timakemes per second
+        self.timer_id = GObject.timeout_add(333, self.do_timer)
+
+    def do_timer(self):
+        """ Activate the app
+        """
+
+        if (self.the_app is not None) and (self.the_app.is_running()):
+                if not self.the_app.is_active:
+                    self.the_dock.minimize_or_restore_windows(self.the_app, None)
+
+        self.timer_id = 0
+        return False # we only run once...
+
+
 class Dock(object):
     """The main application dock class
 
@@ -288,7 +334,10 @@ class Dock(object):
             panel_y : the panel's y position on screen
             panel_size : the size of the panel
             applet_pos : the position of the applet(in pixels) in the panel
-            dm_timer : timer to monitor mouse movement during drag and drop
+            dm_timer : timer to monitor mouse movement during app icon drag and drop
+            da_timer : timer to provide a short delay before activating an app when
+                       data other than a .desktop file is dragged on the applet
+
     """
 
     def __init__(self, applet):
@@ -366,6 +415,7 @@ class Dock(object):
         self.applet_pos = 0
 
         self.dm_timer = None
+        self.da_timer = None
 
         # create an event handler so that we can react to changes e.g
         # the panel the applet is on, or it's position on the panel
@@ -892,11 +942,11 @@ class Dock(object):
                              self.df_shortcut_3),
                             ("df_shortcut_4_action", None,
                              "df_shortcut_4_action", None, "df_shortcut_4_action",
-                              self.df_shortcut_4),
-                             ("pin_action", Gtk.STOCK_ADD,
-                              "_Pin app to the dock", None, "Pin app to the dock",
-                              self.pin_app),
-                             ("unpin_action", Gtk.STOCK_REMOVE,
+                             self.df_shortcut_4),
+                            ("pin_action", Gtk.STOCK_ADD,
+                             "_Pin app to the dock", None, "Pin app to the dock",
+                             self.pin_app),
+                            ("unpin_action", Gtk.STOCK_REMOVE,
                               "_Unpin app from the dock", None, "Unpin app from the dock",
                               self.unpin_app),
                              ("move_up_action", Gtk.STOCK_GO_UP,
@@ -1509,6 +1559,44 @@ class Dock(object):
             self.show_or_hide_indicators()
             self.write_settings()
 
+    def add_app_to_dock(self, desktop_file):
+        """ Adds the app specified by a desktop file to the dock and pins it
+
+        If the app is already present in the dock, no action is taken
+
+        :param desktop_file: the .desktop_file of the app
+
+        """
+
+        for app in self.app_list:
+            if app.desktop_file == desktop_file:
+                return
+
+        dock_app = docked_app.DockedApp()
+        dock_app.desktop_file = desktop_file
+        dock_app.read_info_from_desktop_file()
+        dock_app.is_pinned = True
+
+        if build_gtk2:
+            dock_app.applet_win = self.applet.window
+        else:
+            dock_app.applet_win = self.applet.get_window()
+
+        dock_app.applet = self.applet
+
+        dock_app.applet_orient = self.applet.get_orient()
+        dock_app.set_indicator(self.indicator)
+        dock_app.set_multi_ind(self.multi_ind)
+        dock_app.set_active_bg(self.active_bg)
+
+        size = self.applet.get_size()
+        self.set_app_icon(dock_app, size)
+        self.app_list.append(dock_app)
+        self.add_app(dock_app)
+        self.show_or_hide_app_icons()
+        self.show_or_hide_indicators()
+        self.write_settings()
+
     def show_win(self, win_no):
         """
         Bring the specified window number of the right clicked app to the front
@@ -1529,7 +1617,6 @@ class Dock(object):
         for wnck_win in win_list:
             # have to send 0 as the event time because we have no event time to send
             wnck_win.close(0)
-
 
     def icon_theme_changed(self, icontheme):
         """ Callback for when the Gtk icon theme changes
@@ -1809,10 +1896,10 @@ class Dock(object):
                 # if we don't have the .desktop file then things get a little
                 #  more complicated
                 elif app.has_wnck_app(wnck_app) or \
-                     ((app.wnck_class == dock_app.wnck_class or
-                       app.wm_class_name.upper() == dock_app.wm_class_name.upper() and
+                    ((app.wnck_class == dock_app.wnck_class or
+                      app.wm_class_name.upper() == dock_app.wm_class_name.upper() and
                        # test below is fix for https://bugs.launchpad.net/ubuntu-mate/+bug/1555324
-                       app.wm_class_name.strip() != "")):
+                      app.wm_class_name.strip() != "")):
                         in_dock = True
 
                 if in_dock is True:
@@ -2149,6 +2236,23 @@ class Dock(object):
                 self.box.attach(dock_app.drawing_area, 0, pos, 1, 1)
             else:
                 self.box.attach(dock_app.drawing_area, pos, 0, 1, 1)
+
+    def get_app_by_pos(self, position):
+        """
+            Get the app at a specified position in the dock
+
+        :param self:
+        :param position: int - the position of the app in self.app_list
+
+        :return: a docked_app, or none if position exceeds the number of
+                 apps in the dock
+
+        """
+
+        if position < len(self.app_list):
+            return self.app_list[position]
+        else:
+            return None
 
     def create_box(self, orientation):
         """Create a vertical or horizontal (depending on the applet orientation)
@@ -2552,7 +2656,7 @@ class Dock(object):
         the action to perform (minimizing, moving workspace, activating)
         is decided as follows:
            if (the app's windows are all minimized) or
-           (the app s one or more unminimized window but is not the active app)
+           (the app has one or more unminimized window but is not the active app)
            then
                restore the app's last active window or all windows (based on
                the user's settings). If the active window is on a  different
@@ -2634,8 +2738,14 @@ class Dock(object):
             # rarely, the last active win does not end up as the active window
             # if we activate here, so instead a workaround which seems to do
             # the trick is use a timer as below
+            if event is None:
+                # use the current time if we have no event
+                event_time = Gtk.get_current_event_time()
+            else:
+                event_time = event.time
+
             GObject.timeout_add(20, win_activation_timer,
-                                [last_active_win, event.time])
+                                [last_active_win, event_time])
 
         else:
             # minimize all windows and do the last active window last of all
@@ -2691,11 +2801,12 @@ class Dock(object):
             return
         self.activate_window(win)
 
-    def do_window_scroll(self, scroll_dir, event_time):
+    def do_window_scroll(self, scroll_dir, event_time, the_app=None):
         """ Scroll to the next/previous window of the currently active app
 
         This function is called in response to the mouse scroll event on the
-        panel applet
+        panel applet and also when an applet keyboard shortcut (e.g. <Super>1)
+        is used
 
         Depending on the scroll direction, make the next or previous window of
         the current app active. Scrolling will wrap around in both directions
@@ -2713,6 +2824,8 @@ class Dock(object):
             scroll_dir : A GDK.ScrollDirection which indicates whether to go
                          forwards or backwards through the window list
             event_time : the time scroll event occurred
+            the_app    : will indicate the app whose windows are to be scrolled
+                         when a keyboard shortcut has been used.
         """
 
         # we're only interested in scroll up and down events....
@@ -2720,10 +2833,15 @@ class Dock(object):
            (scroll_dir != Gdk.ScrollDirection.DOWN):
             return
 
-        if self.app_with_mouse is not None:
-            app = self.app_with_mouse
+        if the_app is None:
+            # we've been called in response to a mouse scroll event, so we need to get
+            # the app under the mouse
+            if self.app_with_mouse is not None:
+                app = self.app_with_mouse
+            else:
+                return
         else:
-            return
+            app = the_app
 
         # if the app isn't running, there's nothing to do...
         if app.is_running() is False:
@@ -2797,6 +2915,21 @@ class Dock(object):
         """
 
         self.dm_timer.drag_ended = True
+
+    def start_da_timer(self, app):
+        """
+            Use a timer to before activating an app
+
+        Args:
+            app : the app to activate
+        """
+
+        # first of all, stop any other timer da_timer that may be running
+        if (self.da_timer is not None) and (self.da_timer.timer_id != 0):
+            GObject.source_remove(self.da_timer.timer_id)
+
+        # create a new timer
+        self.da_timer = DragActivateTimer(self, app)
 
     def get_app_under_mouse(self):
         """ Get the docked which is currently under the mouse cursor
