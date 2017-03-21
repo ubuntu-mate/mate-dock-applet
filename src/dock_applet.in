@@ -89,7 +89,20 @@ keyb_shortcuts1 = ["<Super>KP_1", "<Super>KP_2", "<Super>KP_3", "<Super>KP_4", "
 
 def applet_button_press(widget, event, the_dock):
     """Button press event for the applet
- for the right mouse button,
+
+    Handle right button press events only
+
+    Find the app that was right clicked and make a record of it
+
+    Args:
+        widget : the widget that was clicked
+        event : the event args
+        the_dock : the Dock object
+    """
+
+    # we don't get click events for the right mouse button presumably
+    # because the panel hijacks them in order to produce the context menu
+    # However, we do get button press event for the right mouse button,
     # so we can do what we need to do here ....
     if event.button == 3:
         # right click, so save the app that was clicked because
