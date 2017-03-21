@@ -218,6 +218,35 @@ class AboutWindow(Gtk.Window):
         """
 
         the_iter = self.__hints_text_buf.get_end_iter()
+
+        if not build_gtk2:
+            self.__hints_text_buf.insert_with_tags(the_iter,
+                                               "Drag and drop data between applications\n",
+                                               self.__tag_hint_bold)
+            self.__hints_text_buf.insert_with_tags(the_iter, "\n""To easily drag and drop data from one application " +
+                                               "to another, drag the data from the first application onto the dock " +
+                                               "icon of the second application. The dock will activate the second " +
+                                               "application's window, allowing the data to be dragged onto it. " +
+                                               "Note: the second application must already be running.\n\n",
+                                               self.__tag_hint_normal)
+            self.__hints_text_buf.insert_with_tags(the_iter,
+                                               "Adding new applications to the dock\n",
+                                               self.__tag_hint_bold)
+            self.__hints_text_buf.insert_with_tags(the_iter, "\n""Applications can be dragged and dropped from any menu " +
+                                               "applet (i.e. the Main Menu, Menu Bar, Advanced Menu, or Brisk Menu) " +
+                                               "directly onto the dock.\n\n",
+                                               self.__tag_hint_normal)
+
+        self.__hints_text_buf.insert_with_tags(the_iter,
+                                               "Activating apps with keyboard shortcuts\n",
+                                               self.__tag_hint_bold)
+        self.__hints_text_buf.insert_with_tags(the_iter, "\n""Holding down the <Super> (i.e. Windows) and pressing " +
+                                               "a number key will activate an app in the dock. For example, "+
+                                               "pressing ""1"" will activate the first app, ""2"" the second etc. "+
+                                               "Pressing ""0"" will activate the tenth app. To activate apps 11 to 20, "+
+                                               "hold down the <Alt> key as well as <Super>.\n\n",
+                                               self.__tag_hint_normal)
+
         self.__hints_text_buf.insert_with_tags(the_iter,
                                               "Opening a new instance of a running application\n",
                                               self.__tag_hint_bold)
