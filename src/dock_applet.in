@@ -40,9 +40,11 @@ import gi
 if build_gtk2:
     gi.require_version("Gtk", "2.0")
     gi.require_version("Wnck", "1.0")
+    gi.require_version("Keybinder", "0.0")
 else:
     gi.require_version("Gtk", "3.0")
     gi.require_version("Wnck", "3.0")
+    gi.require_version("Keybinder", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
 
@@ -53,34 +55,41 @@ sys.path.insert(1, '@pythondir@')
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk
+from gi.repository import Keybinder
 from gi.repository import Gio
 from gi.repository import GObject
 from gi.repository import Wnck
 
 import xdg.DesktopEntry as DesktopEntry
+from urllib.parse import urlparse
 
 import docked_app
 import dock
 
 from log_it import log_it as log_it
 
+drag_dropped = False   # nasty global var used to keep track of whether or not a drag-drop event has
+                       # occurred
+
+# define a list of keyboard shortcuts to be used to activate specific apps in the dock
+# '<Super>1' to '<Super>0' will correspond to apps 1 to 10
+# '<Super><Alt>1' to '<Super><Alt>9' will correspond to apps 11 to 20
+keyb_shortcuts = ["<Super>1", "<Super>2", "<Super>3", "<Super>4", "<Super>5",
+                  "<Super>6", "<Super>7", "<Super>8", "<Super>9", "<Super>0",
+                  "<Super><Alt>1", "<Super><Alt>2", "<Super><Alt>3", "<Super><Alt>4", "<Super><Alt>5",
+                  "<Super><Alt>6", "<Super><Alt>7", "<Super><Alt>8", "<Super><Alt>9", "<Super><Alt>0"]
+
+# additional shortcuts for the number pad - definitely don't work on my UK keyboards but included
+# anyway in case they work for other layouts
+keyb_shortcuts1 = ["<Super>KP_1", "<Super>KP_2", "<Super>KP_3", "<Super>KP_4", "<Super>KP_5",
+                  "<Super>KP_6", "<Super>KP_7", "<Super>KP_8", "<Super>KP_9", "<Super>KP_0",
+                  "<Super><Alt>KP_1", "<Super><Alt>KP_2", "<Super><Alt>KP_3", "<Super><Alt>KP_4", "<Super><Alt>KP_5",
+                  "<Super><Alt>KP_6", "<Super><Alt>KP_7", "<Super><Alt>KP_8", "<Super><Alt>KP_9", "<Super><Alt>KP_0"]
+
 
 def applet_button_press(widget, event, the_dock):
     """Button press event for the applet
-
-    Handle right button press events only
-
-    Find the app that was right clicked and make a record of it
-
-    Args:
-        widget : the widget that was clicked
-        event : the event args
-        the_dock : the Dock object
-    """
-
-    # we don't get click events for the right mouse button presumably
-    # because the panel hijacks them in order to produce the context menu
-    # However, we do get button press event for the right mouse button,
+ for the right mouse button,
     # so we can do what we need to do here ....
     if event.button == 3:
         # right click, so save the app that was clicked because
@@ -352,14 +361,74 @@ def applet_drag_drop(widget, context, x, y, time, the_dock):
             Stop the timer that monitors the mouse position
     """
 
-    Gtk.drag_finish(context, True, False, time)
-
-    the_dock.stop_drag_motion_timer()
-
     app = the_dock.get_dragee()
     if app is not None:
+        the_dock.stop_drag_motion_timer()
         app.set_dragee(False)
         app.queue_draw()
+        Gtk.drag_finish(context, True, False, time)
+    else:
+
+        # set the drag_dropped module level var so that the drag_data_received event knows
+        # the dnd needs to finish
+        global drag_dropped
+        drag_dropped = True
+
+        target = widget.drag_dest_find_target(context, None)
+        widget.drag_get_data(context, target, time)
+        return True
+
+
+def applet_drag_data_received(widget, drag_context, x, y, data, info, time, the_dock):
+    """ Called when data has been requested from an external source
+        during a drag drop operation
+
+    Examine the data - if it is a .desktop file and the app it relates to
+    is not already in the dock, add it. If the data isn't a .desktop file
+    and the app under the mouse cursor is running, activate it so that
+    the dragged data can be dropped there...
+
+    :param widget: the widget responsible for the event
+    :param drag_context: the dnd context
+    :param x: the x position of the mouse
+    :param y:  y the y position of the mouse
+    :param data: the dragged data
+    :param info:
+    :param time:  the time of the event
+    :param the_dock: the dock ....
+    """
+
+    # examine the data  -did we get any uris ?
+    uri_list = data.get_uris()
+    if (uri_list is not None) and (len(uri_list) > 0):
+        # when dragging .desktop files to the dock we only allow one to be added at
+        # a time. Therefore we're only interested in the first item in the list
+        uri = urlparse(uri_list[0])
+        if uri.scheme == "file":
+            # we're looking for a .desktop file
+            if (uri.path != "") and (os.path.split(uri.path)[1].endswith(".desktop")) and \
+               (os.path.exists(uri.path)):
+
+                # we've got a .desktop file, so if it has been dropped we may need
+                # to add it to the dock
+                global drag_dropped
+                if drag_dropped:
+                    # add the .desktop file to the dock if it is not already there,,,
+                    the_dock.add_app_to_dock(uri.path)
+
+                    # cancel the dnd
+                    Gtk.drag_finish(drag_context, True, False, time)
+                    drag_dropped = False
+                    return
+                else:
+                    # the dnd continues ....
+                    Gdk.drag_status(drag_context, Gdk.DragAction.COPY, time)
+                    return
+
+    # this is not a .desktop so we need to activate the app under the mouse
+    tgt_app = the_dock.get_app_under_mouse()
+    the_dock.start_da_timer(tgt_app)
+    Gdk.drag_status(drag_context, Gdk.DragAction.COPY, time)
 
 
 def applet_drag_end(widget, context, the_dock):
@@ -381,6 +450,76 @@ def applet_drag_end(widget, context, the_dock):
         app.queue_draw()
 
 
+def applet_drag_motion(widget, context, x, y, time, the_dock):
+    """ Handler for the drag-motion event
+
+    :param widget:  - the applet
+    :param context: - the dnd context
+    :param x:       - x coord of the mouse
+    :param y:       - y coord of the mouse
+    :param time:    - the time of the event
+    :param the_dock - the dock
+    :return:
+    """
+
+    # if the applet isn't dragging an app icon, we may need to examine
+    # the dragged data to see whay it contains....
+    app = the_dock.get_dragee()
+    if app is None:
+        # examine the dragged data so we can decide what to do...
+        tgts = context.list_targets()
+        for t in tgts:
+            if t.name() == "text/uri-list":
+                # if the data contains uris, we need to request the data to
+                # see if it contains a .desktop file
+                widget.drag_get_data(context, t, time)
+                return True
+
+        # if the dragged data is anything other than a uri, we just need to activate the app under
+        # the mouse...
+        tgt_app = the_dock.get_app_under_mouse()
+        the_dock.start_da_timer(tgt_app)
+        return True
+    else:
+        # continue the dnd...
+        Gdk.drag_status(context, Gdk.DragAction.COPY, time)
+
+    return True
+
+
+def applet_shortcut_handler(keystring, the_dock):
+    """ Handler for global keyboard shortcut presses
+
+    Start the app if it isn't already running
+
+    If it is already runnning cycle through its windows ...
+
+    :param keystring: the keystring which was pressed e.g. "<Super>4"
+    :param the_dock: the dock...
+    """
+    # get the position in the dock of the app we need to activate
+    if keystring in keyb_shortcuts:
+        app_no = keyb_shortcuts.index(keystring)
+    else:
+        # now look in the number pad shortcurts
+        print("looking in number pad shortcuts")
+        app_no = keyb_shortcuts1.index(keystring)
+
+    app = the_dock.get_app_by_pos(app_no)
+    if app is not None:
+        start_app = app.is_running() is False
+        if start_app:
+            app.start_app()
+        else:
+
+            # if the app only has a single window minimize or restore it
+            # otherwise scroll through all available windows
+            if app.get_num_windows() == 1:
+                the_dock.minimize_or_restore_windows(app, None)
+            else:
+                the_dock.do_window_scroll(Gdk.ScrollDirection.DOWN, 0, app)
+
+
 def applet_fill(applet):
     """
     Create the applet
@@ -396,6 +535,10 @@ def applet_fill(applet):
     """
 
     os.chdir(os.path.expanduser("~"))
+
+    # allow us to set our keyboard shortcuts...
+    Keybinder.init()
+
     applet.set_events(applet.get_events() | Gdk.EventMask.BUTTON_PRESS_MASK
                                           | Gdk.EventMask.BUTTON_RELEASE_MASK
                                           | Gdk.EventMask.POINTER_MOTION_MASK
@@ -421,22 +564,38 @@ def applet_fill(applet):
 
     if not build_gtk2:
         # set up drag and drop - gtk3 only
-        # NOTE: drag-motion events never seem to trigger on applets, which
-        # makes it difficult to tell where the mouse pointer is.....
+        # NOTE: we don't get drag-motion events when dragging app icons within the
+        # dock, making it difficult to tell where the mouse pointer is.....
         # To get around this, dock.py now contains a timer to monitor the
-        # mouse x.y during drag and drops, but if drag-motion events
-        # ever start working, the code from the dock.py timer can be moved
-        # to drag-motion event handler
-        applet.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, None,
-                               Gdk.DragAction.MOVE)
-        applet.drag_dest_set(Gtk.DestDefaults.ALL, [], Gdk.DragAction.MOVE)
+        # mouse x.y during these sorts of drag and drops.
+        # drag-motion events do fire when dropping from other apps (e.g. caja, the
+        # and the drag-motion event is used in these cases
 
+        # we allow .desktop files to be dropped on the applet, so....
+        drag_tgts = [Gtk.TargetEntry.new("text/uri-list", 0, 0)]
+        applet.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, drag_tgts,
+                               Gdk.DragAction.MOVE)
+
+        drag_tgts = [Gtk.TargetEntry.new("text/uri-list", 0, 0)]
+        applet.drag_dest_set(Gtk.DestDefaults.MOTION, None, Gdk.DragAction.COPY)
+        applet.drag_dest_add_image_targets()
         applet.drag_dest_add_text_targets()
-        applet.drag_source_add_text_targets()
+        applet.drag_dest_add_uri_targets()
+
         applet.connect_after("drag-begin", applet_drag_begin, the_dock)
         applet.connect("drag-data-get", applet_drag_data_get)
         applet.connect("drag-drop", applet_drag_drop, the_dock)
         applet.connect("drag-end", applet_drag_end, the_dock)
+        applet.connect("drag-motion", applet_drag_motion, the_dock)
+        applet.connect("drag-data-received", applet_drag_data_received, the_dock)
+
+    # set up keyboard shortcuts used to activate apps in the dock
+    for shortcut in keyb_shortcuts:
+        if not Keybinder.bind(shortcut, applet_shortcut_handler, the_dock):
+            log_it("could not bind shortcut %s" % shortcut)
+    for shortcut in keyb_shortcuts1:
+        if not Keybinder.bind(shortcut, applet_shortcut_handler, the_dock):
+            log_it("could not bind shortcut %s" % shortcut)
 
     applet.set_background_widget(applet)  # hack for panel transparency
 
