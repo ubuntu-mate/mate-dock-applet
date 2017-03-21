@@ -175,10 +175,10 @@ class DockActionList(DockPopup):
         fg_str = "#%.2x%.2x%.2x" % (r, g, b)
 
         # now set the treeview colours
-        self.__title_renderer.set_property("cell-background", self.__bg_str)
-        self.__title_renderer.set_property("foreground", self.__fg_str)
+        self.__title_renderer.set_property("cell-background", bg_str)
+        self.__title_renderer.set_property("foreground", fg_str)
 
-        self.__icon_renderer.set_property("cell-background", self.__bg_str)
+        self.__icon_renderer.set_property("cell-background", bg_str)
 
     def button_release(self, widget, event):
         """ Handler for the button release event
