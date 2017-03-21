@@ -1,3 +1,35 @@
+V0.77 Extended drag and support in Gtk3 version of the applet:
+            Apps can be added to the dock by dragging them off menu applets
+            (Main Menu, Menu Bar, Advanced Menu, Brisk Menu) and onto the
+            applet (Gtk3 only)
+            If data is dragged from an app onto another running app's icon
+            the new app will be made active, allowing the dragged data to
+            dropped onto it (Gtk3 only)
+
+       Added keyboard shortcuts to select and acticate apps in the dock:
+            <Super>1-0 for the first 10 apps in the dock
+            <Super><Alt>1-0 for apps 10-20 in the dock
+
+            For the 5th app, it would be necessary to hold down the Super key
+            (i.e. the Windows) key and press 5. For the 12th app, it would be necessary
+            to hold bown both the Super key and the Alt key and press 2.
+
+            The effect of these shortcuts is as follows:
+            If the app is not running, it will be started.
+            If the app is running and only has a single window open, the window will
+            cycled between minimised and activated states.
+            If the app is running and has multiple windows open, each keypress will
+            activate and display each window in turn.
+
+      Updated the About window to provide details of the new drag and drop and
+      keyboard shortcuut features.
+
+      Fixed a bug which prevented window and action lists from appearing
+
+      New dependencies - keybinder-0.0 (gir1.2-keybinder-0.0 (ubuntu) for gtk2)
+                         keybinder-3.0 (gir1.2-keybinder-3.0 (ubuntu) for gtk3)
+                         libkeybinder-3.0 (Arch)
+
 V0.76 Added support for startup notification when launching apps.
       Added new indicator type - a single solid bar. On Gtk3 this uses the active
       theme's highlight colour. This is not possible with Gtk2, therefore the
