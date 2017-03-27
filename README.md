@@ -43,13 +43,15 @@ An ebuild is available via the [mate-de-gentoo](https://github.com/oz123/mate-de
 
 ### Other distributions
 
-Users of other distros will need to install from source, so first install the required dependencies:
+Users of other distros will need to install from source, so first install the required dependencies. Note, the package names below are for Ubuntu/Linux Mint/Debian - the name of the packages will vary on other distros.
 
 * Python3
-* gir1.2-wnck-1.0
-* libglib2-dev
-* Python Imaging Library
-* Python 3 Cairo bindings
+* Python wnck bindings (gir1.2-wnck-1.0 for Gtk2 versions of the applet, gir1.2-wnck-3.0 for Gtk3)
+* Python bindings to the keybinder library (gir1.2-keybinder-0.0 for Gtk2, gir1.2-keybinder-3.0 for Gtk3)
+* GLib development files (libglib2.0-dev) 
+* Python Imaging Library (python3-pil)
+* Python 3 Cairo bindings (python3-cairo)
+
 
 then cd to the directory containing all of the development files and run:
 
