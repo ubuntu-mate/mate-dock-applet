@@ -48,7 +48,7 @@ import platform
 def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
               use_dock_win_list, win_from_cur_ws_only,
               panel_change_color, dock_panel_change_only, use_panel_act_list,
-              active_icon_bg, fallback_bar_col):
+              active_icon_bg, fallback_bar_col, spacing, attention_type):
     """ Write the xml file using the specified information
 
     The xml file will be in e.g. the following format:
@@ -98,6 +98,9 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
         fallback_bar_col:   a list of the rgb elements of a color to be used
                             for bar indicators when the theme highlight colour
                             cannot be read
+        spacing : the amount of spacing (0-8) between apps in the dock
+        attention_type : how a docked app notifies the user when an app requires
+                         attention
 
     Returns:
         Boolean - True if the file was written successfully, False otherwise
@@ -130,6 +133,9 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
         col_el = ET.Element("col", value="%s" % col)
         fbc_el.append(col_el)
 
+    spc_el = ET.Element("spacing", spc="%d" % spacing)
+    att_el = ET.Element("attention_type", type="%d" % attention_type)
+
     root.append(pa_el)
     root.append(ind_el)
     root.append(sa_el)
@@ -141,6 +147,8 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
     root.append(pal_el)
     root.append(abg_el)
     root.append(fbc_el)
+    root.append(spc_el)
+    root.append(att_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
@@ -172,6 +180,7 @@ def read_xml(filename):
             a boolean - the use panel action list setting
             an integer - the active icon background type
             a list of the r,g and b values (as strings) of the fallback bar indicator colour
+            an integer - the spacing between apps
     """
 
     try:
@@ -251,10 +260,23 @@ def read_xml(filename):
     else:
         fallback_bar_col = ["128", "128", "128"]
 
+    spc_el = root.find("spacing")
+    if spc_el is not None:
+        spacing = int(spc_el.get("spc"))
+    else:
+        spacing = 0
+
+    att_el = root.find("attention_type")
+    if att_el is not None:
+        attention_type = int(att_el.get("type"))
+    else:
+        attention_type = 0
+
     return [True, df_list, light_ind, show_all, multi_ind,
             use_win_list, win_from_cur_ws_only,
             panel_change_color, dock_panel_change_only,
-            use_panel_act_list, bg_type, fallback_bar_col]
+            use_panel_act_list, bg_type, fallback_bar_col,
+            spacing, attention_type]
 
 
 def read_app_xml(filename):
