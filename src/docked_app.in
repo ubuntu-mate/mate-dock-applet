@@ -69,6 +69,7 @@ from gi.repository import GLib
 import cairo
 import math
 import xdg.DesktopEntry as DesktopEntry
+import xdg.BaseDirectory as BaseDirectory
 import os
 import os.path
 import subprocess
@@ -77,9 +78,7 @@ import re
 from collections import namedtuple
 
 import dock_prefs
-from docked_app_helpers import DefaultBackgroundDrawer, AlphaFillBackgroundDrawer, DefaultLightInd,\
-     DefaultDarkInd, ThemeBarInd
-
+from docked_app_helpers import *
 
 from log_it import log_it as log_it
 
@@ -258,23 +257,25 @@ class PulseTimer(object):
 
         return True
 
-CONST_FLASH_DELAY = 330
+CONST_BLINK_DELAY = 330
 
 
-class FlashTimer(object):
+class AttentionTimer(object):
     """Class to help provide visual feedback when an app requries user attention.
 
-    Instantiates a timer which periodically causes the app's dock icon to flash
+    Instantiates a timer which periodically checks whether or not the app 
+    still needs attention. If the app is blinking, it toggles the 
+    blink state
     on and off until the app no longer needs attention
 
     Attributes:
-        app = the DockedApp object which we want to flashh
+        app = the DockedApp object that needs attentions
         timer_id = the id of the timer that is instantiated
 
     """
 
     def __init__(self, app):
-        """Init for the FlashTimer class.
+        """Init for the AttentionTimer class.
 
         Sets everything up by creating the timer, setting a reference to the
         DockedApp and setting the inital flash state to off
@@ -284,9 +285,9 @@ class FlashTimer(object):
         """
 
         self.app = app
-        self.app.is_flashing = True
-        self.app.flash_on = False
-        self.timer_id = GObject.timeout_add(CONST_FLASH_DELAY, self.do_timer)
+        self.app.needs_attention = True
+        self.app.attention_blink_on = False
+        self.timer_id = GObject.timeout_add(CONST_BLINK_DELAY, self.do_timer)
 
         # make the app redraw itself
         app.queue_draw()
@@ -300,8 +301,8 @@ class FlashTimer(object):
         Finally,Redraw the app's icon
         """
 
-        if self.app.is_flashing:
-            self.app.flash_on = not self.app.flash_on
+        if self.app.needs_attention:
+            self.app.attention_blink_on = not self.app.attention_blink_on
         else:
             GObject.source_remove(self.timer_id)
 
@@ -335,8 +336,9 @@ class DockedApp(object):
 
         drawing_area: Gtk.Label- provides a surface on which the app icon can
                               be drawn
-        drawing_area_size : the size in pixels (height AND width) that we have
-                            to draw in
+        drawing_area_size : the base size in pixels (height AND width) that we have
+                            to draw in - note that some indicators require more
+                            and must specify this...
         is_pulsing  : boolean - True if the app is pulsing
         pulse_step  : a count of how far we are through the pulse animation
         app_pb      : a pixbuf of the app's icon
@@ -362,6 +364,11 @@ class DockedApp(object):
         show_count   : boolean - indicates whether or not to display a
                         count value on the app's icon
         count_val   : the value of the count
+        needs_attention: whether or not the app needs the user's attention
+        attention_type : how the docked app indicates to the user that the app
+                         needs attention
+        attention_blink_on : when an app blinks when it needs attention, this specfies
+                             the state
     """
 
     def __init__(self):
@@ -404,8 +411,8 @@ class DockedApp(object):
         self.is_pulsing = False
         self.pulse_step = 0
 
-        self.is_flashing = False
-        self.flash_on = False
+        self.needs_attention = False
+        self.attention_blink_on = False
 
         self.app_pb = None
 
@@ -417,9 +424,11 @@ class DockedApp(object):
         self.is_pinned = False
 
         # set defaults
-        self.indicator = dock_prefs.IndicatorType.LIGHT     # light indicator
-        self.multi_ind = False                              # single indicator
-        self.active_bg = dock_prefs.ActiveBgType.GRADIENT
+        self.indicator = IndicatorType.LIGHT     # light indicator
+        self.multi_ind = False                   # single indicator
+        self.active_bg = ActiveBgType.GRADIENT
+
+        self.attention_type = dock_prefs.AttentionType.BLINK
 
         self.last_active_win = None
 
@@ -472,7 +481,13 @@ class DockedApp(object):
 #        if build_gtk2:
         self.wm_class_name = wnck_class.get_res_class()
 #        else:
-#            self.wm_class_namw = wnck_class.get_id()
+#            self.wm_class_name = wnck_class.get_id()
+
+        # get a list of all the possible locations of .desktop files
+        data_dirs = BaseDirectory.xdg_data_dirs
+        app_dirs = []
+        for dir in data_dirs:
+            app_dirs.append(os.path.join(dir, "applications/"))
 
         # get the currently open windows
         for win in wnck_app.get_windows():
@@ -495,30 +510,30 @@ class DockedApp(object):
         # list of hard to match apps
         # Note: this is not intended to be a permanent feature. Hopefully the
         # Gtk3 version of wnck will allow better app matching and if not, other
-        # window manageing libraries can be investigated
+        # window managing libraries can be investigated
         for app in app_match_list:
             if (wnck_app.get_name() == app[0]) or (win_class_name == app[1]):
-                desktop_file = "/usr/share/applications/%s.desktop" % app[2]
-                if os.path.exists(desktop_file):
-                    self.desktop_file = desktop_file
-                    return self.read_info_from_desktop_file()
 
-        # secondly, search for the required .desktop file
-        if not self.get_desktop_from_custom_launcher(os.path.expanduser("~/.local/share/applications/")):
-            if not self.get_desktop_from_app_info(os.path.expanduser("~/.local/share/applications/")):
-                if not self.brute_force_find_desktop_file(os.path.expanduser("~/.local/share/applications/")):
-                    if not self.get_desktop_from_app_info("/usr/share/applications/"):
-                        if not self.get_desktop_from_app_info("/usr/local/share/applications/"):
-                            if not self.brute_force_find_desktop_file("/usr/share/applications/"):
-                                if not self.brute_force_find_desktop_file("/usr/local/share/applications/"):
-                                    log_it("Unable to match app")
-                                    log_it("App name: %s" % wnck_app.get_name())
-                                    log_it("Wm class: %s" % win_class_name)
-                                    log_it("cmd line: %s" % self.cmd_line)
-                                    return False
+                for dir in app_dirs:
+                    desktop_file = os.path.join(dir, app[2])
+                    if os.path.exists(desktop_file):
+                        self.desktop_file = desktop_file
+                        return self.read_info_from_desktop_file()
 
-        # now that we have the .desktop file, we can get the icon etc
-        return self.read_info_from_desktop_file()
+        # secondly, search for custom launchers
+        if self.get_desktop_from_custom_launcher(os.path.expanduser("~/.local/share/applications/")):
+            return self.read_info_from_desktop_file()
+
+        # lastly, look through all of the possible locations of .desktop files
+        for dir in app_dirs:
+            if self.get_desktop_from_app_info(dir) or self.brute_force_find_desktop_file(dir):
+                return self.read_info_from_desktop_file()
+
+        log_it("Unable to match app")
+        log_it("App name: %s" % wnck_app.get_name())
+        log_it("Wm class: %s" % win_class_name)
+        log_it("cmd line: %s" % self.cmd_line)
+        return False
 
     def set_app_name(self, app_name):
         """sets the app name.
@@ -572,7 +587,7 @@ class DockedApp(object):
                 if ((win_type == Wnck.WindowType.NORMAL) or
                     (win_type == Wnck.WindowType.DIALOG)) and \
                     (win_wm_class_name.lower() == self.wm_class_name.lower()) \
-                    and (wnck_win.is_skip_tasklist() is False):
+                                                  and (wnck_win.is_skip_tasklist() is False):
                     num_win += 1
 
         return num_win
@@ -589,7 +604,7 @@ class DockedApp(object):
                 if ((win_type == Wnck.WindowType.NORMAL) or
                     (win_type == Wnck.WindowType.DIALOG)) and \
                     (win_wm_class_name.lower() == self.wm_class_name.lower()) and \
-                    (wnck_win.is_skip_tasklist() is False):
+                                                  (wnck_win.is_skip_tasklist() is False):
                     win_list.append(wnck_win)
 
         return win_list
@@ -875,7 +890,6 @@ class DockedApp(object):
         """
 
         # TODO: replace DesktopEntry with Gio.DesktopAppInfo... and then
-        # TODO: remove xdg.DesktopEntry from imports and list of dependecies
 
         # if the search dir doesn't exist, don't do anything
         if os.path.isdir(srch_dir) is False:
@@ -928,14 +942,22 @@ class DockedApp(object):
     def set_drawing_area_size(self, size):
         """Set the size request of the app's drawing area.
 
-        The drawing area is always presumeed to be square
-
         Args :
-            size : the size in pixels
+            size : the size in pixels we need, although extra can be applied if required by indicators
 
         """
         self.drawing_area_size = size
-        self.drawing_area.set_size_request(size, size)
+
+        extra_s = ind_extra_s(self.indicator)
+        if extra_s == 0:
+            self.drawing_area.set_size_request(size, size)
+        else:
+            # we need to allocate extra space in the x or y dimension depending on applet orientation
+            if (self.applet_orient == MatePanelApplet.AppletOrient.DOWN) or \
+               (self.applet_orient == MatePanelApplet.AppletOrient.UP):
+                self.drawing_area.set_size_request(size + extra_s, size)
+            else:
+                self.drawing_area.set_size_request(size, size + extra_s)
 
     def queue_draw(self):
         """Queue the app's icon to be redrawn.
@@ -950,7 +972,7 @@ class DockedApp(object):
         """
         self.indicator = indicator
 
-    def set_active_bg (self, active_bg):
+    def set_active_bg(self, active_bg):
         """Set the active background type to the value specified
 
         Args:
@@ -967,6 +989,14 @@ class DockedApp(object):
             multi_ind - boolean
         """
         self.multi_ind = multi_ind
+
+    def set_attention_type(self, attention_type):
+        """Set the attention type to the value specified
+
+        Args:
+            indicator - the indicator type
+        """
+        self.attention_type = attention_type
 
     def is_running(self):
         """Is the app running or not?
@@ -1059,18 +1089,18 @@ class DockedApp(object):
         if ((new_state & Wnck.WindowState.DEMANDS_ATTENTION) != 0) or\
            ((new_state & Wnck.WindowState.URGENT) != 0):
 
-            if not self.is_flashing:
-                self.is_flashing = True
-                self.flash_on = False  # initial flash state = off
-                flasher = FlashTimer(self)
+            if not self.needs_attention:
+                self.needs_attention = True
+                self.attention_blink_on = False  # initial blink state = off
+                timer = AttentionTimer(self)
 
                 if not self.is_visible():
                     self.show_icon()
 
         else:
-            if self.is_flashing:
+            if self.needs_attention:
                 # we need to turn flashing off
-                self.is_flashing = False
+                self.needs_attention = False
                 self.queue_draw()
 
                 # the timer will handle the rest ....
@@ -1104,9 +1134,16 @@ class DockedApp(object):
         # there are lots of drawing operations to be done, so do them to an
         # offscreen surface and when all is finished copy this to the docked
         # app
-        offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
-                                               self.drawing_area_size,
-                                               self.drawing_area_size)
+
+        if self.applet_orient == MatePanelApplet.AppletOrient.DOWN or \
+           self.applet_orient == MatePanelApplet.AppletOrient.UP:
+            oss_w = self.drawing_area_size + ind_extra_s(self.indicator)
+            oss_h = self.drawing_area_size
+        else:
+            oss_w = self.drawing_area_size
+            oss_h = self.drawing_area_size + ind_extra_s(self.indicator)
+
+        offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, oss_w, oss_h)
         ctx = cairo.Context(offscreen_surface)
 
         if self.is_active and (self.is_dragee is False):
@@ -1116,7 +1153,7 @@ class DockedApp(object):
             green = self.highlight_color.g / 255
             blue = self.highlight_color.b / 255
 
-            if self.active_bg == dock_prefs.ActiveBgType.GRADIENT:
+            if self.active_bg == ActiveBgType.GRADIENT:
                 dbgd = DefaultBackgroundDrawer(ctx, self.drawing_area_size,
                                                self.applet_orient, red, green, blue)
             else:
@@ -1140,8 +1177,8 @@ class DockedApp(object):
 
             ctx.paint_with_alpha(alpha)
 
-        elif self.is_flashing:
-            if self.flash_on:
+        elif self.needs_attention and self.attention_type == dock_prefs.AttentionType.BLINK:
+            if self.attention_blink_on:
                 ctx.paint()  # draw normally if in the flash on state
         elif self.is_dragee:
             ctx.paint_with_alpha(0.0)
@@ -1156,7 +1193,7 @@ class DockedApp(object):
 
         # draw the app running indicators
         if (self.is_running()) and \
-           (self.indicator != dock_prefs.IndicatorType.NONE) and \
+           (self.indicator != IndicatorType.NONE) and \
            (self.is_dragee is False):
 
             # work out how many indicators to draw - either a single one or
@@ -1166,20 +1203,20 @@ class DockedApp(object):
 
             if self.ind_ws is None:
                 # show indicators for windows from all workspaces
-                if self.multi_ind is False:
+                if self.multi_ind is False and self.indicator != IndicatorType.SUBWAY:
                     num_ind = 1
                 else:
                     num_ind = self.get_num_windows()
                     if num_ind > 4:
                         num_ind = 4
             else:
-                # get count the number of windows on the current workspace
+                # get the number of windows on the current workspace
                 num_ind = 0
                 for win in self.get_wnck_windows():
                     if win.is_on_workspace(self.ind_ws):
                         num_ind += 1
 
-                if self.multi_ind is False:
+                if self.multi_ind is False and self.indicator != IndicatorType.SUBWAY:
                     if num_ind > 1:
                         num_ind = 1
                 else:
@@ -1187,14 +1224,25 @@ class DockedApp(object):
                         num_ind = 4
 
             ind = None
-            if self.indicator == dock_prefs.IndicatorType.LIGHT:
+            if self.indicator == IndicatorType.LIGHT:
                 ind = DefaultLightInd(ctx, self.drawing_area_size,
                                       self.applet_orient, num_ind)
-            elif self.indicator == dock_prefs.IndicatorType.DARK:
+            elif self.indicator == IndicatorType.DARK:
                 ind = DefaultDarkInd(ctx, self.drawing_area_size,
-                                      self.applet_orient, num_ind)
-            elif self.indicator == dock_prefs.IndicatorType.TBAR:
+                                     self.applet_orient, num_ind)
+            elif self.indicator == IndicatorType.TBAR:
                 ind = ThemeBarInd(ctx, self.drawing_area_size, self.applet_orient, self.applet)
+            elif self.indicator == IndicatorType.TCIRC:
+                ind = ThemeCircleInd(ctx, self.drawing_area_size, self.applet_orient, self.applet, num_ind)
+            elif self.indicator == IndicatorType.TSQUARE:
+                ind = ThemeSquareInd(ctx, self.drawing_area_size, self.applet_orient, self.applet, num_ind)
+            elif self.indicator == IndicatorType.TTRI:
+                ind = ThemeTriInd(ctx, self.drawing_area_size, self.applet_orient, self.applet, num_ind)
+            elif self.indicator == IndicatorType.TDIA:
+                ind = ThemeDiaInd(ctx, self.drawing_area_size, self.applet_orient, self.applet, num_ind)
+            elif self.indicator == IndicatorType.SUBWAY:
+                ind = SubwayInd(ctx, self.drawing_area_size, self.applet_orient,
+                                self.applet, num_ind, offscreen_surface, self.is_active)
 
             if ind is not None:
                 ind.draw()
@@ -1205,6 +1253,9 @@ class DockedApp(object):
 
         if self.show_progress:
             self.draw_progress(ctx)
+
+        if self.needs_attention and self.attention_type == dock_prefs.AttentionType.SHOW_BADGE:
+            self.draw_attention_badge(ctx)
 
         # now draw to the screen
         if build_gtk2:
@@ -1396,6 +1447,90 @@ class DockedApp(object):
                           (width - line_width*2) * self.progress_val,
                           height-line_width*2, 2)
         ctx.fill()
+        ctx.restore()
+
+    def draw_attention_badge(self, ctx):
+        """ Draw a badge on the app icon to indicate the app requires
+            attention
+            
+        Basically a copy and paste of draw_count...
+
+        Args: ctx - the cairo context where the counter is to be drawn
+        """
+
+        # drawing is done at a notional size  64x64 px, and then scaled
+        # appropriately according to self.drawing_area_size
+
+        draw_size = 64.0
+
+        # height of the exaclamation mark = 2 pix border top and bottom + 16 pix
+        # internal height
+        height = 20
+
+        # work out the appropriate font size to use - has to fit within the
+        # borders and provide some space above and below the exclamation mark
+        reqd_font_height = height - 8
+
+        # find a font size where the count can be shown with the required height
+        ctx.select_font_face("", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+        ctext = "!"
+        for fsize in range(24, 2, -1):
+            ctx.set_font_size(fsize)
+            extents = ctx.text_extents(ctext)
+
+            if extents[3] < reqd_font_height:
+                font_size = fsize
+                break
+
+        # work out an appropriate width for the badge
+        inset = height / 2
+        radius = inset - 1
+        if int(extents[2] + extents[0]) > int(radius):
+            width = extents[2] + extents[0] + radius
+        else:
+            width = height
+            # width = height + inset
+
+        width = extents[2] + extents[0] + radius
+        ctx.save()
+
+        # the background color of the badge is the app's highlight colour
+        # convert the highlight values to their cairo equivalents
+        bred = self.highlight_color.r / 255
+        bgreen = self.highlight_color.g / 255
+        bblue = self.highlight_color.b / 255
+
+        # set an appropriate text and border color
+        if bred + bgreen + bblue > 1.5:  # mid-level grey
+            tred = tgreen = tblue = 0.0
+        else:
+            tred = tgreen = tblue = 1.0
+
+        # the badge is placed in the upper left of the drawing area
+        adj = 2
+        left = inset
+
+        # do the drawing - attribution for the drawing code:
+        # https://bazaar.launchpad.net/~unity-team/unity/trunk/view/head:/launcher/LauncherIcon.cpp
+        ctx.scale(self.drawing_area_size / draw_size,
+                  self.drawing_area_size / draw_size)
+
+        ctx.move_to(left, height - 1 + adj)
+        ctx.arc(left, inset + adj, radius, 0.5 * math.pi, 1.5 * math.pi)
+        ctx.arc(left + width - inset - adj, inset + adj, radius, 1.5 * math.pi, 0.5 * math.pi)
+        ctx.line_to(left, height - 1 + adj)
+        ctx.set_source_rgb(bred, bgreen, bblue)
+        ctx.fill_preserve()
+        ctx.set_source_rgb(tred, tgreen, tblue)
+        ctx.set_line_width(2)
+        ctx.stroke()
+
+        # draw the text
+        ctx.move_to(left + inset - (extents[0] + extents[2] / 2) - radius,
+                    (height / 2) + adj + extents[3] / 2)
+        ctx.set_source_rgb(tred, tgreen, tblue)
+        ctx.show_text(ctext)
+
         ctx.restore()
 
     def set_pixbuf(self, pixbuf):
