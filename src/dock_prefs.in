@@ -46,22 +46,14 @@ from gi.repository import GdkPixbuf
 
 from random import randint
 
-from docked_app_helpers import DefaultBackgroundDrawer, AlphaFillBackgroundDrawer, DefaultLightInd,\
-     DefaultDarkInd, ThemeBarInd
+from docked_app_helpers import *
 
 
-class IndicatorType:
-    """Class to define the indicator types"""
-    LIGHT = 0   # Light Circle
-    DARK = 1    # Dark Circle
-    NONE = 2
-    TBAR = 3    # Theme Bar
-
-
-class ActiveBgType:
-    """Class to define the active icon background types"""
-    GRADIENT = 0
-    ALPHAFILL = 1
+class AttentionType:
+    """Class to specify the ways in which docked apps can shoe that they need attention
+    """
+    BLINK = 0
+    SHOW_BADGE = 1
 
 
 def create_frame(caption):
@@ -177,40 +169,42 @@ class DockPrefsWindow(Gtk.Window):
         self.__rb_bar_ind = Gtk.RadioButton(group=self.__rb_light_ind,
                                             label="Single bar")
         self.__rb_no_ind = Gtk.RadioButton(group=self.__rb_light_ind,
-                                           label="None - don't use indicators")
+                                           label="None")
         self.__rb_no_ind.connect("toggled", self.rb_no_ind_toggled)
+        self.__rb_circ_ind = Gtk.RadioButton(group=self.__rb_light_ind,
+                                             label="Circle")
+        self.__rb_square_ind = Gtk.RadioButton(group=self.__rb_light_ind,
+                                               label="Square")
+        self.__rb_tri_ind = Gtk.RadioButton(group=self.__rb_light_ind,
+                                            label="Triangle")
+        self.__rb_dia_ind = Gtk.RadioButton(group=self.__rb_light_ind,
+                                            label="Diamond")
+        self.__rb_subway_ind = Gtk.RadioButton(group=self.__rb_light_ind,
+                                               label="Subway")
 
         # connect event handlers so that we can update the preview when settings
         # are changed
         self.__rb_light_ind.connect("toggled", self.setting_toggled)
         self.__rb_dark_ind.connect("toggled", self.setting_toggled)
         self.__rb_bar_ind.connect("toggled", self.rb_no_ind_toggled)
+        self.__rb_circ_ind.connect("toggled", self.setting_toggled)
+        self.__rb_square_ind.connect("toggled", self.setting_toggled)
+        self.__rb_tri_ind.connect("toggled", self.setting_toggled)
+        self.__rb_dia_ind.connect("toggled", self.setting_toggled)
+        self.__rb_subway_ind.connect("toggled", self.setting_toggled)
 
         self.__frame_preview = create_frame("Preview")
         self.__frame_preview.set_shadow_type(Gtk.ShadowType.NONE)
         self.__hbox_preview = self.create_hbox
         self.__hbox_preview.set_spacing(0)
 
-        self.__da_pad1 = Gtk.DrawingArea()
-        self.__da_pad1.set_size_request(self.PREVIEW_SIZE, self.PREVIEW_SIZE)
-        self.__da_pad2 = Gtk.DrawingArea()
-        self.__da_pad2.set_size_request(self.PREVIEW_SIZE, self.PREVIEW_SIZE)
-        if build_gtk2:
-            self.__da_pad1.connect("expose-event", self.draw_da_pad)
-            self.__da_pad2.connect("expose-event", self.draw_da_pad)
-        else:
-            self.__da_pad1.connect("draw", self.draw_da_pad)
-            self.__da_pad2.connect("draw", self.draw_da_pad)
-
         self.__da_preview = Gtk.DrawingArea()
-        self.__da_preview.set_size_request(self.PREVIEW_SIZE, self.PREVIEW_SIZE)
+        self.__da_preview.set_size_request(self.PREVIEW_SIZE * 3, self.PREVIEW_SIZE)
 
         self.__frame_preview_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                                    xscale=1.0, yscale=1.0)
         self.__frame_preview_align.set_padding(0, 0, 12, 0)
-        self.__hbox_preview.pack_start(self.__da_pad1, False, False, 0)
         self.__hbox_preview.pack_start(self.__da_preview, False, False, 0)
-        self.__hbox_preview.pack_start(self.__da_pad2, False, False, 0)
         self.__frame_preview_align.add(self.__hbox_preview)
         self.__vbox_preview = self.create_vbox
         self.__vbox.set_spacing(2)
@@ -228,17 +222,72 @@ class DockPrefsWindow(Gtk.Window):
         self.__cb_multi_ind.set_tooltip_text("Display an indicator (max 4) for each open window")
         self.__cb_multi_ind.connect("toggled", self.setting_toggled)
 
-        self.__vbox_ind_type = self.create_vbox
-        self.__vbox_ind_type.set_spacing(2)
-        self.__vbox_ind_type.add(self.__rb_light_ind)
-        self.__vbox_ind_type.add(self.__rb_dark_ind)
-        self.__vbox_ind_type.add(self.__rb_bar_ind)
-        self.__vbox_ind_type.add(self.__rb_no_ind)
+        if build_gtk2:
+            self.__tbl_ind_type = Gtk.Table(rows=5, columns=2,
+                                            homogeneous=False)
+            self.__tbl_ind_type.attach(self.__rb_light_ind,
+                                       0, 1, 0, 1,
+                                       Gtk.AttachOptions.FILL,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__tbl_ind_type.attach(self.__rb_dark_ind,
+                                       0, 1, 1, 2,
+                                       Gtk.AttachOptions.FILL,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__tbl_ind_type.attach(self.__rb_bar_ind,
+                                       0, 1, 2, 3,
+                                       Gtk.AttachOptions.FILL,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__tbl_ind_type.attach(self.__rb_circ_ind,
+                                       0, 1, 3, 4,
+                                       Gtk.AttachOptions.FILL,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__tbl_ind_type.attach(self.__rb_square_ind,
+                                       0, 1, 4, 5,
+                                       Gtk.AttachOptions.FILL,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__tbl_ind_type.attach(self.__rb_tri_ind,
+                                       1, 2, 0, 1,
+                                       Gtk.AttachOptions.FILL,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__tbl_ind_type.attach(self.__rb_dia_ind,
+                                       1, 2, 1, 2,
+                                       Gtk.AttachOptions.FILL,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__tbl_ind_type.attach(self.__rb_subway_ind,
+                                       1, 2, 2, 3,
+                                       Gtk.AttachOptions.FILL,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+            self.__tbl_ind_type.attach(self.__rb_no_ind,
+                                       1, 2, 3, 4,
+                                       Gtk.AttachOptions.FILL,
+                                       Gtk.AttachOptions.SHRINK,
+                                       2, 2)
+        else:
+            self.__tbl_ind_type = Gtk.Grid()
+            self.__tbl_ind_type.set_row_spacing(2)
+            self.__tbl_ind_type.set_column_spacing(2)
+            self.__tbl_ind_type.attach(self.__rb_light_ind, 0, 0, 1, 1)
+            self.__tbl_ind_type.attach(self.__rb_dark_ind, 0, 1, 1, 1)
+            self.__tbl_ind_type.attach(self.__rb_bar_ind, 0, 2, 1, 1)
+            self.__tbl_ind_type.attach(self.__rb_circ_ind, 0, 3, 1, 1)
+            self.__tbl_ind_type.attach(self.__rb_square_ind, 0, 4, 1, 1)
+            self.__tbl_ind_type.attach(self.__rb_tri_ind, 1, 0, 1, 1)
+            self.__tbl_ind_type.attach(self.__rb_dia_ind, 1, 1, 1, 1)
+            self.__tbl_ind_type.attach(self.__rb_subway_ind, 1, 2, 1, 1)
+            self.__tbl_ind_type.attach(self.__rb_no_ind, 1, 3, 1, 1)
 
         self.__frame_ind_type_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                                     xscale=1.0, yscale=1.0)
         self.__frame_ind_type_align.set_padding(0, 0, 12, 0)
-        self.__frame_ind_type_align.add(self.__vbox_ind_type)
+        self.__frame_ind_type_align.add(self.__tbl_ind_type)
         self.__frame_ind_type.add(self.__frame_ind_type_align)
 
         self.__frame_bg = create_frame("Active icon background")
@@ -274,6 +323,7 @@ class DockPrefsWindow(Gtk.Window):
                                          Gtk.AttachOptions.FILL,
                                          Gtk.AttachOptions.SHRINK,
                                          2, 2)
+
         else:
             self.__appearance_tbl.attach(self.__frame_preview, 0, 0, 1, 1)
             self.__appearance_tbl.attach(self.__frame_ind_type, 0, 1, 1, 1)
@@ -348,13 +398,31 @@ class DockPrefsWindow(Gtk.Window):
         self.__win_sel_vbox.pack_start(self.__frame_win_sel, False,
                                        False, 4)
 
+        self.__frame_spc = create_frame("App spacing")
+        if build_gtk2:
+            self.__sb_spc = Gtk.SpinButton()
+            self.__sb_spc.set_adjustment(Gtk.Adjustment(0, 0, 7, 1, 4))
+        else:
+            self.__sb_spc = Gtk.SpinButton.new_with_range(0, 7, 1)
+
+        self.__sb_spc.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
+        self.__sb_spc.set_numeric(True)
+        self.__sb_spc.set_max_length(1)
+        self.__sb_spc.set_snap_to_ticks(True)
+
+        self.__frame_spc_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                               xscale=1.0, yscale=1.0)
+        self.__frame_spc_align.set_padding(0, 0, 12, 300)
+        self.__frame_spc_align.add(self.__sb_spc)
+        self.__frame_spc.add(self.__frame_spc_align)
+
         self.__frame_color_change = create_frame("Panel colour")
         self.__cb_panel_color_change = Gtk.CheckButton(label="Change panel colour to match wallpaper")
         self.__cb_panel_color_change.connect("toggled", self.color_change_toggled)
         self.__cb_dock_panel_only = Gtk.CheckButton(label="Change colour of dock's panel only")
 
         if build_gtk2:
-            self.__table_color_change = Gtk.Table(rows=2, columns=1,
+            self.__table_color_change = Gtk.Table(rows=3, columns=1,
                                                   homogeneous=False)
             self.__table_color_change.attach(self.__cb_panel_color_change,
                                              0, 1, 0, 1,
@@ -389,6 +457,7 @@ class DockPrefsWindow(Gtk.Window):
 
         self.__panel_vbox = self.create_vbox
         self.__panel_vbox.set_spacing(2)
+        self.__panel_vbox.pack_start(self.__frame_spc, False, False, 4)
         self.__panel_vbox.pack_start(self.__frame_color_change,
                                      False, False, 4)
         self.__panel_vbox.pack_start(self.__cb_pan_act,
@@ -409,13 +478,52 @@ class DockPrefsWindow(Gtk.Window):
         self.__fb_bar_col_vbox.pack_start(self.__fb_bar_col_hbox, False, False, 2)
         self.__frame_fb_bar_col.add(self.__fb_bar_col_vbox)
 
+        self.__frame_attention_type = create_frame("Action when apps need attention")
+        self.__rb_attention_blink = Gtk.RadioButton(label="Blink the app icon")
+        self.__rb_attention_badge = Gtk.RadioButton(label="Show a badge on the app icon",
+                                                    group=self.__rb_attention_blink)
+
+        if build_gtk2:
+            self.__table_attention_type = Gtk.Table(rows=2, columns=1,
+                                                    homogeneous=False)
+            self.__table_attention_type.attach(self.__rb_attention_blink,
+                                               0, 1, 0, 1,
+                                               Gtk.AttachOptions.FILL,
+                                               Gtk.AttachOptions.SHRINK,
+                                               2, 2)
+            self.__table_attention_type.attach(self.__rb_attention_badge,
+                                               0, 1, 1, 2,
+                                               Gtk.AttachOptions.FILL,
+                                               Gtk.AttachOptions.SHRINK,
+                                               2, 2)
+
+        else:
+            self.__table_attention_type = Gtk.Grid()
+            self.__table_attention_type.set_row_spacing(2)
+            self.__table_attention_type.set_column_spacing(2)
+
+            self.__table_attention_type.attach(self.__rb_attention_blink,
+                                               0, 0, 1, 1)
+            self.__table_attention_type.attach(self.__rb_attention_badge,
+                                               0, 1, 1, 1)
+
+        self.__frame_attention_type_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                          xscale=1.0, yscale=1.0)
+        self.__frame_attention_type_align.set_padding(0, 0, 12, 0)
+        self.__frame_attention_type_align.add(self.__table_attention_type)
+        self.__frame_attention_type.add(self.__frame_attention_type_align)
+        self.__misc_vbox = self.create_vbox
+        self.__misc_vbox.set_spacing(2)
+        self.__misc_vbox.pack_start(self.__frame_fb_bar_col, False, False, 4)
+        self.__misc_vbox.pack_start(self.__frame_attention_type, False, False, 4)
+
         self.__vbox.pack_start(self.__notebook, True, True, 4)
         self.__notebook.append_page(self.__appearance_tbl, Gtk.Label("Appearance"))
         self.__notebook.append_page(self.__ws_vbox, Gtk.Label("Workspaces"))
         self.__notebook.append_page(self.__win_sel_vbox, Gtk.Label("Windows"))
         self.__notebook.append_page(self.__panel_vbox,
                                     Gtk.Label("Panel Options"))
-        self.__notebook.append_page(self.__frame_fb_bar_col, Gtk.Label("Misc"))
+        self.__notebook.append_page(self.__misc_vbox, Gtk.Label("Misc"))
 
         self.__vbox.pack_start(Gtk.HSeparator(), True, True, 4)
         self.__vbox.pack_start(self.__hbbx, False, False, 0)
@@ -479,29 +587,6 @@ class DockPrefsWindow(Gtk.Window):
 
         self.hide()
 
-    def draw_da_pad(self, drawing_area, event):
-        """
-            Draw a light or dark background on a drawing area adjacent to the
-            preview, to simulate the look of a panel
-
-         Args:
-
-            drawing_area : our drawing area that caused the event
-            event        : the event parameters
-        """
-
-        if build_gtk2:
-            ctx = drawing_area.window.cairo_create()
-        else:
-            ctx = event
-
-        if self.__rb_dark_ind.get_active():
-            ctx.set_source_rgb(0.75, 0.75, 0.75)
-        else:
-            ctx.set_source_rgb(0.25, 0.25, 0.25)
-        ctx.rectangle(0, 0, self.PREVIEW_SIZE, self.PREVIEW_SIZE)
-        ctx.fill()
-
     def draw_preview(self, drawing_area, event):
         """Draw a preview of the current appearance settings
 
@@ -517,18 +602,22 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         if build_gtk2:
-            ctx = self.__da_preview.window.cairo_create()
+            tgt_ctx = self.__da_preview.window.cairo_create()
         else:
-            ctx = event
+            tgt_ctx = event
 
         # if a dark indicator is set, we draw a light background, otherwise a
         # dark background
         if self.__rb_dark_ind.get_active():
-            ctx.set_source_rgb(0.75, 0.75, 0.75)
+            tgt_ctx.set_source_rgb(0.85, 0.85, 0.85)
         else:
-            ctx.set_source_rgb(0.25, 0.25, 0.25)
-        ctx.rectangle(0, 0, self.PREVIEW_SIZE, self.PREVIEW_SIZE)
-        ctx.fill()
+            tgt_ctx.set_source_rgb(0.15, 0.21, 0.15)
+        tgt_ctx.rectangle(0, 0, self.PREVIEW_SIZE * 3, self.PREVIEW_SIZE)
+        tgt_ctx.fill()
+
+        app_size = self.PREVIEW_SIZE + ind_extra_s(self.get_indicator_type())
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, app_size, self.PREVIEW_SIZE)
+        ctx = cairo.Context(surface)
 
         # draw the app icon
         Gdk.cairo_set_source_pixbuf(ctx, self.__app_pb, 3, 3)
@@ -563,11 +652,47 @@ class DockPrefsWindow(Gtk.Window):
             elif self.__rb_dark_ind.get_active():
                 ind = DefaultDarkInd(ctx, self.PREVIEW_SIZE,
                                      MatePanelApplet.AppletOrient.UP, num_ind)
-            else:
+            elif self.__rb_bar_ind.get_active():
                 ind = ThemeBarInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
                                   self.__app.applet)
+            elif self.__rb_circ_ind.get_active():
+                ind = ThemeCircleInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
+                                     self.__app.applet, num_ind)
+            elif self.__rb_square_ind.get_active():
+                ind = ThemeSquareInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
+                                     self.__app.applet, num_ind)
+            elif self.__rb_tri_ind.get_active():
+                ind = ThemeTriInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
+                                  self.__app.applet, num_ind)
+            elif self.__rb_dia_ind.get_active():
+                ind = ThemeDiaInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
+                                  self.__app.applet, num_ind)
+            elif self.__rb_subway_ind.get_active():
+                active = bool(randint(0, 1))
+                ind = SubwayInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
+                                self.__app.applet, num_ind, surface, active)
+            else:
+                ind = None
 
-            ind.draw()
+            if ind is not None:
+                ind.draw()
+
+            # now draw to the screen
+            if build_gtk2:
+                tgt_ctx = drawing_area.window.cairo_create()
+                tgt_ctx.rectangle(event.area.x, event.area.y,
+                                  event.area.width, event.area.height)
+                tgt_ctx.clip()
+
+                tgt_ctx.set_source_surface(surface, self.PREVIEW_SIZE, 0)
+
+                tgt_ctx.paint()
+                tgt_ctx = None
+            else:
+                tgt_ctx.set_source_surface(surface, self.PREVIEW_SIZE, 0)
+                tgt_ctx.paint()
+
+            ctx = None
 
     def color_change_toggled(self, widget):
         """Handler for the panel color change checkbox toggled event
@@ -585,10 +710,7 @@ class DockPrefsWindow(Gtk.Window):
         Args:
             widget: the widget the caused the event
         """
-
-        self.__da_pad1.queue_draw()
         self.__da_preview.queue_draw()
-        self.__da_pad2.queue_draw()
 
     def rb_no_ind_toggled(self, widget):
         """ Handler for the no indicator radio button toggled event, also
@@ -616,6 +738,16 @@ class DockPrefsWindow(Gtk.Window):
             return IndicatorType.DARK
         elif self.__rb_bar_ind.get_active():
             return IndicatorType.TBAR
+        elif self.__rb_circ_ind.get_active():
+            return IndicatorType.TCIRC
+        elif self.__rb_square_ind.get_active():
+            return IndicatorType.TSQUARE
+        elif self.__rb_tri_ind.get_active():
+            return IndicatorType.TTRI
+        elif self.__rb_dia_ind.get_active():
+            return IndicatorType.TDIA
+        elif self.__rb_subway_ind.get_active():
+            return IndicatorType.SUBWAY
         else:
             return IndicatorType.NONE
 
@@ -631,6 +763,16 @@ class DockPrefsWindow(Gtk.Window):
             self.__rb_dark_ind.set_active(True)
         elif indicator == IndicatorType.TBAR:
             self.__rb_bar_ind.set_active(True)
+        elif indicator == IndicatorType.TCIRC:
+            self.__rb_circ_ind.set_active(True)
+        elif indicator == IndicatorType.TSQUARE:
+            self.__rb_square_ind.set_active(True)
+        elif indicator == IndicatorType.TTRI:
+            self.__rb_tri_ind.set_active(True)
+        elif indicator == IndicatorType.TDIA:
+            self.__rb_dia_ind.set_active(True)
+        elif indicator == IndicatorType.SUBWAY:
+            self.__rb_subway_ind.set_active(True)
         else:
             self.__rb_no_ind.set_active(True)
 
@@ -810,7 +952,7 @@ class DockPrefsWindow(Gtk.Window):
         """
             Set the colour of the fallback bar indicator colour button
 
-        Arga:
+        Args:
             colrgb : a list containing the r,g and b colour components(0-255) as strings
         """
 
@@ -840,6 +982,46 @@ class DockPrefsWindow(Gtk.Window):
             cbrgba = self.__cbtn_fb_bar_col.get_rgba().to_color()
 
         return ["%s" % int(cbrgba.red / 256), "%s" % int(cbrgba.green / 256), "%s" % int(cbrgba.blue / 256)]
+
+    def set_app_spacing(self, spacing):
+        """ Set the amount of space between icons in the dock
+        """
+
+        self.__sb_spc.set_value(spacing)
+    
+    def get_app_spacing(self):
+        """
+            Get the amount of space between icons in the dock
+            
+        :return: int
+         
+        """
+
+        self.__sb_spc.update()
+        return self.__sb_spc.get_value()
+
+    def set_attention_type(self, attention_type):
+        """ Set the attention type
+        
+        Args : attention_type: An AttentionType e.g. AttentionType.BLINK
+        """
+        if attention_type == AttentionType.BLINK:
+            self.__rb_attention_blink.set_active(True)
+        else:
+            self.__rb_attention_badge.set_active(True)
+
+    def get_attention_type(self):
+        """
+            Get the attention type
+            
+        Returns: An AttentionType
+                    
+        """
+
+        if self.__rb_attention_blink.get_active():
+            return AttentionType.BLINK
+        else:
+            return AttentionType.SHOW_BADGE
 
 
 def main():
