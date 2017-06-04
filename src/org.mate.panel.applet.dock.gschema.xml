@@ -63,8 +63,18 @@
     </key>
     <key type="as" name="fallback-bar-col">
       <default>["128","128","128"]</default>
-      <summary>The rgb elements of the fallback bar indicator</summary>
-      <description>A colour to be when drawing bar indicators and the highlight colour of the current theme cannot be determind. Mainly intended for use with Gtk2.</description>
+      <summary>The rgb elements of the fallback color of bar and other types of indicators</summary>
+      <description>A colour to be when drawing bar and other types of indicators and the highlight colour of the current theme cannot be determind. Mainly intended for use with Gtk2.</description>
+    </key>
+    <key type="i" name="app-spacing">
+      <default>0</default>
+      <summary>The amount of space between app icons in the dock</summary>
+      <description>The amount of space between app icons in the dock - valid values 0 - 8</description>
+    </key>
+    <key type="i" name="attention-type">
+      <default>0</default>
+      <summary>Defines how a dock icon reacts when an app requires attention</summary>
+      <description>Defines how a dock icon reacts when an app requires attention e.g. blink</description>
     </key>
    </schema>
 </schemalist>
