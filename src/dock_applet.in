@@ -40,24 +40,25 @@ import gi
 if build_gtk2:
     gi.require_version("Gtk", "2.0")
     gi.require_version("Wnck", "1.0")
-    gi.require_version("Keybinder", "0.0")
 else:
     gi.require_version("Gtk", "3.0")
     gi.require_version("Wnck", "3.0")
-    gi.require_version("Keybinder", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
 
 import os
 import sys
+import threading
 sys.path.insert(1, '@pythondir@')
 
+from Xlib.display import Display
+from Xlib import X, error
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk
-from gi.repository import Keybinder
 from gi.repository import Gio
 from gi.repository import GObject
+from gi.repository import GLib
 from gi.repository import Wnck
 
 import xdg.DesktopEntry as DesktopEntry
@@ -78,13 +79,6 @@ keyb_shortcuts = ["<Super>1", "<Super>2", "<Super>3", "<Super>4", "<Super>5",
                   "<Super>6", "<Super>7", "<Super>8", "<Super>9", "<Super>0",
                   "<Super><Alt>1", "<Super><Alt>2", "<Super><Alt>3", "<Super><Alt>4", "<Super><Alt>5",
                   "<Super><Alt>6", "<Super><Alt>7", "<Super><Alt>8", "<Super><Alt>9", "<Super><Alt>0"]
-
-# additional shortcuts for the number pad - definitely don't work on my UK keyboards but included
-# anyway in case they work for other layouts
-keyb_shortcuts1 = ["<Super>KP_1", "<Super>KP_2", "<Super>KP_3", "<Super>KP_4", "<Super>KP_5",
-                  "<Super>KP_6", "<Super>KP_7", "<Super>KP_8", "<Super>KP_9", "<Super>KP_0",
-                  "<Super><Alt>KP_1", "<Super><Alt>KP_2", "<Super><Alt>KP_3", "<Super><Alt>KP_4", "<Super><Alt>KP_5",
-                  "<Super><Alt>KP_6", "<Super><Alt>KP_7", "<Super><Alt>KP_8", "<Super><Alt>KP_9", "<Super><Alt>KP_0"]
 
 
 def applet_button_press(widget, event, the_dock):
@@ -500,23 +494,19 @@ def applet_drag_motion(widget, context, x, y, time, the_dock):
     return True
 
 
-def applet_shortcut_handler(keystring, the_dock):
+def applet_shortcut_handler(keybinder, the_dock):
     """ Handler for global keyboard shortcut presses
 
     Start the app if it isn't already running
 
     If it is already runnning cycle through its windows ...
 
-    :param keystring: the keystring which was pressed e.g. "<Super>4"
+    :param keybinder: the keybinder object with the keystring which was pressed e.g. "<Super>4"
     :param the_dock: the dock...
     """
     # get the position in the dock of the app we need to activate
-    if keystring in keyb_shortcuts:
-        app_no = keyb_shortcuts.index(keystring)
-    else:
-        # now look in the number pad shortcurts
-        print("looking in number pad shortcuts")
-        app_no = keyb_shortcuts1.index(keystring)
+    if keybinder.current_shortcut in keybinder.shortcuts:
+        app_no = keybinder.shortcuts.index(keybinder.current_shortcut)
 
     app = the_dock.get_app_by_pos(app_no)
     if app is not None:
@@ -548,9 +538,6 @@ def applet_fill(applet):
     """
 
     os.chdir(os.path.expanduser("~"))
-
-    # allow us to set our keyboard shortcuts...
-    Keybinder.init()
 
     applet.set_events(applet.get_events() | Gdk.EventMask.BUTTON_PRESS_MASK
                                           | Gdk.EventMask.BUTTON_RELEASE_MASK
@@ -603,15 +590,13 @@ def applet_fill(applet):
         applet.connect("drag-data-received", applet_drag_data_received, the_dock)
 
     # set up keyboard shortcuts used to activate apps in the dock
+    keybinder = GlobalKeyBinding()
     for shortcut in keyb_shortcuts:
-        if not Keybinder.bind(shortcut, applet_shortcut_handler, the_dock):
-            log_it("could not bind shortcut %s" % shortcut)
-    for shortcut in keyb_shortcuts1:
-        if not Keybinder.bind(shortcut, applet_shortcut_handler, the_dock):
-            log_it("could not bind shortcut %s" % shortcut)
+        keybinder.grab(shortcut)
+    keybinder.connect("activate", applet_shortcut_handler, the_dock)
+    keybinder.start()
 
     applet.set_background_widget(applet)  # hack for panel transparency
-
 
 def applet_factory(applet, iid, data):
     """Factory routine called when an applet needs to be created
@@ -632,6 +617,95 @@ def applet_factory(applet, iid, data):
     applet_fill(applet)
 
     return True
+
+
+class GlobalKeyBinding(GObject.GObject, threading.Thread):
+    __gsignals__ = {
+        'activate': (GObject.SignalFlags.RUN_LAST, None, ()),
+    }
+
+    def __init__(self):
+        GObject.GObject.__init__(self)
+        threading.Thread.__init__(self)
+        self.setDaemon(True)
+
+        self.display = Display()
+        self.screen = self.display.screen()
+        self.window = self.screen.root
+        self.keymap = Gdk.Keymap().get_default()
+        self.ignored_masks = self.get_mask_combinations(X.LockMask | X.Mod2Mask | X.Mod5Mask)
+        self.map_modifiers()
+        self.shortcuts = []
+
+    def get_mask_combinations(self, mask):
+        return [x for x in range(mask+1) if not (x & ~mask)]
+
+    def map_modifiers(self):
+        gdk_modifiers = (Gdk.ModifierType.CONTROL_MASK, Gdk.ModifierType.SHIFT_MASK, Gdk.ModifierType.MOD1_MASK,
+                         Gdk.ModifierType.MOD2_MASK, Gdk.ModifierType.MOD3_MASK, Gdk.ModifierType.MOD4_MASK, Gdk.ModifierType.MOD5_MASK,
+                         Gdk.ModifierType.SUPER_MASK, Gdk.ModifierType.HYPER_MASK)
+        self.known_modifiers_mask = 0
+        for modifier in gdk_modifiers:
+            if "Mod" not in Gtk.accelerator_name(0, modifier) or "Mod4" in Gtk.accelerator_name(0, modifier):
+                self.known_modifiers_mask |= modifier
+
+    def idle(self):
+        self.emit("activate")
+        return False
+
+    def activate(self):
+        GLib.idle_add(self.run)
+
+    def grab(self, shortcut):
+        keycode = None
+        accelerator = shortcut.replace("<Super>", "<Mod4>")
+        keyval, modifiers = Gtk.accelerator_parse(accelerator)
+
+        try:
+            keycode = self.keymap.get_entries_for_keyval(keyval).keys[0].keycode
+        except AttributeError:
+            # In older Gtk3 the get_entries_for_keyval() returns an unnamed tuple...
+            keycode = self.keymap.get_entries_for_keyval(keyval)[1][0].keycode
+        modifiers = int(modifiers)
+        self.shortcuts.append([keycode, modifiers])
+
+        # Request to receive key press/release reports from other windows that may not be using modifiers
+        catch = error.CatchError(error.BadWindow)
+        self.window.change_attributes(onerror=catch, event_mask = X.KeyPressMask)
+        if catch.get_error():
+            return False
+
+        catch = error.CatchError(error.BadAccess)
+        for ignored_mask in self.ignored_masks:
+            mod = modifiers | ignored_mask
+            result = self.window.grab_key(keycode, mod, True, X.GrabModeAsync, X.GrabModeAsync, onerror=catch)
+        self.display.flush()
+        if catch.get_error():
+            return False
+        return True
+
+    def run(self):
+        self.running = True
+        while self.running:
+            event = self.display.next_event()
+            modifiers = event.state & self.known_modifiers_mask
+            self.current_shortcut = None
+            if event.type == X.KeyPress and [event.detail, modifiers] in self.shortcuts:
+                # Track this shortcut to know which app to activate
+                self.current_shortcut = [event.detail, modifiers]
+                GLib.idle_add(self.idle)
+                self.display.allow_events(X.AsyncKeyboard, event.time)
+            else:
+                self.display.allow_events(X.ReplayKeyboard, event.time)
+
+    def stop(self):
+        self.running = False
+        self.ungrab()
+        self.display.close()
+
+    def ungrab(self):
+        for shortcut in self.shortcuts:
+            self.window.ungrab_key(shortcut[0], X.AnyModifier, self.window)
 
 
 MatePanelApplet.Applet.factory_main("DockAppletFactory", True,
