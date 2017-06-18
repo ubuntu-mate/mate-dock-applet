@@ -47,7 +47,7 @@ Users of other distros will need to install from source, so first install the re
 
 * Python3
 * Python wnck bindings (gir1.2-wnck-1.0 for Gtk2 versions of the applet, gir1.2-wnck-3.0 for Gtk3)
-* Python bindings to the keybinder library (gir1.2-keybinder-0.0 for Gtk2, gir1.2-keybinder-3.0 for Gtk3)
+* Python implementation of Xlib (python-xlib)
 * GLib development files (libglib2.0-dev) 
 * Python Imaging Library (python3-pil)
 * Python 3 Cairo bindings (python3-cairo)
