@@ -1,4 +1,4 @@
-AC_INIT([Dock Applet], [0.78])
+AC_INIT([Dock Applet], [0.79])
 
 AM_INIT_AUTOMAKE
 AM_PATH_PYTHON([3.0])

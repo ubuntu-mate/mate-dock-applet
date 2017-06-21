@@ -1,3 +1,18 @@
+V0.79 The applet no longer swallows <Super> key presses. This means it now works happily
+      alongside other apps that also use the <Super> key, e.g. the Brisk menu, the Advanced
+      Mate Menu or Albert.
+
+      Fixed crashes relating to Pango when window list and action_list contents needed
+      to be ellipsized.
+
+V0.78 Added five new types of indicators
+
+      Added a new option to specify the amount of space between icons in the dock
+
+      Added a new option to specify how a dock icon reacts when an app requires
+      attention. The icon can now either flash (the default) or display an
+      exclamation mark over the icon.
+
 V0.77 Extended drag and support in Gtk3 version of the applet:
             Apps can be added to the dock by dragging them off menu applets
             (Main Menu, Menu Bar, Advanced Menu, Brisk Menu) and onto the
