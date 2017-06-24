@@ -85,50 +85,6 @@ from log_it import log_it as log_it
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
 AppInfoTup = namedtuple('AppInfoTup', ['app', 'pid', 'windows'])
 
-
-def im_get_comp_color(filename):
-    """Find the complimentary colour of the average colour of an image.
-
-    Uses ImageMagick to read and process the image
-
-    Args:
-        filename : the filename of the image
-
-    Returns:
-        a tuple of r,g,b values (0-255)
-
-    """
-
-    cmdstr = "convert " + filename + " -colors 16 -depth 8 -format ""%c"" " + \
-             "histogram:info:|sort -rn|head -n 1| grep -oe '#[^\s]*'"
-    cmd = subprocess.Popen(cmdstr, shell=True, stdout=subprocess.PIPE)
-
-    for line in cmd.stdout:
-        pass
-
-    ll1 = str(line)
-    astr = ll1[2:9]
-
-    cmdstr = "convert xc:'" + astr + "' -modulate 100,100,0 -depth 8 txt:"
-    cmd = subprocess.Popen(cmdstr, shell=True, stdout=subprocess.PIPE)
-
-    for line in cmd.stdout:
-        pass
-
-    l1p = str(line)
-    lll = l1p.split(" ")
-    astr = lll
-    astr = lll[3].lstrip("#")
-    if len(astr) == 8:
-        # remove alpha channel
-        astr = astr[0:6]
-
-    red = int(astr[0:2], 16)
-    green = int(astr[2:4], 16)
-    blue = int(astr[4:6], 16)
-    return red, green, blue
-
-
 def get_avg_color(pixbuf):
     """calculate the average colour of a pixbuf.
 
