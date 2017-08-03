@@ -27,11 +27,11 @@ The applet is included by default in Ubuntu MATE 16.04. It can be used by select
 
 Note: when upgrading from Ubuntu Mate 15.10 to 16.04 any previously installed version of the applet will be replaced with the one from the distribution's respositories.
 
-### Ubuntu MATE 15.10
+### Ubuntu MATE 15.10 and Linux Mint
 
-Users of Ubuntu MATE 15.10 and earlier, or of Linux Mint, can install the applet from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
+Users of Ubuntu MATE 15.10 and earlier, or of Linux Mint 18.1 or earlier, can install the applet from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
 
-Note: this is GTK2 only
+Note: this is currently GTK2 only
 
 ### Arch Linux
 
