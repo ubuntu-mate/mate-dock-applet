@@ -323,10 +323,7 @@ class Dock(object):
             app_act_list :  a popup window which shows actions relating to the
                             currently highlighted app e.g. Pin/Unpin/Open new
                             window
-            act_list_delay : the amount of time (in milliseconds) after which
-                             the app's window list will pop up when the mouse
-                             hovers over the app
-            act_list_timer : timer object used to count act_list_delay
+            act_list_timer : timer object used when popping up the action list
             panel_cc : used to change the colour of the MATE panel(s) to
                        the dominant color of the desktop wallpaper (if enabled
                         in the applet settings)
@@ -339,6 +336,8 @@ class Dock(object):
             dm_timer : timer to monitor mouse movement during app icon drag and drop
             da_timer : timer to provide a short delay before activating an app when
                        data other than a .desktop file is dragged on the applet
+            popup_delay : the delay (in ms) before an action list appears when the
+                          mouse hovers over a docked app
 
     """
 
@@ -397,6 +396,7 @@ class Dock(object):
         self.active_bg = 0
         self.app_spacing = 0
         self.attention_type = dock_prefs.AttentionType.BLINK
+        self.popup_delay = 1000
 
         self.read_settings()
         self.set_fallback_bar_colour()
@@ -410,7 +410,6 @@ class Dock(object):
         self.app_win_list.icontheme = self.icontheme
         self.app_act_list = dock_action_list.DockActionList(self.wnck_screen)
         self.app_act_list.icontheme = self.icontheme
-        self.act_list_delay = 1000
         self.act_list_timer = None
 
         self.panel_x = 0
@@ -691,6 +690,7 @@ class Dock(object):
 
                 self.app_spacing = xml_settings[12]
                 self.attention_type = xml_settings[13]
+                self.popup_delay = xml_settings[14]
 
                 # now, immediately write the settings to dconf and back to the
                 # config file so the dock can access them
@@ -718,6 +718,7 @@ class Dock(object):
 
                 self.settings.set_int("app-spacing", self.app_spacing)
                 self.settings.set_int("attention-type", self.attention_type)
+                self.settings.set_int("popup-delay", self.popup_delay)
 
                 dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                                    self.show_all_apps, self.multi_ind,
@@ -728,12 +729,13 @@ class Dock(object):
                                    self.active_bg,
                                    self.fallback_bar_col,
                                    self.app_spacing,
-                                   self.attention_type)
+                                   self.attention_type,
+                                   self.popup_delay)
                 return
 
         # we get here if there was no previous configuration, or the
         # configuration couldn't be read.
-        # Where the configuration cou;n't be read this could be due to an
+        # Where the configuration couldn't be read this could be due to an
         # error or because new versions of the applet have added configuration
         # options not yet in the user's xml file. To recover, simply assume a
         # default set of options
@@ -749,6 +751,7 @@ class Dock(object):
         self.fallback_bar_col = self.settings.get_value("fallback-bar-col").unpack()
         self.app_spacing = self.settings.get_int("app-spacing")
         self.attention_type = self.settings.get_int("attention-type")
+        self.popup_delay = self.settings.get_int("popup-delay")
 
     def write_settings(self):
         """Write the current dock settings.
@@ -786,6 +789,7 @@ class Dock(object):
             self.settings.set_value("fallback-bar-col", GLib.Variant('as', self.fallback_bar_col))
             self.settings.set_int("app-spacing", self.app_spacing)
             self.settings.set_int("attention-type", self.attention_type)
+            self.settings.set_int("popup-delay", self.popup_delay)
 
         dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                            self.show_all_apps, self.multi_ind,
@@ -797,7 +801,8 @@ class Dock(object):
                            self.active_bg,
                            self.fallback_bar_col,
                            self.app_spacing,
-                           self.attention_type)
+                           self.attention_type,
+                           self.popup_delay)
 
     def read_app_match(self):
         """ Read an xml file which contains a list of apps which are difficult
@@ -1383,7 +1388,7 @@ class Dock(object):
             self.prefs_win.set_fallback_bar_col(self.fallback_bar_col)
             self.prefs_win.set_app_spacing(self.app_spacing)
             self.prefs_win.set_attention_type(self.attention_type)
-
+            self.prefs_win.set_popup_delay(self.popup_delay)
         else:
             self.prefs_win.show_all()
 
@@ -1421,7 +1426,8 @@ class Dock(object):
            (self.active_bg != self.prefs_win.get_bg()) or \
            (self.fallback_bar_col != self.prefs_win.get_fallback_bar_col()) or \
            (self.app_spacing != self.prefs_win.get_app_spacing()) or \
-           (self.attention_type != self.prefs_win.get_attention_type()):
+           (self.attention_type != self.prefs_win.get_attention_type()) or \
+           (self.popup_delay != self.prefs_win.get_popup_delay()):
 
             old_ind = self.indicator
             self.indicator = self.prefs_win.get_indicator_type()
@@ -1431,6 +1437,7 @@ class Dock(object):
             self.use_win_list = self.prefs_win.get_use_win_list()
             self.app_spacing = self.prefs_win.get_app_spacing()
             self.attention_type = self.prefs_win.get_attention_type()
+            self.popup_delay = self.prefs_win.get_popup_delay()
 
             new_panel_color_setting = self.change_panel_color != self.prefs_win.get_change_panel_color()
             self.change_panel_color = self.prefs_win.get_change_panel_color()
@@ -2478,7 +2485,7 @@ class Dock(object):
             GObject.source_remove(self.act_list_timer)
 
         if not self.panel_act_list:
-            self.act_list_timer = GObject.timeout_add(self.act_list_delay,
+            self.act_list_timer = GObject.timeout_add(self.popup_delay,
                                                       self.show_act_list)
 
     def stop_act_list_timer(self):

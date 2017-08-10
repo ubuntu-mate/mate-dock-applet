@@ -48,7 +48,8 @@ import platform
 def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
               use_dock_win_list, win_from_cur_ws_only,
               panel_change_color, dock_panel_change_only, use_panel_act_list,
-              active_icon_bg, fallback_bar_col, spacing, attention_type):
+              active_icon_bg, fallback_bar_col, spacing, attention_type,
+              popup_delay):
     """ Write the xml file using the specified information
 
     The xml file will be in e.g. the following format:
@@ -101,6 +102,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
         spacing : the amount of spacing (0-8) between apps in the dock
         attention_type : how a docked app notifies the user when an app requires
                          attention
+        popup_delay : the delay before action/windows lists appear
 
     Returns:
         Boolean - True if the file was written successfully, False otherwise
@@ -135,6 +137,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
 
     spc_el = ET.Element("spacing", spc="%d" % spacing)
     att_el = ET.Element("attention_type", type="%d" % attention_type)
+    pdy_el = ET.Element("popup_delay", delay="%d" % popup_delay)
 
     root.append(pa_el)
     root.append(ind_el)
@@ -149,6 +152,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
     root.append(fbc_el)
     root.append(spc_el)
     root.append(att_el)
+    root.append(pdy_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
@@ -181,6 +185,7 @@ def read_xml(filename):
             an integer - the active icon background type
             a list of the r,g and b values (as strings) of the fallback bar indicator colour
             an integer - the spacing between apps
+            an integer - the delay before window and acion lists popup
     """
 
     try:
@@ -272,11 +277,17 @@ def read_xml(filename):
     else:
         attention_type = 0
 
+    pdy_el = root.find("popup_delay")
+    if pdy_el is not None:
+        popup_delay = int(pdy_el.get("delay"))
+    else:
+        popup_delay = 1000
+
     return [True, df_list, light_ind, show_all, multi_ind,
             use_win_list, win_from_cur_ws_only,
             panel_change_color, dock_panel_change_only,
             use_panel_act_list, bg_type, fallback_bar_col,
-            spacing, attention_type]
+            spacing, attention_type, popup_delay]
 
 
 def read_app_xml(filename):

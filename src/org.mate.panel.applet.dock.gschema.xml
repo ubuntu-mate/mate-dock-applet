@@ -76,5 +76,10 @@
       <summary>Defines how a dock icon reacts when an app requires attention</summary>
       <description>Defines how a dock icon reacts when an app requires attention e.g. blink</description>
     </key>
+    <key type="i" name="popup-delay">
+      <default>1000</default>
+      <summary>The delay before a popup window appears</summary>
+      <description>The delay (in milliseconds) before an action list or window list appears when the mouse hovers over a docked app</description>
+    </key>
    </schema>
 </schemalist>

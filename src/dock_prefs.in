@@ -512,10 +512,32 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_attention_type_align.set_padding(0, 0, 12, 0)
         self.__frame_attention_type_align.add(self.__table_attention_type)
         self.__frame_attention_type.add(self.__frame_attention_type_align)
+
+        self.__frame_pdel = create_frame("Popup Delay(s)")
+        if build_gtk2:
+            self.__sb_pdel = Gtk.SpinButton()
+            self.__sb_pdel.set_adjustment(Gtk.Adjustment(1.0, 0.1, 5.0, 0.1, 1))
+        else:
+            self.__sb_pdel = Gtk.SpinButton.new_with_range(0.1, 5, 0.1)
+
+        self.__sb_pdel.set_digits(1)
+
+        self.__sb_pdel.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
+        self.__sb_pdel.set_numeric(True)
+        self.__sb_pdel.set_max_length(3)
+        self.__sb_pdel.set_snap_to_ticks(True)
+
+        self.__frame_pdel_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                               xscale=1.0, yscale=1.0)
+        self.__frame_pdel_align.set_padding(0, 0, 12, 300)
+        self.__frame_pdel_align.add(self.__sb_pdel)
+        self.__frame_pdel.add(self.__frame_pdel_align)
+
         self.__misc_vbox = self.create_vbox
         self.__misc_vbox.set_spacing(2)
         self.__misc_vbox.pack_start(self.__frame_fb_bar_col, False, False, 4)
         self.__misc_vbox.pack_start(self.__frame_attention_type, False, False, 4)
+        self.__misc_vbox.pack_start(self.__frame_pdel, False, False,4)
 
         self.__vbox.pack_start(self.__notebook, True, True, 4)
         self.__notebook.append_page(self.__appearance_tbl, Gtk.Label("Appearance"))
@@ -1023,6 +1045,26 @@ class DockPrefsWindow(Gtk.Window):
         else:
             return AttentionType.SHOW_BADGE
 
+    def set_popup_delay(self, delay):
+        """ Set the amount of space between icons in the dock
+
+        Args:
+            delay: the delay in ms
+        """
+
+        # convert delay to seconds
+        self.__sb_pdel.set_value(delay/1000)
+
+    def get_popup_delay(self):
+        """
+            Get the popup delay, converting from seconds to ms
+
+        :return: int
+
+        """
+
+        self.__sb_pdel.update()
+        return int(self.__sb_pdel.get_value()*1000)
 
 def main():
     """main function - debug code can go here"""
