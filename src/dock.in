@@ -1679,10 +1679,11 @@ class Dock(object):
     def close_win(self, data=None):
         """Close all windows for the right clicked app"""
 
-        win_list = self.right_clicked_app.get_wnck_windows()
-        for wnck_win in win_list:
-            # have to send 0 as the event time because we have no event time to send
-            wnck_win.close(0)
+        if self.right_clicked_app is not None:
+            win_list = self.right_clicked_app.get_wnck_windows()
+            for wnck_win in win_list:
+                # have to send 0 as the event time because we have no event time to send
+                wnck_win.close(0)
 
     def icon_theme_changed(self, icontheme):
         """ Callback for when the Gtk icon theme changes

@@ -801,7 +801,7 @@ class DockedApp(object):
                             de_exec = re.sub("-bin", "", de_exec)
 
                             if "/" in de_exec:
-                                if de_exec.split("/")[-1] in self.cmd_line:
+                                if ("/" + de_exec.split("/")[-1]) in self.cmd_line:
                                     exec_found = True
 
                     # check that the wm_classes match
