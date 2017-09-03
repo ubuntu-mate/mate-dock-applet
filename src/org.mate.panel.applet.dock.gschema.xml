@@ -34,7 +34,7 @@
     <key type="b" name="panel-act-list">
         <default>false</default>
         <summary>Whether to show an app's action list on the panel right click menu.</summary>
-        <description>Whether to an apps aciton list on the panel right click menu. If set to false, the applet's built in action list popup will be used</description>
+        <description>Whether to an apps action list on the panel right click menu. If set to false, the applet's built in action list popup will be used</description>
     </key>
     <key type="b" name="first-run">
        <default>true</default>
@@ -80,6 +80,16 @@
       <default>1000</default>
       <summary>The delay before a popup window appears</summary>
       <description>The delay (in milliseconds) before an action list or window list appears when the mouse hovers over a docked app</description>
+    </key>
+    <key type ="as" name="saved-configs">
+     <default>[]</default>
+     <summary>The pinned app configurations defined for each workspace</summary>
+     <description>Each item in the list is a csv string containing the config name, the name of the workspace that the config will automatically be selected for, followed by .desktop filenames representing the pinned apps</description>
+    </key>
+    <key type="b" name="pinned-apps-on-all-workspaces">
+     <default>true</default>
+     <summary>Whether pinned apps appear on all workspaces, or only on the workspace where they were pinned</summary>
+     <description>If true, pinned apps appear on all workspaces. If false, whenever a new workspace is made active the corresponding pinned app configuration will be loaded</description>
     </key>
    </schema>
 </schemalist>

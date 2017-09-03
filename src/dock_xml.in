@@ -49,7 +49,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
               use_dock_win_list, win_from_cur_ws_only,
               panel_change_color, dock_panel_change_only, use_panel_act_list,
               active_icon_bg, fallback_bar_col, spacing, attention_type,
-              popup_delay):
+              popup_delay, saved_configs, pa_on_all_ws):
     """ Write the xml file using the specified information
 
     The xml file will be in e.g. the following format:
@@ -67,6 +67,9 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
             <win_from_cur_ws_only>True or False</>
             <panel_change_color>True or False</>
             <dock_panel_change_only>True or False</>
+            ...
+            ...
+
         </root>
 
     Args:
@@ -104,6 +107,17 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
                          attention
         popup_delay : the delay before action/windows lists appear
 
+        saved_configs : a list of tuples containing details of the pinned app
+                        config. Each tuple contains the
+                        following:
+                            string - the config name
+                            string - the workspace (if any) the config is to be
+                                     automatically loaded for
+                            string - a .desktop filename specifying a pinned app
+                            string - another .desktop filename etc. etc.
+        pa_on_all_ws : boolean - whether pinned apps appear on all workspaces or
+                                 only the workspace where they were pinned
+
     Returns:
         Boolean - True if the file was written successfully, False otherwise
 
@@ -139,6 +153,25 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
     att_el = ET.Element("attention_type", type="%d" % attention_type)
     pdy_el = ET.Element("popup_delay", delay="%d" % popup_delay)
 
+    sc_el = ET.Element("saved_configs")
+    for config in saved_configs:
+        cfg_el = ET.Element("config")
+        cnm_el = ET.Element("config_name", name=config[0])
+        cws_el = ET.Element("workspace_name", workspace=config[1])
+        cpa_el = ET.Element("pinned_apps")
+        for loop in range(2, len(config)):
+            df = config[loop]
+            df_el = ET.Element("desktop_file", name=df)
+            cpa_el.append(df_el)
+
+        cfg_el.append(cnm_el)
+        cfg_el.append(cws_el)
+        cfg_el.append(cpa_el)
+
+        sc_el.append(cfg_el)
+
+    paoaws_el = ET.Element("pinned_apps_all_workspaces", paoaws="%s" %pa_on_all_ws)
+
     root.append(pa_el)
     root.append(ind_el)
     root.append(sa_el)
@@ -153,6 +186,8 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
     root.append(spc_el)
     root.append(att_el)
     root.append(pdy_el)
+    root.append(sc_el)
+    root.append(paoaws_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
@@ -186,6 +221,11 @@ def read_xml(filename):
             a list of the r,g and b values (as strings) of the fallback bar indicator colour
             an integer - the spacing between apps
             an integer - the delay before window and acion lists popup
+            a list of the workspace indexes that pinned apps are pinned to
+            a tuple containing the details of pinned app configs - format is the same used when
+            saving...
+            a boolean - the pinned apps on all workspaces setting
+
     """
 
     try:
@@ -202,7 +242,7 @@ def read_xml(filename):
     # note - values may be missing from the config file e.g. if a new version
     # of the applet adds a new configuration settings. If this happens, we just
     # assume a default option rather than reporting an error
-    #
+
     ind_el = root.find("ind_type")
     if ind_el is not None:
         light_ind = int(ind_el.get("light"))
@@ -283,11 +323,42 @@ def read_xml(filename):
     else:
         popup_delay = 1000
 
+    saved_configs = []
+    sc_el = root.find("saved_configs")
+    if sc_el is not None:
+        for config in sc_el:
+
+            config_name = ""
+            config_ws = ""
+            cnm_el = config.find("config_name")
+            if cnm_el is not None:
+                config_name = cnm_el.get("name")
+            cws_el = config.find("workspace_name")
+            if cws_el is not None:
+                config_ws = cws_el.get("workspace")
+
+            conf = []
+            conf.append(config_name)
+            conf.append(config_ws)
+            pinned_apps = config.find("pinned_apps")
+            if pinned_apps is not None:
+                for app in pinned_apps:
+                    conf.append(app.get("name"))
+
+            saved_configs.append(conf)
+
+    paoaws_el = root.find("pinned_apps_all_workspaces")
+    if paoaws_el is not None:
+        pinned_apps_all_workspaces = paoaws_el.get("paoaws") == "True"
+    else:
+        pinned_apps_all_workspaces = True
+
     return [True, df_list, light_ind, show_all, multi_ind,
             use_win_list, win_from_cur_ws_only,
             panel_change_color, dock_panel_change_only,
             use_panel_act_list, bg_type, fallback_bar_col,
-            spacing, attention_type, popup_delay]
+            spacing, attention_type, popup_delay, saved_configs,
+            pinned_apps_all_workspaces]
 
 
 def read_app_xml(filename):

@@ -255,7 +255,6 @@ class DragActivateTimer(object):
         self.the_app = the_app
         self.the_dock = the_dock
         # wait .3 of a second ...
-        # tion 50 timakemes per second
         self.timer_id = GObject.timeout_add(333, self.do_timer)
 
     def do_timer(self):
@@ -338,6 +337,15 @@ class Dock(object):
                        data other than a .desktop file is dragged on the applet
             popup_delay : the delay (in ms) before an action list appears when the
                           mouse hovers over a docked app
+            pa_configs : list of pinned app configurations. each item in the list
+                         is a tuple containing the following:
+                           string : the config name
+                           string : the name of the workspace the config is associated with
+                           string : a .desktop filename representing a pinned app
+                           string : another pinned app, etc. etc.
+            pa_on_all_ws : boolean - if true, pinned apps appear on all workspaces.
+                                     If false, pinned apps are set according to the current workspace
+
 
     """
 
@@ -397,6 +405,8 @@ class Dock(object):
         self.app_spacing = 0
         self.attention_type = dock_prefs.AttentionType.BLINK
         self.popup_delay = 1000
+        self.pa_configs = []
+        self.pa_on_all_ws = True
 
         self.read_settings()
         self.set_fallback_bar_colour()
@@ -405,6 +415,7 @@ class Dock(object):
         # .desktop files
         self.app_match = self.read_app_match()
         self.dock_action_group = None
+        self.popup_action_group = None
 
         self.app_win_list = dock_win_list.DockWinList(self.wnck_screen)
         self.app_win_list.icontheme = self.icontheme
@@ -691,9 +702,13 @@ class Dock(object):
                 self.app_spacing = xml_settings[12]
                 self.attention_type = xml_settings[13]
                 self.popup_delay = xml_settings[14]
+                self.pa_configs = xml_settings[15]
+                self.pa_on_all_ws = xml_settings[16]
 
                 # now, immediately write the settings to dconf and back to the
                 # config file so the dock can access them
+
+                configs = self.configs_to_settings()
 
                 self.settings.set_value("pinned-apps", GLib.Variant('as',
                                         pinned_apps))
@@ -719,6 +734,8 @@ class Dock(object):
                 self.settings.set_int("app-spacing", self.app_spacing)
                 self.settings.set_int("attention-type", self.attention_type)
                 self.settings.set_int("popup-delay", self.popup_delay)
+                self.settings.set_boolean("pinned-apps-on-all-workspaces", self.pa_on_all_ws)
+                self.settings.set_value("saved-configs", GLib.Variant('as', configs))
 
                 dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                                    self.show_all_apps, self.multi_ind,
@@ -730,7 +747,9 @@ class Dock(object):
                                    self.fallback_bar_col,
                                    self.app_spacing,
                                    self.attention_type,
-                                   self.popup_delay)
+                                   self.popup_delay,
+                                   self.pa_configs,
+                                   self.pa_on_all_ws)
                 return
 
         # we get here if there was no previous configuration, or the
@@ -752,6 +771,23 @@ class Dock(object):
         self.app_spacing = self.settings.get_int("app-spacing")
         self.attention_type = self.settings.get_int("attention-type")
         self.popup_delay = self.settings.get_int("popup-delay")
+        self.pa_on_all_ws = self.settings.get_boolean("pinned-apps-on-all-workspaces")
+
+    def configs_to_settings(self):
+        """ Convenience function to convert the current set of saved configs
+            into a form that can to be written to dconf settings i.e. a list of
+            csv strings
+        """
+
+        pa_configs = []
+        for config in self.pa_configs:
+            item = '"' + config[0] + "," + config[1]
+            for loop in range(2, len(config)):
+                item += "," + config[loop]
+            item += '"'
+            pa_configs.append(item)
+
+        return pa_configs
 
     def write_settings(self):
         """Write the current dock settings.
@@ -765,12 +801,17 @@ class Dock(object):
 
         pinned_apps = []
         for dock_app in self.app_list:
-
             if dock_app.desktop_file is not None and dock_app.is_pinned:
                 pinned_apps.append(os.path.basename(dock_app.desktop_file))
 
+        pa_configs = self.configs_to_settings()
+
         if self.settings:
-            self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
+            # only save the current set of self.pinned apps if we're not using linking pinned apps
+            # to workspaces
+            if self.pa_on_all_ws:
+                self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
+
             self.settings.set_int("indicator-type", self.indicator)
             self.settings.set_boolean("multi-ind", self.multi_ind)
             self.settings.set_boolean("apps-from-all-workspaces",
@@ -790,6 +831,8 @@ class Dock(object):
             self.settings.set_int("app-spacing", self.app_spacing)
             self.settings.set_int("attention-type", self.attention_type)
             self.settings.set_int("popup-delay", self.popup_delay)
+            self.settings.set_boolean("pinned-apps-on-all-workspaces", self.pa_on_all_ws)
+            self.settings.set_value("saved-configs", GLib.Variant('as', pa_configs))
 
         dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                            self.show_all_apps, self.multi_ind,
@@ -802,7 +845,9 @@ class Dock(object):
                            self.fallback_bar_col,
                            self.app_spacing,
                            self.attention_type,
-                           self.popup_delay)
+                           self.popup_delay,
+                           self.pa_configs,
+                           self.pa_on_all_ws)
 
     def read_app_match(self):
         """ Read an xml file which contains a list of apps which are difficult
@@ -825,7 +870,7 @@ class Dock(object):
             return []
 
     def set_fallback_bar_colour(self):
-        """ Set the colour to be used for drawing bar and other types of indicators when 
+        """ Set the colour to be used for drawing bar and other types of indicators when
             the highlight colour from the theme can't be determined
         """
 
@@ -836,12 +881,12 @@ class Dock(object):
         docked_app_helpers.fallback_ind_col = [r, g, b]
 
     def set_actions_for_app(self, app):
-        """Show or hide actions in the context menu so that only relevant ones
+        """Show or hide actions in the context menu and action list so that only relevant ones
            are shown for the specified app
 
-           If the app is pinned, do not show the pin action.
+           If the app is pinned, do not show the pin actions.
 
-           If the app in not pinned, don't show the unpin action.
+           If the app in not pinned, don't show the unpin actions.
 
            Depending on applet orientation actions to move the app left/right
            or up/down along the dock need to shown or hidden.
@@ -866,10 +911,61 @@ class Dock(object):
             app : The DockedApp
         """
 
-        df_shortcut_1_action = self.dock_action_group.get_action("df_shortcut_1_action")
-        df_shortcut_2_action = self.dock_action_group.get_action("df_shortcut_2_action")
-        df_shortcut_3_action = self.dock_action_group.get_action("df_shortcut_3_action")
-        df_shortcut_4_action = self.dock_action_group.get_action("df_shortcut_4_action")
+        def set_vis(action, vis):
+            """ convenience function to set an action's visibilty
+
+            Args:
+                action : the action
+                vis    : boolean - True if the action is to be visible, False otherwise
+            """
+
+            action.set_visible(vis)
+
+        # hide all actions which can appear either in the panel right click menu or popop action list
+        #
+        # they'll be shown again later depending on which is being used...
+
+        # first, hide actions defined in the desktop file...
+        act = self.dock_action_group.get_action("df_shortcut_1_action")
+        set_vis(act, self.panel_act_list)
+        act = self.dock_action_group.get_action("df_shortcut_2_action")
+        set_vis(act, self.panel_act_list)
+        act = self.dock_action_group.get_action("df_shortcut_3_action")
+        set_vis(act, self.panel_act_list)
+        act = self.dock_action_group.get_action("df_shortcut_4_action")
+        set_vis(act, self.panel_act_list)
+
+        act = self.popup_action_group.get_action("df_shortcut_1_action")
+        set_vis(act, not self.panel_act_list)
+        act = self.popup_action_group.get_action("df_shortcut_2_action")
+        set_vis(act, not self.panel_act_list)
+        act = self.popup_action_group.get_action("df_shortcut_3_action")
+        set_vis(act, not self.panel_act_list)
+        act = self.popup_action_group.get_action("df_shortcut_4_action")
+        set_vis(act, not self.panel_act_list)
+
+        # now do pin and unpin actions
+        act = self.dock_action_group.get_action("pin_action")
+        set_vis(act, self.panel_act_list)
+        act = self.dock_action_group.get_action("unpin_action")
+        set_vis(act, self.panel_act_list)
+
+        act = self.popup_action_group.get_action("pin_action")
+        set_vis(act, not self.panel_act_list)
+        act = self.popup_action_group.get_action("unpin_action")
+        set_vis(act, not self.panel_act_list)
+
+        # now setup the relevant actions panel/action list items
+        if self.panel_act_list:
+            df_shortcut_1_action = self.dock_action_group.get_action("df_shortcut_1_action")
+            df_shortcut_2_action = self.dock_action_group.get_action("df_shortcut_2_action")
+            df_shortcut_3_action = self.dock_action_group.get_action("df_shortcut_3_action")
+            df_shortcut_4_action = self.dock_action_group.get_action("df_shortcut_4_action")
+        else:
+            df_shortcut_1_action = self.popup_action_group.get_action("df_shortcut_1_action")
+            df_shortcut_2_action = self.popup_action_group.get_action("df_shortcut_2_action")
+            df_shortcut_3_action = self.popup_action_group.get_action("df_shortcut_3_action")
+            df_shortcut_4_action = self.popup_action_group.get_action("df_shortcut_4_action")
 
         act_exists, act_name = app.get_rc_action(1)
         df_shortcut_1_action.set_visible(act_exists)
@@ -895,8 +991,21 @@ class Dock(object):
             df_shortcut_4_action.set_label(act_name)
             df_shortcut_4_action.set_icon_name(app.icon_name)
 
-        pin_action = self.dock_action_group.get_action("pin_action")
-        unpin_action = self.dock_action_group.get_action("unpin_action")
+        if self.panel_act_list:
+            pin_action = self.dock_action_group.get_action("pin_action")
+            unpin_action = self.dock_action_group.get_action("unpin_action")
+        else:
+            pin_action = self.popup_action_group.get_action("pin_action")
+            unpin_action = self.popup_action_group.get_action("unpin_action")
+
+        pin_action.set_visible(not app.is_pinned)
+        unpin_action.set_visible(app.is_pinned)
+
+        if pin_action.is_visible():
+            pin_action.set_label("Pin %s" % app.app_name)
+        else:
+            unpin_action.set_label("Unpin %s" % app.app_name)
+
         move_up_action = self.dock_action_group.get_action("move_up_action")
         move_down_action = self.dock_action_group.get_action("move_down_action")
         move_left_action = self.dock_action_group.get_action("move_left_action")
@@ -906,8 +1015,6 @@ class Dock(object):
         close_win_action.set_visible(False)
 
         index = self.get_app_position_in_dock(app)
-        pin_action.set_visible(not app.is_pinned)
-        unpin_action.set_visible(app.is_pinned)
 
         orientation = self.applet.get_orient()
 
@@ -927,11 +1034,6 @@ class Dock(object):
             move_left_action.set_label("Move %s to the left on the dock" % app.app_name)
             move_right_action.set_label("Move %s to the right on the dock" % app.app_name)
 
-        if pin_action.is_visible():
-            pin_action.set_label("Pin %s" % app.app_name)
-        else:
-            unpin_action.set_label("Unpin %s" % app.app_name)
-
         # set the actions for selecting specific windows
 
         num_win = app.get_num_windows()
@@ -946,8 +1048,12 @@ class Dock(object):
         ccl_action = self.dock_action_group.get_action("ccl_action")
         ccl_action.set_visible(not app.has_desktop_file())
 
+        # now setup the actions which can appear in either the right click menu or
+        # action list, depending on which is being used
+
     def setup_menu(self):
-        """Set up the actions and right click menu for the applet
+        """Set up the actions and right click menu for the applet. Also setup
+           the actions for the popup action list
         """
 
         # actions named df_shortcut_<x>_action are used for implementing
@@ -1021,6 +1127,30 @@ class Dock(object):
 
         self.applet.setup_menu(menu_xml, self.dock_action_group)
 
+        # setup the action list items - pin/unpin options plus actions defined in the
+        # desktop file.
+        self.popup_action_group = Gtk.ActionGroup("PopupActions")
+        self.popup_action_group.add_actions([
+            ("df_shortcut_1_action", None,
+             "df_shortcut_1_action", None, "df_shortcut_1_action",
+             self.df_shortcut_1),
+            ("df_shortcut_2_action", None,
+             "df_shortcut_2_action", None, "df_shortcut_2_action",
+             self.df_shortcut_2),
+            ("df_shortcut_3_action", None,
+             "df_shortcut_3_action", None, "df_shortcut_3_action",
+             self.df_shortcut_3),
+            ("df_shortcut_4_action", None,
+             "df_shortcut_4_action", None, "df_shortcut_4_action",
+             self.df_shortcut_4),
+            ("pin_action", Gtk.STOCK_ADD,
+             "Pin app to the dock", None, "Pin app to the dock",
+             self.pin_app),
+            ("unpin_action", Gtk.STOCK_REMOVE,
+             "_Unpin app from the dock", None, "Unpin app from the dock",
+             self.unpin_app)
+            ])
+
     def df_shortcut_1(self, data=None):
         """Perform the app's 1st .desktop file specified shortcut/action
         """
@@ -1087,6 +1217,52 @@ class Dock(object):
         if the_app is not None:
             the_app.run_rc_action(4)
 
+    def update_pinned_app_config(self):
+        """
+            Updates the pinned app configuration data for the current workspace from
+            self.app_list
+
+            Should be called when apps are pinned/unpinned, change positions on the dock etc.
+
+        """
+
+        ws = self.wnck_screen.get_active_workspace()
+        if ws is not None:
+            ws_name = ws.get_name()
+
+            # get the list of currently pinned apps from self.app_list
+            app_list = []
+            for app in self.app_list:
+                if app.is_pinned:
+                    app_list.append(os.path.basename(app.desktop_file))
+
+            # update the config with the new list
+            newconf = []
+            index = 0
+            for config in self.pa_configs:
+                if config[1] == ws_name:
+                    # copy the config name and workspace
+
+                    newconf = [config[0], config[1]]
+                    for app in app_list:
+                        newconf.append(app)
+
+                    self.pa_configs.remove(config)
+                    self.pa_configs.append(newconf)
+                    break
+
+                index += 1
+
+            if newconf == []:
+                # this is a new configuration, so append it to the list
+                # (config name can be the same as the workspace name for now)
+
+                newconf = [ws_name, ws_name]
+                for app in app_list:
+                    newconf.append(app)
+
+                self.pa_configs.append(newconf)
+
     def unpin_app(self, data=None):
         """Unpin an app from the dock
 
@@ -1109,10 +1285,26 @@ class Dock(object):
 
         if the_app is not None:
             the_app.is_pinned = False
-            self.write_settings()
             if not the_app.is_running():
                 self.remove_app_from_dock(the_app)
+                self.set_all_apps_minimise_targets()
                 self.right_clicked_app = None
+
+            # if we're pinning apps to specific workspaces, remove the app from
+            # the workspace its pinned to
+            if not self.pa_on_all_ws:
+                self.update_pinned_app_config()
+
+                # if the app is running, but has no windows on the current workspace
+                # it needs to be removed from the dock
+                if the_app.is_running():
+                    cur_ws = self.wnck_screen.get_active_workspace()
+                    if not the_app.has_windows_on_workspace(cur_ws):
+                        self.remove_app_from_dock(the_app)
+                        self.set_all_apps_minimise_targets()
+                        self.right_clicked_app = None
+
+            self.write_settings()
 
     def pin_app(self, data=None):
         """Pin an app to the dock.
@@ -1130,6 +1322,12 @@ class Dock(object):
 
         if the_app is not None:
             the_app.is_pinned = True
+
+            # if we're pinning apps to specific workspaces, add the app to
+            # the current workspaces saved configuration
+            if not self.pa_on_all_ws:
+                self.update_pinned_app_config()
+
             self.write_settings()
 
     def get_app_position_in_dock(self, app):
@@ -1140,8 +1338,11 @@ class Dock(object):
         Returns : the index of the app, or -1 if it wasn't found
         """
 
-        index = 0  # used for gtk2 only
+        index = 0
+        hidden = 0
+
         for app_da in self.box.get_children():
+
             if app_da == app.drawing_area:
                 if build_gtk2:
                     return index
@@ -1152,7 +1353,6 @@ class Dock(object):
                     else:
                         boxi = self.box.child_get_property(app_da,
                                                            "top_attach")
-
                     return boxi
 
             index += 1
@@ -1193,6 +1393,9 @@ class Dock(object):
                 # recalculate the minimize targets for each app
                 self.set_minimise_target(self.app_list[index-1])
                 self.set_minimise_target(self.app_list[index])
+
+                if not self.pa_on_all_ws:
+                    self.update_pinned_app_config()
 
                 self.write_settings()
 
@@ -1243,6 +1446,8 @@ class Dock(object):
             app.queue_draw()
 
         # save the new settings
+        if not self.pa_on_all_ws:
+            self.update_pinned_app_config()
         self.write_settings()
 
     def get_app_root_coords(self, app):
@@ -1258,25 +1463,10 @@ class Dock(object):
 
         dock_x, dock_y = self.get_dock_root_coords()
 
-        if (self.panel_orient == "top") or (self.panel_orient == "bottom"):
-            min_x = dock_x + \
-                    (self.get_app_position_in_dock(app) *
-                     (app.drawing_area_size + self.app_spacing +
-                      docked_app_helpers.ind_extra_s(self.indicator)))
-            if build_gtk2:
-                min_x += self.get_app_position_in_dock(app)
-
-            min_y = dock_y
-        else:
-            min_x = dock_x
-            min_y = dock_y + \
-                     (self.get_app_position_in_dock(app) *
-                     (app.drawing_area_size + self.app_spacing +
-                      docked_app_helpers.ind_extra_s(self.indicator)))
-            if build_gtk2:
-                min_y += self.get_app_position_in_dock(app)
-
-        return min_x, min_y
+        x, y, w, h = app.get_allocation()
+        dock_x += x
+        dock_y += y
+        return dock_x, dock_y
 
     def get_dock_root_coords(self):
         """ Get the root coords of the top left pixel of the dock
@@ -1363,6 +1553,8 @@ class Dock(object):
                 self.set_minimise_target(self.app_list[index+1])
                 self.set_minimise_target(self.app_list[index])
 
+                if not self.pa_on_all_ws:
+                    self.update_pinned_app_config()
                 self.write_settings()
 
     def show_prefs_win(self, data=None):
@@ -1384,11 +1576,13 @@ class Dock(object):
             self.prefs_win.set_change_panel_color(self.change_panel_color)
             self.prefs_win.set_change_dock_color_only(self.change_dock_color_only)
             self.prefs_win.set_pan_act(self.panel_act_list)
+            self.prefs_win.set_win_cur_ws_only(self.win_from_cur_ws_only)
             self.prefs_win.set_bg(self.active_bg)
             self.prefs_win.set_fallback_bar_col(self.fallback_bar_col)
             self.prefs_win.set_app_spacing(self.app_spacing)
             self.prefs_win.set_attention_type(self.attention_type)
             self.prefs_win.set_popup_delay(self.popup_delay)
+            self.prefs_win.set_show_pinned_apps_on_all_ws(self.pa_on_all_ws)
         else:
             self.prefs_win.show_all()
 
@@ -1427,7 +1621,8 @@ class Dock(object):
            (self.fallback_bar_col != self.prefs_win.get_fallback_bar_col()) or \
            (self.app_spacing != self.prefs_win.get_app_spacing()) or \
            (self.attention_type != self.prefs_win.get_attention_type()) or \
-           (self.popup_delay != self.prefs_win.get_popup_delay()):
+           (self.popup_delay != self.prefs_win.get_popup_delay()) or \
+           (self.pa_on_all_ws != self.prefs_win.get_show_pinned_apps_on_all_ws()):
 
             old_ind = self.indicator
             self.indicator = self.prefs_win.get_indicator_type()
@@ -1438,6 +1633,7 @@ class Dock(object):
             self.app_spacing = self.prefs_win.get_app_spacing()
             self.attention_type = self.prefs_win.get_attention_type()
             self.popup_delay = self.prefs_win.get_popup_delay()
+            self.pa_on_all_ws = self.prefs_win.get_show_pinned_apps_on_all_ws()
 
             new_panel_color_setting = self.change_panel_color != self.prefs_win.get_change_panel_color()
             self.change_panel_color = self.prefs_win.get_change_panel_color()
@@ -1787,8 +1983,8 @@ class Dock(object):
     def setup_app_list(self):
         """Setup the list of docked apps.
 
-        First, read the list of pinned apps from the settings and add them to
-        the app list
+        If pinned apps are pinned to all workspaces read the list of pinned apps from the settings and add them to
+        the app list, otherwise get the current workspace and load the config assigned for it, if any
 
         Then iterate through the running apps, and then either:
             if this is a non-pinned app add it to app list
@@ -1799,24 +1995,32 @@ class Dock(object):
         close events and active window change events
         """
 
+        self.wnck_screen.force_update()  # recommended per Wnck documentation
+
         self.app_list = []
+        if self.pa_on_all_ws:
+            pinned_apps = self.settings.get_value("pinned-apps").unpack()
+            # the settings contain a list of .desktop files, so we need to find and
+            # read each file
+        else:
+            pinned_apps = []
+            cur_ws = self.wnck_screen.get_active_workspace()
+            if cur_ws is not None:
+                ws_name = cur_ws.get_name()
+                for config in self.pa_configs:
+                    if ws_name == config[1]:
+                        for loop in range(2, len(config)):
+                            pinned_apps.append(config[loop])
 
-        pinned_apps = self.settings.get_value("pinned-apps").unpack()
-
-        # the settings contain a list of .desktop files, so we need to find and
-        # read each ile
         for pinned_app in pinned_apps:
             dock_app = docked_app.DockedApp()
-
             full_name = self.find_desktop_file(pinned_app)
             if full_name != "":
                 dock_app.desktop_file = full_name
                 if dock_app.read_info_from_desktop_file():
                     self.app_list.append(dock_app)
 
-            dock_app.is_pinned = True
-
-        self.wnck_screen.force_update()  # recommended per Wnck documentation
+                dock_app.is_pinned = True
 
         for wnck_window in self.wnck_screen.get_windows():
 
@@ -1840,29 +2044,33 @@ class Dock(object):
 
                 dock_app.applet = self.applet
 
-                dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match)
+                dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match, self.window_ws_changed)
 
-                # if this is a pinned app, merge the running app details with
+                # if this is a pinned app already in the list, merge the running app details with
                 # the item already set up in app_list
                 for app in self.app_list:
                     if app.desktop_file == dock_app.desktop_file:
                         # copy the running app's info to the pinned dock item
                         self.copy_wnck_info_to_app(app, dock_app, wnck_window)
-
                         break
                 else:
                     # it's not a pinned app so add it to the app list
                     self.app_list.append(dock_app)
 
-        self.wnck_screen.connect("active-window-changed",
-                                 self.active_win_changed)
-        self.wnck_screen.connect("active-workspace-changed",
-                                 self.active_workspace_changed)
-        self.wnck_screen.connect("window-opened", self.window_opened)
-        self.wnck_screen.connect("window_closed", self.window_closed)
+    def clear_dock_apps(self):
+        """ Clear out the current list of apps, pinned and unpinned, restoring the
+            dock to an empty state
+        :return:
+        """
+
+        a1 = self.app_list.copy()
+        for dock_app in a1:
+            self.remove_app_from_dock(dock_app)
 
     def active_workspace_changed(self, wnck_screen, previously_active_space):
         """ Event handler for the active workspace change even
+
+        Load a saved pinned app config for the new workspace if appropriate
 
         Show or hide pinned and unpinned dock apps as appropriate
 
@@ -1873,8 +2081,25 @@ class Dock(object):
 
         """
 
-        self.show_or_hide_app_icons()
-        self.show_or_hide_indicators()
+        # get the name of the new workspace
+        ws = wnck_screen.get_active_workspace()
+        if ws is None:
+            return
+
+        ws_name = ws.get_name()
+
+        # if we're using a different dock
+        if not self.pa_on_all_ws:
+            # we're using different configurations on pinned apps on each workspace
+            # so first, clear out the current set of apps
+            self.clear_dock_apps()
+
+            # setup the new dock for this workspace
+            self.setup_app_list()
+            self.setup_dock_apps()
+            self.show_or_hide_app_icons()
+            self.show_or_hide_indicators()
+            self.set_all_apps_minimise_targets()
 
     def active_win_changed(self, wnck_screen, prev_active_window):
         """Event handler for the window change event
@@ -1915,6 +2140,21 @@ class Dock(object):
                                 app.queue_draw()
                                 break
 
+    def window_ws_changed(self, wnck_window):
+        """ Handler for the wnck_window workspace changed signal
+
+        If we're showing unpinned apps from the current workspace only, then
+        we need to make sure that dock icons are hidden if an unpinned app
+        has no more windows on the current workspace, but still has windows
+        open on another...
+
+        """
+
+        if not self.show_all_apps:
+            self.show_or_hide_app_icons()
+            self.show_or_hide_indicators()
+            self.set_all_apps_minimise_targets()
+
     def window_opened(self, wnck_screen, wnck_window):
         """Event handler for the window_opened event
 
@@ -1952,7 +2192,7 @@ class Dock(object):
             dock_app.set_multi_ind(self.multi_ind)
             dock_app.set_active_bg(self.active_bg)
             dock_app.set_attention_type(self.attention_type)
-            got_desktop = dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match)
+            got_desktop = dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match, self.window_ws_changed)
 
             # look for the app relating to the window in the dock
             in_dock = False
@@ -2087,19 +2327,63 @@ class Dock(object):
                     except ValueError:
                         pass
 
+    def app_is_pinned_to_workspace(self, app):
+        """
+            Checks to see if the app is pinned to a specific workspace
+
+        Args:
+            app : a docked app
+
+        Returns:
+            String: the name of the workspace the app is pinned to, or "" if
+                    it isn't pinned to any
+
+        """
+
+        if app.desktop_file is None:
+            return""
+
+        df = os.path.basename(app.desktop_file)
+        if df is None:
+            return ""
+
+        for config in self.pa_configs:
+
+            if df in config or app.desktop_file in self.pa_configs:
+                return config[1]
+
+        return ""
+
     def show_or_hide_app_icons(self):
         """ If we're only showing unpinned apps from the current workspace then
-            then show/hide as appropriate.
+            then show/hide unpinned apps as appropriate.
+
+            If we're showing unpinned apps from all workspaces then we also need
+            to check if we're also showing pinned apps on the workspaces they
+            were pinned to. If so we can only show icons for apps which are not pinned
+            to the current workspace if they're not already pinned to another...
 
             Finally, recalculate all app minimization targets
         """
 
+        cur_ws = self.wnck_screen.get_active_workspace()
+
         if self.show_all_apps:
-            for app in self.app_list:
-                if not app.is_visible():
-                    app.show_icon()
+            if self.pa_on_all_ws:
+                for app in self.app_list:
+                    if not app.is_pinned:
+                        if not app.is_visible():
+                            app.show_icon()
+            else:
+                ws_name = cur_ws.get_name()
+                for app in self.app_list:
+                    if not app.is_pinned:
+                        pinned_ws = self.app_is_pinned_to_workspace(app)
+                        if pinned_ws == "":
+                            app.show_icon()
+                        else:
+                            app.hide_icon()
         else:
-            cur_ws = self.wnck_screen.get_active_workspace()
             for app in self.app_list:
                 if not app.is_pinned:
                     if app.has_windows_on_workspace(cur_ws):
@@ -2107,7 +2391,6 @@ class Dock(object):
                     else:
                         app.hide_icon()
 
-        # recalculate all apps icon geometry
         self.set_all_apps_minimise_targets()
 
     def show_or_hide_indicators(self):
@@ -2353,11 +2636,13 @@ class Dock(object):
     def setup_dock(self):
         """Setup the dock."
 
-        Add all pinned apps to the dock
+        Add all applicable pinned apps to the dock
 
         Add all non-pinned running apps to the dock
 
         Setup all apps according to the applet size and orientation
+
+        Setup signal handlers
 
         """
 
@@ -2367,6 +2652,22 @@ class Dock(object):
 
         # setup up pinned and non-pinned running apps
         self.setup_app_list()
+        self.setup_dock_apps()
+        self.show_or_hide_app_icons()
+        self.show_or_hide_indicators()
+
+        # set up signal handlers
+        self.wnck_screen.connect("active-window-changed",
+                                 self.active_win_changed)
+        self.wnck_screen.connect("active-workspace-changed",
+                                 self.active_workspace_changed)
+        self.wnck_screen.connect("window-opened", self.window_opened)
+        self.wnck_screen.connect("window_closed", self.window_closed)
+
+    def setup_dock_apps(self):
+        """ setup the apps in the app list according to the dock settings
+        """
+        orientation = self.applet.get_orient()
         applet_size = self.applet.get_size()
 
         # add the apps to the dock
@@ -2387,8 +2688,8 @@ class Dock(object):
             dock_app.set_attention_type(self.attention_type)
             self.add_app(dock_app)
 
-        self.show_or_hide_app_icons()
-        self.show_or_hide_indicators()
+        # make everything visible...
+        self.box.show_all()
 
     def set_new_orientation(self, new_orient):
         """Change the dock applet to a new applet orientation
@@ -2538,12 +2839,12 @@ class Dock(object):
         # first of all, add any shortcut actions specified in the app's
         # .desktop file
 
-        df_shortcut_1_action = self.dock_action_group.get_action("df_shortcut_1_action")
-        df_shortcut_2_action = self.dock_action_group.get_action("df_shortcut_2_action")
-        df_shortcut_3_action = self.dock_action_group.get_action("df_shortcut_3_action")
-        df_shortcut_4_action = self.dock_action_group.get_action("df_shortcut_4_action")
-        pin_action = self.dock_action_group.get_action("pin_action")
-        unpin_action = self.dock_action_group.get_action("unpin_action")
+        df_shortcut_1_action = self.popup_action_group.get_action("df_shortcut_1_action")
+        df_shortcut_2_action = self.popup_action_group.get_action("df_shortcut_2_action")
+        df_shortcut_3_action = self.popup_action_group.get_action("df_shortcut_3_action")
+        df_shortcut_4_action = self.popup_action_group.get_action("df_shortcut_4_action")
+        pin_action = self.popup_action_group.get_action("pin_action")
+        unpin_action = self.popup_action_group.get_action("unpin_action")
 
         self.app_act_list = dock_action_list.DockActionList(self.wnck_screen)
         self.app_act_list.icontheme = self.icontheme
@@ -2575,7 +2876,7 @@ class Dock(object):
         if pin_action.is_visible():
             self.app_act_list.add_to_list(pin_action.get_label(),
                                           pin_action, False)
-        else:
+        if unpin_action.is_visible():
             self.app_act_list.add_to_list(unpin_action.get_label(),
                                           unpin_action, False)
 

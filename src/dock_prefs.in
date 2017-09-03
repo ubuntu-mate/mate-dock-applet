@@ -330,7 +330,40 @@ class DockPrefsWindow(Gtk.Window):
             self.__appearance_tbl.attach(self.__cb_multi_ind, 0, 2, 1, 1)
             self.__appearance_tbl.attach(self.__frame_bg, 0, 3, 1, 1)
 
-        self.__frame_unpinned_apps = create_frame("Unpinned applications")
+        self.__frame_pinned_apps = create_frame("Pinned application dock icons")
+        self.__rb_pinned_all_ws = Gtk.RadioButton(label="Display on all workspaces")
+        self.__rb_pinned_pin_ws = Gtk.RadioButton(label="Display only on the workspace the app was pinned",
+                                                  group=self.__rb_pinned_all_ws)
+
+        if build_gtk2:
+            self.__table_pinned_apps = Gtk.Table(rows=2, columns=1,
+                                                 homogeneous=False)
+            self.__table_pinned_apps.attach(self.__rb_pinned_all_ws,
+                                            0, 1, 0, 1,
+                                            Gtk.AttachOptions.FILL,
+                                            Gtk.AttachOptions.SHRINK,
+                                            2, 2)
+            self.__table_pinned_apps.attach(self.__rb_pinned_pin_ws,
+                                            0, 1, 1, 2,
+                                            Gtk.AttachOptions.FILL,
+                                            Gtk.AttachOptions.SHRINK,
+                                            2, 2)
+        else:
+            self.__table_pinned_apps = Gtk.Grid()
+            self.__table_pinned_apps.set_row_spacing(2)
+            self.__table_pinned_apps.set_column_spacing(2)
+            self.__table_pinned_apps.attach(self.__rb_pinned_all_ws,
+                                            0, 0, 1, 1)
+            self.__table_pinned_apps.attach(self.__rb_pinned_pin_ws,
+                                            0, 1, 1, 1)
+
+        self.__frame_pinned_apps_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                       xscale=1.0, yscale=1.0)
+        self.__frame_pinned_apps_align.set_padding(0, 0, 12, 0)
+        self.__frame_pinned_apps_align.add(self.__table_pinned_apps)
+        self.__frame_pinned_apps.add(self.__frame_pinned_apps_align)
+
+        self.__frame_unpinned_apps = create_frame("Unpinned application dock icons")
         self.__rb_unpinned_all_ws = Gtk.RadioButton(label="Display unpinned apps from all workspaces")
         self.__rb_unpinned_cur_ws = Gtk.RadioButton(group=self.__rb_unpinned_all_ws,
                                     label="Display unpinned apps only from current workspace")
@@ -365,10 +398,28 @@ class DockPrefsWindow(Gtk.Window):
 
         self.__cb_win_cur_ws = Gtk.CheckButton(label="Display indicators/window list items for current workspace only")
 
+        self.__notes_scrolled_win = Gtk.ScrolledWindow()
+        self.__notes_scrolled_win.set_policy(Gtk.PolicyType.NEVER,
+                                             Gtk.PolicyType.AUTOMATIC)
+        self.__tv_notes = Gtk.TextView()
+        self.__tv_notes.set_wrap_mode(Gtk.WrapMode.WORD)
+        self.__tv_notes.set_editable(False)
+        self.__notes_text_buf = Gtk.TextBuffer()
+
+        self.__tv_notes.set_buffer(self.__notes_text_buf)
+        iter = self.__notes_text_buf.get_start_iter()
+        self.__notes_text_buf.insert(iter,
+                                     "Note: when displaying pinned apps only on the workspace where they were " +
+                                     "created, it is a good idea to also select the 'Display unpinned apps' " +
+                                     "and 'Display indicators/window list' items for the current workspace " +
+                                     "only options.")
+
         self.__ws_vbox = self.create_vbox
         self.__ws_vbox.set_spacing(2)
+        self.__ws_vbox.pack_start(self.__frame_pinned_apps, False, False, 4)
         self.__ws_vbox.pack_start(self.__frame_unpinned_apps, False, False, 4)
         self.__ws_vbox.pack_start(self.__cb_win_cur_ws, False, False, 4)
+        self.__ws_vbox.pack_end(self.__tv_notes, False, False, 4)
 
         self.__frame_win_sel = create_frame("Window selection")
         self.__rb_win_list = Gtk.RadioButton(label="From applet's window list")
@@ -528,7 +579,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__sb_pdel.set_snap_to_ticks(True)
 
         self.__frame_pdel_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                               xscale=1.0, yscale=1.0)
+                                                xscale=1.0, yscale=1.0)
         self.__frame_pdel_align.set_padding(0, 0, 12, 300)
         self.__frame_pdel_align.add(self.__sb_pdel)
         self.__frame_pdel.add(self.__frame_pdel_align)
@@ -537,7 +588,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__misc_vbox.set_spacing(2)
         self.__misc_vbox.pack_start(self.__frame_fb_bar_col, False, False, 4)
         self.__misc_vbox.pack_start(self.__frame_attention_type, False, False, 4)
-        self.__misc_vbox.pack_start(self.__frame_pdel, False, False,4)
+        self.__misc_vbox.pack_start(self.__frame_pdel, False, False, 4)
 
         self.__vbox.pack_start(self.__notebook, True, True, 4)
         self.__notebook.append_page(self.__appearance_tbl, Gtk.Label("Appearance"))
@@ -859,6 +910,7 @@ class DockPrefsWindow(Gtk.Window):
 
     def get_show_pinned_apps_on_all_ws(self):
         """Gets whether pinned apps are displayed in the dock on all workspaces
+           or just on the workspace where they were created
 
         Returns: boolean
         """
@@ -874,7 +926,7 @@ class DockPrefsWindow(Gtk.Window):
         if show_on_all:
             self.__rb_pinned_all_ws.set_active(True)
         else:
-            self.__rb_pinned_cur_ws.set_active(True)
+            self.__rb_pinned_pin_ws.set_active(True)
 
     def get_pan_act(self):
         """ Gets whether or not the show the action list on the panel
@@ -1065,6 +1117,7 @@ class DockPrefsWindow(Gtk.Window):
 
         self.__sb_pdel.update()
         return int(self.__sb_pdel.get_value()*1000)
+
 
 def main():
     """main function - debug code can go here"""

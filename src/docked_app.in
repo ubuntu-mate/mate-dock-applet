@@ -415,7 +415,7 @@ class DockedApp(object):
 
         return ret_val
 
-    def setup_from_wnck(self, wnck_app, wnck_class, app_match_list):
+    def setup_from_wnck(self, wnck_app, wnck_class, app_match_list, win_ws_changed_cb):
         """Set up for an already running app, obtaining info from libWnck.
 
         Will attempt to get the app path, icon path, .desktop file, currently
@@ -448,6 +448,7 @@ class DockedApp(object):
         # get the currently open windows
         for win in wnck_app.get_windows():
             win.connect("state-changed", self.win_state_changed)
+            win.connect("workspace-changed", win_ws_changed_cb)
             win_class = win.get_class_group()
             win_class_name = win_class.get_res_class()
             # if self.wm_class_group_name == "":

@@ -553,6 +553,10 @@ def applet_fill(applet):
     applet.add(the_dock.box)
     applet.show_all()
 
+    # make sure that apps pinned to specific workspaces other than the current one
+    # are hidden
+    the_dock.show_or_hide_app_icons()
+
     applet.connect("enter-notify-event", applet_enter_notify, the_dock)
     applet.connect("leave-notify-event", applet_leave_notify, the_dock)
     applet.connect("motion-notify-event", applet_motion_notify, the_dock)
