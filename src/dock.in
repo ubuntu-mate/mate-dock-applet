@@ -53,16 +53,18 @@ else:
     gi.require_version("Wnck", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
+gi.require_version("Notify", "0.7")
 
 from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import MatePanelApplet
 from gi.repository import GObject
 from gi.repository import Wnck
-
 from gi.repository import GdkPixbuf
 from gi.repository import Gio
 from gi.repository import GLib
+from gi.repository import Notify
+
 import os
 import os.path
 import sys
@@ -359,6 +361,7 @@ class Dock(object):
 
         super().__init__()
 
+        Notify.init("Mate Dock Applet")
         self.applet = applet    # the panel applet, in case we need it later
 
         self.app_list = []
@@ -1284,6 +1287,9 @@ class Dock(object):
                 the_app = self.right_clicked_app
 
         if the_app is not None:
+            # get the index of the app in self.app list
+            app_index =  self.app_list.index(the_app)
+
             the_app.is_pinned = False
             if not the_app.is_running():
                 self.remove_app_from_dock(the_app)
@@ -1304,7 +1310,54 @@ class Dock(object):
                         self.set_all_apps_minimise_targets()
                         self.right_clicked_app = None
 
+            self.notification = Notify.Notification.new("%s unpinned" %the_app.app_name)
+            self.notification.set_icon_from_pixbuf(the_app.app_pb)
+            self.notification.add_action("action_click", "Undo", self.notify_cb, [the_app, app_index])
+            self.notification.show()
+
             self.write_settings()
+
+    def notify_cb(self, Notification, action, app_data):
+        """
+            Callback for 'Unpin' notification
+
+            Pin the app back onto the dock in the same position and workspace as it was
+            unpinned from
+
+
+        Params:
+            Notification: the notification
+            action: the action performed i.e. mouse click
+            app_data :  a tuple containing the docked_app that was unpinned, and the index in self.app_list
+                        from which the app was unpinned
+
+        """
+
+        the_app = app_data[0]
+
+        # is the app still in the dock?
+        app_in_dock = False
+        for app in self.app_list:
+            if app == the_app:
+                app_in_dock = True
+                break
+
+        the_app.is_pinned = True
+        if not app_in_dock:
+            # the app is not in the dock, so add it again and then move to the required
+            # position
+            self.app_list.append(the_app)
+            self.add_app(the_app)
+            self.move_app(the_app, app_data[1])
+
+        notification = Notify.Notification.new("%s re-pinned" % the_app.app_name)
+        notification.set_icon_from_pixbuf(the_app.app_pb)
+        notification.show()
+
+        # write settings...
+        if not self.pa_on_all_ws:
+            self.update_pinned_app_config()
+        self.write_settings()
 
     def pin_app(self, data=None):
         """Pin an app to the dock.
@@ -1390,6 +1443,10 @@ class Dock(object):
                 self.app_list[index-1] = self.app_list[index]
                 self.app_list[index] = app
 
+                # allow Gtk to move perform the move
+                while Gtk.events_pending():
+                    Gtk.main_iteration()
+
                 # recalculate the minimize targets for each app
                 self.set_minimise_target(self.app_list[index-1])
                 self.set_minimise_target(self.app_list[index])
@@ -1403,8 +1460,8 @@ class Dock(object):
         """ Move a docked app to a new position in the dock, adjusting the
             the positions of other apps as necessary
 
-        This is used during drag and drop operatations and is therefore gtk3
-        only
+        This is used during drag and drop operatations and when repinning
+        unpinned apps in response to notifications
 
         Args:
             the_app : the docked_app we're moving
@@ -1413,37 +1470,45 @@ class Dock(object):
 
         old_pos = self.app_list.index(the_app)
 
-        if self.box.orientation == Gtk.Orientation.HORIZONTAL:
-            prop = "left-attach"
+        # first move the app's drawing area
+        if build_gtk2:
+            self.box.reorder_child(the_app.drawing_area, new_pos)
         else:
-            prop = "top-attach"
+            if self.box.orientation == Gtk.Orientation.HORIZONTAL:
+                prop = "left-attach"
+            else:
+                prop = "top-attach"
 
-        if new_pos > old_pos:
-            step = 1
-        else:
-            step = -1
+            if new_pos > old_pos:
+                step = 1
+            else:
+                step = -1
 
-        i = old_pos + step
+            i = old_pos + step
 
-        # first, adjust the contents of the box
-        while i != new_pos + step:
-            app_to_move = self.app_list[i]
-            self.box.child_set_property(app_to_move.drawing_area,
-                                        prop, i - step)
-            i += step
+            # first, adjust the contents of the box containing the app drawing areas
+            while i != new_pos + step:
+                app_to_move = self.app_list[i]
+                self.box.child_set_property(app_to_move.drawing_area,
+                                            prop, i - step)
+                i += step
 
-        # move the desired app
-        self.box.child_set_property(the_app.drawing_area, prop, new_pos)
+            # move the desired app's drawing area
+            self.box.child_set_property(the_app.drawing_area, prop, new_pos)
 
         # now move things around in the app list to match
         self.app_list.remove(the_app)
         self.app_list.insert(new_pos, the_app)
 
+        # allow Gtk to move perform the move
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+
         # we need to redraw the icons and recalculate the minimise positions
         # of all apps
-        self.set_all_apps_minimise_targets()
         for app in self.app_list:
             app.queue_draw()
+        self.set_all_apps_minimise_targets()
 
         # save the new settings
         if not self.pa_on_all_ws:
@@ -1548,6 +1613,10 @@ class Dock(object):
 
                 self.app_list[index+1] = self.app_list[index]
                 self.app_list[index] = app
+
+                # allow Gtk to move perform the move
+                while Gtk.events_pending():
+                    Gtk.main_iteration()
 
                 # recalculate the minimize targets for each app
                 self.set_minimise_target(self.app_list[index+1])
