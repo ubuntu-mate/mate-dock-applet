@@ -347,7 +347,7 @@ class Dock(object):
                            string : another pinned app, etc. etc.
             pa_on_all_ws : boolean - if true, pinned apps appear on all workspaces.
                                      If false, pinned apps are set according to the current workspace
-
+            notification : the latest unpin notification
 
     """
 
@@ -420,9 +420,9 @@ class Dock(object):
         self.dock_action_group = None
         self.popup_action_group = None
 
-        self.app_win_list = dock_win_list.DockWinList(self.wnck_screen)
+        self.app_win_list = dock_win_list.DockWinList(self.wnck_screen, self.applet.get_orient())
         self.app_win_list.icontheme = self.icontheme
-        self.app_act_list = dock_action_list.DockActionList(self.wnck_screen)
+        self.app_act_list = dock_action_list.DockActionList(self.wnck_screen, self.applet.get_orient())
         self.app_act_list.icontheme = self.icontheme
         self.act_list_timer = None
 
@@ -434,6 +434,8 @@ class Dock(object):
 
         self.dm_timer = None
         self.da_timer = None
+
+        self.notification = None
 
         # create an event handler so that we can react to changes e.g
         # the panel the applet is on, or it's position on the panel
@@ -1288,7 +1290,7 @@ class Dock(object):
 
         if the_app is not None:
             # get the index of the app in self.app list
-            app_index =  self.app_list.index(the_app)
+            app_index = self.app_list.index(the_app)
 
             the_app.is_pinned = False
             if not the_app.is_running():
@@ -1310,14 +1312,15 @@ class Dock(object):
                         self.set_all_apps_minimise_targets()
                         self.right_clicked_app = None
 
-            self.notification = Notify.Notification.new("%s unpinned" %the_app.app_name)
+            # maintain a reference to the unpin notification...
+            self.notification = Notify.Notification.new("%s unpinned" % the_app.app_name)
             self.notification.set_icon_from_pixbuf(the_app.app_pb)
             self.notification.add_action("action_click", "Undo", self.notify_cb, [the_app, app_index])
             self.notification.show()
 
             self.write_settings()
 
-    def notify_cb(self, Notification, action, app_data):
+    def notify_cb(self, notification, action, app_data):
         """
             Callback for 'Unpin' notification
 
@@ -1326,7 +1329,7 @@ class Dock(object):
 
 
         Params:
-            Notification: the notification
+            notification: the notification
             action: the action performed i.e. mouse click
             app_data :  a tuple containing the docked_app that was unpinned, and the index in self.app_list
                         from which the app was unpinned
@@ -2915,7 +2918,8 @@ class Dock(object):
         pin_action = self.popup_action_group.get_action("pin_action")
         unpin_action = self.popup_action_group.get_action("unpin_action")
 
-        self.app_act_list = dock_action_list.DockActionList(self.wnck_screen)
+        self.app_act_list = dock_action_list.DockActionList(self.wnck_screen,
+                                                            self.applet.get_orient())
         self.app_act_list.icontheme = self.icontheme
 
         # get the panel custom background colour (if any) and then set the
@@ -2956,11 +2960,11 @@ class Dock(object):
 
         self.app_act_list.set_applet_details(applet_x, applet_y,
                                              applet_w, applet_h)
-        self.app_act_list.set_panel_orient(self.applet.get_orient())
         app_x, app_y = self.get_app_root_coords(highlighted_app)
         self.app_act_list.set_app_root_coords(app_x, app_y)
 
         self.app_act_list.show_all()
+        self.app_act_list.set_opacity(0.9)
 
         self.act_list_timer = None
         return False
@@ -3047,7 +3051,8 @@ class Dock(object):
 
         self.set_actions_for_app(self.app_with_mouse)
 
-        self.app_win_list = dock_win_list.DockWinList(self.wnck_screen)
+        self.app_win_list = dock_win_list.DockWinList(self.wnck_screen,
+                                                      self.applet.get_orient())
         self.app_win_list.icontheme = self.icontheme
 
         # get the panel custom background colour (if any) and then set the
@@ -3067,11 +3072,11 @@ class Dock(object):
 
         self.app_win_list.set_applet_details(applet_x, applet_y,
                                              applet_w, applet_h)
-        self.app_win_list.set_panel_orient(self.applet.get_orient())
         app_x, app_y = self.get_app_root_coords(highlighted_app)
         self.app_win_list.set_app_root_coords(app_x, app_y)
 
         self.app_win_list.show_all()
+        self.app_win_list.set_opacity(0.9)
 
         self.act_list_timer = None
         return False
