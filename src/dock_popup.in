@@ -63,6 +63,8 @@ import cairo
 from time import sleep
 
 import docked_app
+from math import pi
+
 
 CONST_TIMER_DELAY = 1000
 CONST_ICON_SIZE = 16
@@ -104,9 +106,12 @@ class DockPopup(Gtk.Window):
             __applet_h : the height of the applet in pixels
             __panel_orient : the orienation of the MATE panel the applet is on
 
+            __do_window_shaping : whether or not the window can be shaped,
+                                  e.g. have rounded corners. Depends on 
+                                  Gtk3 and gi module >= 3.26.0
     """
 
-    def __init__(self, wnck_screen):
+    def __init__(self, wnck_screen, panel_orient):
         """
         create the window and its contents
 
@@ -145,7 +150,7 @@ class DockPopup(Gtk.Window):
 
         self.__app_x = 0
         self.__app_y = 0
-        self.__panel_orient = MatePanelApplet.AppletOrient.LEFT  # default value
+        self.__panel_orient = panel_orient
 
         self.__bgr = 0
         self.__bgg = 0
@@ -179,22 +184,49 @@ class DockPopup(Gtk.Window):
 
         # set vars used when drawing the window border
         self.__border_width = 15
-        self.__border_line = 4.5
+        self.__border_line = 4
         self.__line_width = 2
-        self.__line_curve = 4
+        self.__line_curve = 5.0
+        self.__pointer_size = 16
 
         # add drawing areas to all outsides of the 3x3 grid
+        # if we're showing shaped windows then the drawing area nearest the panel
+        # needs to be expanded so that that portion of the window it can be shaped
+        #  into a pointer to the app icon
+
+        if build_gtk2:
+            self.__do_window_shaping = False
+        else:
+            gi_ver = GObject.pygobject_version
+            self.__do_window_shaping = gi_ver[0] > 3 or \
+                                       ((gi_ver[0] == 3) and (gi_ver[1] >= 26))
+
+        da_height = self.__border_width
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
+            da_height += self.__pointer_size
         self.__da_top = create_drawing_area(self.__border_width,
-                                            self.__border_width,
+                                            da_height,
                                             self.draw_top_border)
-        self.__da_left = create_drawing_area(self.__border_width,
+
+        da_width = self.__border_width
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
+            da_width += self.__pointer_size
+        self.__da_left = create_drawing_area(da_width,
                                              self.__border_width,
                                              self.draw_left_border)
-        self.__da_right = create_drawing_area(self.__border_width,
+
+        da_width = self.__border_width
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.LEFT:
+            da_width += self.__pointer_size
+        self.__da_right = create_drawing_area(da_width,
                                               self.__border_width,
                                               self.draw_right_border)
+
+        da_height = self.__border_width
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.UP:
+            da_height += self.__pointer_size
         self.__da_bottom = create_drawing_area(self.__border_width,
-                                               self.__border_width,
+                                               da_height,
                                                self.draw_bottom_border)
 
         if build_gtk2:
@@ -397,12 +429,15 @@ class DockPopup(Gtk.Window):
 
             return rect
 
-        panel_space = 10    # how many pixels away from the panel the window list
-                            # will appear
+        # set how many pixels away from the panel the window list will appear
+        if self.__do_window_shaping:
+            panel_space = 5
+        else:
+            panel_space = 10
 
-        win_border = 15     # size of the border (in pixels) around the window
-                            # list where the mouse must remain, outside of which
-                            # the window list will hide
+        win_border = 15 # size of the border (in pixels) around the window
+                        # list where the mouse must remain, outside of which
+                        # the window list will hide
 
         screen = self.get_screen()
 
@@ -549,53 +584,88 @@ class DockPopup(Gtk.Window):
         return
 
     def size_allocate(self, widget, event):
+
+        def draw_rounded(cr, area, radius):
+            """ draws rectangles with rounded (circular arc) corners """
+            # Attribution: https://gist.github.com/kamiller/3013605
+
+            a, b, c, d = area
+            cr.arc(a + radius, c + radius, radius, 2 * (pi / 2), 3 * (pi / 2))
+            cr.arc(b - radius, c + radius, radius, 3 * (pi / 2), 4 * (pi / 2))
+            cr.arc(b - radius, d - radius, radius, 0 * (pi / 2), 1 * (pi / 2))  # ;o)
+            cr.arc(a + radius, d - radius, radius, 1 * (pi / 2), 2 * (pi / 2))
+            cr.close_path()
+
+            cr.stroke_preserve()
+
         if (event.width != self.__win_w) or (event.height != self.__win_h):
             self.__win_w = event.width
             self.__win_h = event.height
 
             self.set_win_position()
-    # TODO: keep checking status of this bug:
-    # https://bugzilla.gnome.org/show_bug.cgi?id=667959
-    # and when a fix is available shape_combine_region for rounded windows...
-    # def size_allocate(self, widget, allocation):
-    #    def rounded_rectangle(cr, x, y, w, h, r=20):
-    #        # Attribution:
-    #        # https://stackoverflow.com/questions/2384374/rounded-rectangle-in-pygtk
-    #        # This is just one of the samples from
-    #        # http://www.cairographics.org/cookbook/roundedrectangles/
-    #        #   A****BQ
-    #        #  H      C
-    #        #  *      *
-    #        #  G      D
-    #        #   F****E
-    #
-    #            cr.move_to(x + r, y)                      # Move to A
-    #        cr.line_to(x + w - r, y)                    # Straight line to B
-    #        cr.curve_to(x + w, y, x + w, y ,x + w, y + r)
-    #        # Curve to C, Control points are both at Q
-    #        cr.line_to(x + w, y + h - r)                  # Move to D
-    #        cr.curve_to(x + w,y + h, x + w,y + h, x + w - r, y +h ) # Curve to E
-    #        cr.line_to(x + r, y + h)                    # Line to F
-    #        cr.curve_to(x, y + h, x, y + h, x, y + h - r) # Curve to G
-    #        cr.line_to(x,y+r)                      # Line to H
-    #        cr.curve_to(x,y,x,y,x+r,y)             # Curve to A
-    #
-    #    print("size allocated %d %d %d %d" % (allocation.x, allocation.y,
-    #                                           allocation.width, allocation.height))
-    #
-    #    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
-    #                                   allocation.width,
-    #                                   allocation.height)
-    #
-    #    ctx = cairo.Context(surface)
-    #    rounded_rectangle(ctx, allocation.x + 5 , allocation.y + 5,
-    #                      allocation.width - 10, allocation.height - 10)
-    #    ctx.set_source_rgba(1, 1, 1, 1)
-    #
-    #    ctx.fill()
-    #
-    #    region = Gdk.cairo_region_create_from_surface(surface)
-    #    self.props.window.shape_combine_region(region, 0, 0)
+
+        if not self.__do_window_shaping:
+            return
+
+        # round the corners of the portion of the window containing the widget and border
+        allocation = self.get_allocation()
+
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
+                                     allocation.width,
+                                     allocation.height)
+
+        ctx = cairo.Context(surface)
+
+        if self.__panel_orient == MatePanelApplet.AppletOrient.UP:
+            draw_rounded(ctx, [allocation.x, allocation.width,
+                               allocation.y, allocation.height - self.__pointer_size], 10)
+        elif self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
+            draw_rounded(ctx, [allocation.x, allocation.width,
+                               allocation.y + self.__pointer_size,
+                               allocation.height], 10)
+        elif self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
+            draw_rounded(ctx, [self.__pointer_size + 1, allocation.width,
+                               allocation.y, allocation.height], 10)
+        else:
+            draw_rounded(ctx, [allocation.x, allocation.width - self.__pointer_size,
+                               allocation.y, allocation.height], 10)
+
+        ctx.set_source_rgba(1, 1, 1, 1)
+
+        ctx.fill()
+
+        # now create a pointer to the app's icon in the dock
+        if self.__panel_orient == MatePanelApplet.AppletOrient.UP:
+            ctx.move_to(allocation.width / 2 - self.__pointer_size,
+                        allocation.height - self.__pointer_size)
+            ctx.line_to(allocation.width / 2, allocation.height)
+            ctx.line_to(allocation.width / 2 + self.__pointer_size,
+                        allocation.height - self.__pointer_size)
+        elif self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
+            ctx.move_to(allocation.width / 2 - self.__pointer_size,
+                        self.__pointer_size)
+            ctx.line_to(allocation.width / 2, 0)
+            ctx.line_to(allocation.width / 2 + self.__pointer_size,
+                        self.__pointer_size)
+        elif self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
+            ctx.move_to(self.__pointer_size,
+                        allocation.height / 2 - self.__pointer_size)
+            ctx.line_to(0, allocation.height / 2)
+            ctx.line_to(self.__pointer_size,
+                        allocation.height / 2 + self.__pointer_size)
+        else:
+            ctx.move_to(allocation.width - self.__pointer_size,
+                        allocation.height / 2 - self.__pointer_size)
+            ctx.line_to(allocation.width, allocation.height / 2)
+            ctx.line_to(allocation.width - self.__pointer_size,
+                        allocation.height / 2 + self.__pointer_size)
+
+        ctx.stroke_preserve()
+        ctx.set_source_rgba(1, 1, 1, 1)
+        ctx.fill()
+
+        region = Gdk.cairo_region_create_from_surface(surface)
+        self.shape_combine_region(region)
 
     def draw_top_border(self, drawing_area, event):
         """
@@ -626,22 +696,44 @@ class DockPopup(Gtk.Window):
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)
         ctx.set_source_rgb(self.__fgr / 255, self.__fgg / 255,
                            self.__fgb / 255)
-        ctx.move_to(self.__border_line, alloc.height)
-        ctx.line_to(self.__border_line,
-                    self.__border_line + self.__line_curve)
-        ctx.curve_to(self.__border_line,
-                     self.__border_line + self.__line_curve,
-                     self.__border_line, self.__border_line,
-                     self.__border_line + self.__line_curve,
-                     self.__border_line)
-        ctx.line_to(alloc.width - self.__border_line - self.__line_curve,
-                    self.__border_line)
-        ctx.curve_to(alloc.width - self.__border_line - self.__line_curve,
-                     self.__border_line,
-                     alloc.width - self.__border_line, self.__border_line,
-                     alloc.width - self.__border_line,
-                     self.__border_line + self.__line_curve)
-        ctx.line_to(alloc.width - self.__border_line, alloc.height)
+
+        # the position of the top, left and right border lines depend on whether or not we need to
+        # shape the window into a pointer to the app icon
+        top_extent = left_extent = self.__border_line
+        right_extent = alloc.width - self.__border_line
+        if self.__do_window_shaping:
+            if self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
+                top_extent += self.__pointer_size
+            elif self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
+                left_extent += self.__pointer_size
+            elif self.__panel_orient == MatePanelApplet.AppletOrient.LEFT:
+                right_extent -= self.__pointer_size
+
+        ctx.move_to(left_extent, alloc.height)
+
+        ctx.line_to(left_extent, top_extent + self.__line_curve)
+
+        ctx.curve_to(left_extent,
+                     top_extent + self.__line_curve,
+                     left_extent, top_extent,
+                     left_extent + self.__line_curve,
+                     top_extent)
+
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
+            # extend the border line into the pointer
+            ctx.line_to(alloc.width / 2 - self.__pointer_size + 1,
+                        top_extent)
+            ctx.line_to(alloc.width / 2, top_extent - self.__pointer_size + 1)
+            ctx.line_to(alloc.width / 2 + self.__pointer_size - 1,
+                        top_extent)
+
+        ctx.line_to(right_extent - self.__line_curve, top_extent)
+        ctx.curve_to(right_extent - self.__line_curve,
+                     top_extent,
+                     right_extent, top_extent,
+                     right_extent,
+                     top_extent + self.__line_curve)
+        ctx.line_to(right_extent, alloc.height)
         ctx.stroke()
 
     def draw_left_border(self, drawing_area, event):
@@ -671,8 +763,22 @@ class DockPopup(Gtk.Window):
         ctx.set_source_rgb(self.__fgr / 255, self.__fgg / 255,
                            self.__fgb / 255)
 
-        ctx.move_to(self.__border_line, 0)
-        ctx.line_to(self.__border_line, alloc.height)
+        left_extent = self.__border_line
+        # the position of the left border depends on whether or not we're doing window shaping
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
+            left_extent += self.__pointer_size
+
+        ctx.move_to(left_extent, 0)
+
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
+            # extend the border line into the pointer
+            ctx.line_to(left_extent,
+                        alloc.height / 2 - self.__pointer_size + 1)
+            ctx.line_to(self.__border_line, alloc.height / 2)
+
+            ctx.line_to(left_extent, alloc.height / 2 + self.__pointer_size - 1)
+
+        ctx.line_to(left_extent, alloc.height)
         ctx.stroke()
 
     def draw_right_border(self, drawing_area, event):
@@ -699,13 +805,26 @@ class DockPopup(Gtk.Window):
         ctx.set_source_rgb(self.__fgr / 255, self.__fgg / 255,
                            self.__fgb / 255)
 
-        ctx.move_to(alloc.width - self.__border_line, 0)
-        ctx.line_to(alloc.width - self.__border_line, alloc.height)
+        right_extent = alloc.width - self.__border_line
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.LEFT:
+            right_extent -= self.__pointer_size
+
+        ctx.move_to(right_extent, 0)
+
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.LEFT:
+            # extend the border line into the pointer
+            ctx.line_to(right_extent,
+                        alloc.height / 2 - self.__pointer_size + 1)
+            ctx.line_to(alloc.width - self.__border_line, alloc.height / 2)
+            ctx.line_to(right_extent, alloc.height / 2 + self.__pointer_size - 1)
+
+        ctx.line_to(right_extent, alloc.height)
         ctx.stroke()
 
     def draw_bottom_border(self, drawing_area, event):
         """
             Draw the bottom of the window border with rounded corners
+        
         """
 
         if build_gtk2:
@@ -727,24 +846,46 @@ class DockPopup(Gtk.Window):
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)
         ctx.set_source_rgb(self.__fgr / 255, self.__fgg / 255,
                            self.__fgb / 255)
-        ctx.move_to(self.__border_line, 0)
-        ctx.line_to(self.__border_line,
-                    alloc.height - self.__border_line - self.__line_curve)
-        ctx.curve_to(self.__border_line,
-                     alloc.height - self.__border_line - self.__line_curve,
-                     self.__border_line, alloc.height - self.__border_line,
-                     self.__border_line + self.__line_curve,
-                     alloc.height - self.__border_line)
 
-        ctx.line_to(alloc.width - self.__border_line - self.__line_curve,
-                    alloc.height - self.__border_line)
-        ctx.curve_to(alloc.width - self.__border_line - self.__line_curve,
-                     alloc.height - self.__border_line,
-                     alloc.width - self.__border_line,
-                     alloc.height - self.__border_line,
-                     alloc.width - self.__border_line,
-                     alloc.height - self.__border_line - self.__line_curve)
-        ctx.line_to(alloc.width - self.__border_line, 0)
+        # the lower, right and left extents of the border depend on whether or not we need to
+        # shape the window into a pointer to the app icon
+        left_extent = self.__border_line
+        right_extent = alloc.width - self.__border_line
+        lower_extent = alloc.height - self.__border_line
+        if self.__do_window_shaping:
+            if self.__panel_orient == MatePanelApplet.AppletOrient.UP:
+                lower_extent -= self.__pointer_size
+            elif self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
+                left_extent += self.__pointer_size
+            elif self.__panel_orient == MatePanelApplet.AppletOrient.LEFT:
+                right_extent -= self.__pointer_size
+
+        ctx.move_to(left_extent, 0)
+        ctx.line_to(left_extent,
+                    lower_extent - self.__line_curve)
+        ctx.curve_to(left_extent,
+                     lower_extent - self.__line_curve,
+                     left_extent, lower_extent,
+                     left_extent + self.__line_curve,
+                     lower_extent)
+
+        if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.UP:
+            # draw a pointer
+            ctx.line_to(alloc.width / 2 - self.__pointer_size + 1,
+                        lower_extent)
+            ctx.line_to(alloc.width / 2, lower_extent + self.__pointer_size - 1)
+            ctx.line_to(alloc.width/2 + self.__pointer_size - 1,
+                        lower_extent)
+
+        ctx.line_to(right_extent - self.__line_curve, lower_extent)
+
+        ctx.curve_to(right_extent - self.__line_curve,
+                     lower_extent,
+                     right_extent,
+                     lower_extent,
+                     right_extent,
+                     lower_extent - self.__line_curve)
+        ctx.line_to(right_extent, 0)
         ctx.stroke()
 
     def win_hidden(self, widget):
@@ -899,15 +1040,15 @@ class DockPopup(Gtk.Window):
 
     icontheme = property(get_icontheme, set_icontheme)
 
-    def set_panel_orient(self, panel_orient):
-        """ Set the variable which records the orientation of the panel the
-            applet is on
+    def da_pointer_draw(self, drawing_area, event):
 
-        Args:
-                panel_orient : the panel  orientation
-        """
+        ctx = event
+        alloc = drawing_area.get_allocation()
 
-        self.__panel_orient = panel_orient
+        ctx.rectangle(0, 0, alloc.width, alloc.height)
+        ctx.set_source_rgb(self.__bgr / 255, self.__bgg / 255,
+                           self.__bgb / 255)
+        ctx.fill()
 
     def set_app_root_coords(self, x, y):
         """ Sets the x and y root coords of the app

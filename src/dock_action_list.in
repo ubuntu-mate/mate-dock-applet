@@ -77,7 +77,7 @@ class DockActionList(DockPopup):
 
     """
 
-    def __init__(self, wnck_screen):
+    def __init__(self, wnck_screen, panel_orient):
         """
         create the window and its contents
 
@@ -86,7 +86,7 @@ class DockActionList(DockPopup):
         """
 
         # call the base classes constructor
-        DockPopup.__init__(self, wnck_screen)
+        DockPopup.__init__(self, wnck_screen, panel_orient)
 
         # we use a treeview to list each action, so initialise it and its
         # liststore

@@ -53,7 +53,6 @@ gi.require_version("MatePanelApplet", "4.0")
 from gi.repository import Gtk
 from gi.repository import Wnck
 from gi.repository import GdkPixbuf
-from gi.repository import Gio
 from gi.repository import Gdk
 from gi.repository import Pango
 
@@ -79,7 +78,7 @@ class DockWinList(DockPopup):
 
     """
 
-    def __init__(self, wnck_screen):
+    def __init__(self, wnck_screen, panel_orient):
         """
         create the window and its contents
 
@@ -88,7 +87,7 @@ class DockWinList(DockPopup):
         """
 
         # call the base classes constructor
-        DockPopup.__init__(self, wnck_screen)
+        DockPopup.__init__(self, wnck_screen, panel_orient)
 
         self.__bg_str = ""
         self.__fg_str = ""
