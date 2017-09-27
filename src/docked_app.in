@@ -85,6 +85,7 @@ from log_it import log_it as log_it
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
 AppInfoTup = namedtuple('AppInfoTup', ['app', 'pid', 'windows'])
 
+
 def get_avg_color(pixbuf):
     """calculate the average colour of a pixbuf.
 
@@ -176,6 +177,7 @@ class PulseTimer(object):
             once_only : do only one iteration of pulsing, then stop
         """
 
+        self.timer_count = 0
         self.app = app
         self.app.pulse_step = 0
         self.app.is_pulsing = True
@@ -193,6 +195,13 @@ class PulseTimer(object):
         Redraw the app's icon
         """
 
+        self.timer_count += 1
+        if self.timer_count / int(1000/CONST_PULSE_DELAY) == 45:
+            # we've been pulsing for long enough, the user will be getting a headache
+            self.remove_timer()
+            self.app.queue_draw()
+            return False
+
         if self.app.pulse_step != CONST_PULSE_STEPS:
             self.app.pulse_step += 1
         else:
@@ -201,17 +210,24 @@ class PulseTimer(object):
             if (self.app.startup_id is not None) and not self.once_only:
                 self.app.pulse_step = 0
             else:
-                # we only want the icon to pulse one
+                # we only want the icon to pulse once
                 # if we have a startup_id the notification needs to be cancelled
                 if self.app.startup_id is not None:
                     self.app.cancel_startup_notification()
 
-                self.app.is_pulsing = False
-                GObject.source_remove(self.timer_id)
+                self.remove_timer()
 
         self.app.queue_draw()
-
         return True
+
+    def remove_timer(self):
+        """
+            Cancel the timer and stop the app icon pulsing...
+            
+        """
+
+        self.app.is_pulsing = False
+        GObject.source_remove(self.timer_id)
 
 CONST_BLINK_DELAY = 330
 
@@ -426,6 +442,7 @@ class DockedApp(object):
             wnck_class  : a WnckClass obect relating to the app
             app_match_list : a list of tuples containing details of apps which
                              are hard to match with their .desktop files
+            wnck_ws_changed_cb : workspace changed callback
 
         Returns: True if successful, False otherwise
         """
@@ -1126,7 +1143,7 @@ class DockedApp(object):
             # draw the icon semi-transparently according to how far through the
             # animation we are
 
-            half_way = CONST_PULSE_STEPS/2
+            half_way = int(CONST_PULSE_STEPS/2)
             if self.pulse_step <= half_way:
                 alpha = 1.0 - (self.pulse_step / half_way)
             else:
@@ -1326,10 +1343,7 @@ class DockedApp(object):
         """
 
         def rounded_rectangle(cr, x, y, w, h, r=20):
-            """ Convenience function to draw a rounded rectangle, really needs
-                to be in a library module somewhere, as its used bythe window
-                list
-
+            """ Convenience function to draw a rounded rectangle
                 # Attribution:
                 # https://stackoverflow.com/questions/2384374/rounded-rectangle-in-pygtk
                 # This is just one of the samples from
