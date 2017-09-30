@@ -1388,13 +1388,28 @@ class DockedApp(object):
         height = 8              # total height of the progress bar
         line_width = 2          # border line width
         int_height = height - line_width * 2  # interior height
-        left = 8
+        left = 8.5
         width = draw_size - left * 2   # width of the progress bar
 
-        top = (draw_size/8) * 5
+        top = (draw_size/8) * 5 +0.5
 
         ctx.save()
         ctx.scale(self.drawing_area_size/draw_size, self.drawing_area_size/draw_size)
+
+        # fill the interior with the background colour
+        ctx.set_line_width((1))
+        ctx.set_source_rgb(bk_red, bk_green, bk_blue)
+        rounded_rectangle(ctx, left, top, width, height, 7)
+        ctx.stroke_preserve()
+        ctx.fill()
+
+        # fill part of the interior with a different colour, depending on
+        # the progress value
+        ctx.set_source_rgb(fred, fgreen, fblue)
+        rounded_rectangle(ctx, left + line_width-1, top,
+                         (width - (line_width-1)*2) * self.progress_val,
+                          height, 7)
+        ctx.fill()
 
         # draw exterior of the progress bar
         ctx.set_source_rgb(brd_red, brd_green, brd_blue)
@@ -1402,22 +1417,22 @@ class DockedApp(object):
         rounded_rectangle(ctx, left, top, width, height, 7)
         ctx.stroke()
 
-        # fill the interior with the background colour
-        ctx.set_line_width(1)
-        ctx.set_source_rgb(bk_red, bk_green, bk_blue)
-        rounded_rectangle(ctx, left + line_width, top + line_width,
-                          width - line_width*2, height-line_width*2,
-                          2)
 
-        ctx.fill()
+        #ctx.set_line_width(1)
+        #ctx.set_source_rgb(bk_red, bk_green, bk_blue)
+        #rounded_rectangle(ctx, left + line_width, top + line_width,
+        #                  width - line_width*2, height-line_width*2,
+         #                 2)
+
+        #ctx.fill()
 
         # fill part of the interior with a different colour, depending on
         # the progress value
-        ctx.set_source_rgb(fred, fgreen, fblue)
-        rounded_rectangle(ctx, left + line_width, top + line_width,
-                          (width - line_width*2) * self.progress_val,
-                          height-line_width*2, 2)
-        ctx.fill()
+        #ctx.set_source_rgb(fred, fgreen, fblue)
+        #rounded_rectangle(ctx, left + line_width, top + line_width,
+        #                  (width - line_width*2) * self.progress_val,
+        #                  height-line_width*2, 2)
+        #ctx.fill()
         ctx.restore()
 
     def draw_attention_badge(self, ctx):
