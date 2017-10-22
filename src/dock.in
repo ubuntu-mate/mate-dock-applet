@@ -805,14 +805,22 @@ class Dock(object):
         """
 
         pinned_apps = []
-        for dock_app in self.app_list:
-            if dock_app.desktop_file is not None and dock_app.is_pinned:
-                pinned_apps.append(os.path.basename(dock_app.desktop_file))
+        if self.pa_on_all_ws:
+            for dock_app in self.app_list:
+                if dock_app.desktop_file is not None and dock_app.is_pinned:
+                    pinned_apps.append(os.path.basename(dock_app.desktop_file))
+        else:
+            # get the original pinned app configuration from dconf, so
+            # it can be written to the .xml config file.
+            # Doing so allows the pinned app configuration to be restored on
+            # if the user reverts the pa_on_all_ws setting, even if the applet
+            # is deleted from the panel and then adds it again
+            pinned_apps = self.settings.get_value("pinned-apps").unpack()
 
         pa_configs = self.configs_to_settings()
 
         if self.settings:
-            # only save the current set of self.pinned apps if we're not using linking pinned apps
+            # only save the current set of self.pinned apps if we're not inking pinned apps
             # to workspaces
             if self.pa_on_all_ws:
                 self.settings.set_value("pinned-apps", GLib.Variant('as', pinned_apps))
@@ -1705,7 +1713,6 @@ class Dock(object):
             self.app_spacing = self.prefs_win.get_app_spacing()
             self.attention_type = self.prefs_win.get_attention_type()
             self.popup_delay = self.prefs_win.get_popup_delay()
-            self.pa_on_all_ws = self.prefs_win.get_show_pinned_apps_on_all_ws()
 
             new_panel_color_setting = self.change_panel_color != self.prefs_win.get_change_panel_color()
             self.change_panel_color = self.prefs_win.get_change_panel_color()
@@ -1723,6 +1730,15 @@ class Dock(object):
 
             self.fallback_bar_col = self.prefs_win.get_fallback_bar_col()
             self.set_fallback_bar_colour()
+
+            if self.pa_on_all_ws != self.prefs_win.get_show_pinned_apps_on_all_ws():
+                self.pa_on_all_ws = self.prefs_win.get_show_pinned_apps_on_all_ws()
+
+                self.clear_dock_apps()
+                self.setup_app_list()
+                self.setup_dock_apps()
+                self.set_all_apps_minimise_targets()
+
             self.write_settings()
 
             # redraw everything here
