@@ -1,3 +1,24 @@
+V0.80 With Gtk3 and Python GObject bindings 3.26.0 or greater, window lists and
+      action lists now have rounded corners and point to their app's icon in the
+      dock. Fix for Issues #52 and #53
+
+      Fix for Issue #84 - app icons continually flashing
+
+      The delay before action lists appear when the mouse hovers over a dock icon can
+      now be set in the preferences dialog
+
+      Apps can now be pinned to specific workspaces, in other words their app icons only
+      appear in the dock when a particular workspace is active. This allows users
+      to customise the dock for each workspace they use.
+
+      Fix for Issue #87 - the applet right click menu no longer contains
+      actions for the currently active app when popup action lists are enabled
+
+      When unpinning an app a notification is now displayed which allows the operation to
+      be undone and re-pins the app to the dock.
+
+      The appearance of progress bars on dock icons has been improved.
+
 V0.79 The applet no longer swallows <Super> key presses. This means it now works happily
       alongside other apps that also use the <Super> key, e.g. the Brisk menu, the Advanced
       Mate Menu or Albert.
