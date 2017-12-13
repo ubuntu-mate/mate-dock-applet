@@ -53,9 +53,8 @@ sys.path.insert(1, '@pythondir@')
 
 import gettext
 
-localedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locale')
-translate = gettext.translation('mate-dock-applet', localedir, fallback=True)
-_ = translate.gettext
+_ = gettext.gettext
+gettext.textdomain('mate-dock-applet')
 
 from Xlib.display import Display
 from Xlib import X, error

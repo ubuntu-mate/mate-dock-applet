@@ -46,9 +46,8 @@ from gi.repository import Gtk, Pango
 import gettext
 import os
 
-localedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locale')
-translate = gettext.translation('mate-dock-applet', localedir, fallback=True)
-_ = translate.gettext
+_ = gettext.gettext
+gettext.textdomain('mate-dock-applet')
 
 
 class AboutWindow(Gtk.Window):

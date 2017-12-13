@@ -87,9 +87,8 @@ from log_it import log_it as log_it
 
 import gettext
 
-localedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locale')
-translate = gettext.translation('mate-dock-applet', localedir, fallback=True)
-_ = translate.gettext
+_ = gettext.gettext
+gettext.textdomain('mate-dock-applet')
 
 
 class DragMotionTimer(object):
