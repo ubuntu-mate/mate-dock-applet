@@ -245,7 +245,7 @@ class AboutWindow(Gtk.Window):
                                                self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
-                                               "Activating apps with keyboard shortcuts\n",
+                                               _("Activating apps with keyboard shortcuts\n"),
                                                self.__tag_hint_bold)
         self.__hints_text_buf.insert_with_tags(the_iter, _("\n""Holding down the <Super> (i.e. Windows) and pressing " +
                                                "a number key will activate an app in the dock. For example, "+

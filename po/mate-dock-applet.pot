@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-13 10:37-0600\n"
+"POT-Creation-Date: 2017-12-13 11:02-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -29,7 +29,7 @@ msgstr ""
 msgid "Opening a new instance of a running application\n"
 msgstr ""
 
-#: src/dock_info.in:129
+#: src/dock_info.in:129 src/dock_about.in:260
 msgid ""
 "\n"
 "To quickly open a new instance of a running application either hold down the "
@@ -143,6 +143,7 @@ msgstr ""
 
 #: src/dock_about.in:233
 msgid ""
+"\n"
 "To easily drag and drop data from one application to another, drag the data "
 "from the first application onto the dock icon of the second application. The "
 "dock will activate the second application's window, allowing the data to be "
@@ -156,13 +157,19 @@ msgstr ""
 
 #: src/dock_about.in:242
 msgid ""
+"\n"
 "Applications can be dragged and dropped from any menu applet (i.e. the Main "
 "Menu, Menu Bar, Advanced Menu, or Brisk Menu) directly onto the dock.\n"
 "\n"
 msgstr ""
 
+#: src/dock_about.in:248
+msgid "Activating apps with keyboard shortcuts\n"
+msgstr ""
+
 #: src/dock_about.in:250
 msgid ""
+"\n"
 "Holding down the <Super> (i.e. Windows) and pressing a number key will "
 "activate an app in the dock. For example, pressing 1 will activate the first "
 "app, 2 the second etc. Pressing 0 will activate the tenth app. To activate "
