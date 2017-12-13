@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-13 09:34-0600\n"
+"POT-Creation-Date: 2017-12-13 10:37-0600\n"
 "PO-Revision-Date: 2017-12-13 09:34-0600\n"
 "Last-Translator: Joel Barrios <darkshram@gmail.com>\n"
 "Language-Team: English <darkshram@gmail.com>\n"
@@ -438,6 +438,16 @@ msgstr ""
 
 #: src/docked_app_helpers.in:850
 msgid "Must be implemented by ActiveBackgroundDrawer descendents"
+msgstr ""
+
+#: src/dock.in:1024
+#, python-format
+msgid "Pin %s"
+msgstr ""
+
+#: src/dock.in:1026
+#, python-format
+msgid "Unpin %s"
 msgstr ""
 
 #: src/dock.in:1046

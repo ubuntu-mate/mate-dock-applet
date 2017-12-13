@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-13 09:34-0600\n"
+"POT-Creation-Date: 2017-12-13 10:37-0600\n"
 "PO-Revision-Date: 2017-12-13 09:34-0600\n"
 "Last-Translator: Joel Barrios <darkshram@gmail.com>\n"
 "Language-Team: Spanish <darkshram@gmail.com>\n"
@@ -84,8 +84,8 @@ msgid ""
 "information again."
 msgstr ""
 "\n"
-"Clic sobre el botón 'Consejos y Trucos' en el diálogo de la"
-"ventana 'Acerca de' para ver esta información de nuevo."
+"Clic sobre el botón 'Consejos y Trucos' en el diálogo de laventana 'Acerca "
+"de' para ver esta información de nuevo."
 
 #: src/dock_about.in:65
 msgid "About Dock Applet"
@@ -167,8 +167,9 @@ msgid ""
 "Menu, Menu Bar, Advanced Menu, or Brisk Menu) directly onto the dock.\n"
 "\n"
 msgstr ""
-"Aplicaciones pueden ser arrastradas y soltadas desde mini-aplicaciones de menú"
-"(ejemplos: Main Menu, Advanced Menu o Brisk Menu) directamente sobre Dock Applet.\n"
+"Aplicaciones pueden ser arrastradas y soltadas desde mini-aplicaciones de "
+"menú(ejemplos: Main Menu, Advanced Menu o Brisk Menu) directamente sobre "
+"Dock Applet.\n"
 "\n"
 
 #: src/dock_about.in:250
@@ -332,7 +333,8 @@ msgstr "Mostrar en todos los espacios de trabajo"
 
 #: src/dock_prefs.in:342
 msgid "Display only on the workspace the app was pinned"
-msgstr "Mostrar sólo en los espacios de trabajo donde la aplicación ha sido prendida"
+msgstr ""
+"Mostrar sólo en los espacios de trabajo donde la aplicación ha sido prendida"
 
 #: src/dock_prefs.in:373
 msgid "Unpinned application dock icons"
@@ -348,7 +350,9 @@ msgstr "Mostrar aplicaciones desprendidas sólo en el espacio de trabajo actual"
 
 #: src/dock_prefs.in:406
 msgid "Display indicators/window list items for current workspace only"
-msgstr "Mostrar lista de elementos de indicadores/ventanas sólo para el espacio de trabajo actual"
+msgstr ""
+"Mostrar lista de elementos de indicadores/ventanas sólo para el espacio de "
+"trabajo actual"
 
 #: src/dock_prefs.in:419
 msgid ""
@@ -451,6 +455,16 @@ msgstr "Debe se implementado por las subclases del Indicador"
 #: src/docked_app_helpers.in:850
 msgid "Must be implemented by ActiveBackgroundDrawer descendents"
 msgstr "Debe ser implementado por los descendientes de ActiveBackgroundDrawer"
+
+#: src/dock.in:1024
+#, python-format
+msgid "Pin %s"
+msgstr "Prender %s"
+
+#: src/dock.in:1026
+#, python-format
+msgid "Unpin %s"
+msgstr "Desprender %s"
 
 #: src/dock.in:1046
 #, python-format

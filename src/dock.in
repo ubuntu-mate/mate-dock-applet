@@ -1021,9 +1021,9 @@ class Dock(object):
         unpin_action.set_visible(app.is_pinned)
 
         if pin_action.is_visible():
-            pin_action.set_label(_"Pin %s") % app.app_name)
+            pin_action.set_label(_("Pin %s")) % app.app_name)
         else:
-            unpin_action.set_label(_"Unpin %s") % app.app_name)
+            unpin_action.set_label(_("Unpin %s")) % app.app_name)
 
         move_up_action = self.dock_action_group.get_action("move_up_action")
         move_down_action = self.dock_action_group.get_action("move_down_action")
