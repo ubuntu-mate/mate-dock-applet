@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-13 10:56-0600\n"
+"POT-Creation-Date: 2017-12-13 11:58-0600\n"
 "PO-Revision-Date: 2017-12-13 09:34-0600\n"
 "Last-Translator: Joel Barrios <darkshram@gmail.com>\n"
 "Language-Team: English <darkshram@gmail.com>\n"
@@ -17,19 +17,19 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/dock_info.in:72
+#: src/dock_info.in:71
 msgid "Dock Applet hints, tips, and information"
 msgstr ""
 
-#: src/dock_info.in:76 src/dock_about.in:69
+#: src/dock_info.in:75 src/dock_about.in:68 src/dock.in:1121
 msgid "Close"
 msgstr ""
 
-#: src/dock_info.in:127 src/dock_about.in:258
+#: src/dock_info.in:126 src/dock_about.in:257
 msgid "Opening a new instance of a running application\n"
 msgstr ""
 
-#: src/dock_info.in:129 src/dock_about.in:260
+#: src/dock_info.in:128 src/dock_about.in:259
 msgid ""
 "\n"
 "To quickly open a new instance of a running application either hold down the "
@@ -40,13 +40,13 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/dock_info.in:135 src/dock_about.in:267
+#: src/dock_info.in:134 src/dock_about.in:266
 msgid ""
 "\n"
 "Window switching using the mouse wheel\n"
 msgstr ""
 
-#: src/dock_info.in:138 src/dock_about.in:270
+#: src/dock_info.in:137 src/dock_about.in:269
 msgid ""
 "\n"
 "To quickly switch between an application's open windows, move the mouse "
@@ -55,13 +55,13 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/dock_info.in:144 src/dock_about.in:277
+#: src/dock_info.in:143 src/dock_about.in:276
 msgid ""
 "\n"
 "Panel colour changing\n"
 msgstr ""
 
-#: src/dock_info.in:146 src/dock_about.in:279
+#: src/dock_info.in:145 src/dock_about.in:278
 msgid ""
 "\n"
 "When the applet sets the panel colour for the first time, the result may not "
@@ -73,30 +73,30 @@ msgid ""
 "the panel opacity as required."
 msgstr ""
 
-#: src/dock_info.in:155
+#: src/dock_info.in:154
 msgid ""
 "\n"
 "Click the 'Hints & Tips' button on the applet 'About' dialog box to see this "
 "information again."
 msgstr ""
 
-#: src/dock_about.in:65
+#: src/dock_about.in:64
 msgid "About Dock Applet"
 msgstr ""
 
-#: src/dock_about.in:71
+#: src/dock_about.in:70
 msgid "Hints & Tips"
 msgstr ""
 
-#: src/dock_about.in:73
+#: src/dock_about.in:72
 msgid "License"
 msgstr ""
 
-#: src/dock_about.in:127
+#: src/dock_about.in:126
 msgid "<b>MATE Dock Applet</b>"
 msgstr ""
 
-#: src/dock_about.in:137
+#: src/dock_about.in:136
 msgid ""
 "MATE Dock Applet is free software; you can redistribute it and/or modify it "
 "under the terms of the GNU General Public Licence as published by the Free "
@@ -113,35 +113,35 @@ msgid ""
 "St, Fifth Floor, Boston, MA 02110-1301 USA\n"
 msgstr ""
 
-#: src/dock_about.in:157
+#: src/dock_about.in:156
 msgid "A dock applet for the MATE desktop"
 msgstr ""
 
-#: src/dock_about.in:159
+#: src/dock_about.in:158
 msgid "This program comes with ABSOLUTELY NO WARRENTY"
 msgstr ""
 
-#: src/dock_about.in:160
+#: src/dock_about.in:159
 msgid "and is distributed under the GNU General"
 msgstr ""
 
-#: src/dock_about.in:161
+#: src/dock_about.in:160
 msgid "Public License, version 3 or later"
 msgstr ""
 
-#: src/dock_about.in:170
+#: src/dock_about.in:169
 msgid "For details click"
 msgstr ""
 
-#: src/dock_about.in:173
+#: src/dock_about.in:172
 msgid "here"
 msgstr ""
 
-#: src/dock_about.in:231
+#: src/dock_about.in:230
 msgid "Drag and drop data between applications\n"
 msgstr ""
 
-#: src/dock_about.in:233
+#: src/dock_about.in:232
 msgid ""
 "\n"
 "To easily drag and drop data from one application to another, drag the data "
@@ -151,11 +151,11 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/dock_about.in:240
+#: src/dock_about.in:239
 msgid "Adding new applications to the dock\n"
 msgstr ""
 
-#: src/dock_about.in:242
+#: src/dock_about.in:241
 msgid ""
 "\n"
 "Applications can be dragged and dropped from any menu applet (i.e. the Main "
@@ -163,11 +163,11 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/dock_about.in:248
+#: src/dock_about.in:247
 msgid "Activating apps with keyboard shortcuts\n"
 msgstr ""
 
-#: src/dock_about.in:250
+#: src/dock_about.in:249
 msgid ""
 "\n"
 "Holding down the <Super> (i.e. Windows) and pressing a number key will "
@@ -177,63 +177,63 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/dock_custom_launcher.in:84
+#: src/dock_custom_launcher.in:82
 msgid "Create Launcher"
 msgstr ""
 
-#: src/dock_custom_launcher.in:106
+#: src/dock_custom_launcher.in:104
 msgid "Help"
 msgstr ""
 
-#: src/dock_custom_launcher.in:109 src/dock_prefs.in:144
+#: src/dock_custom_launcher.in:107 src/dock_prefs.in:142
 msgid "Cancel"
 msgstr ""
 
-#: src/dock_custom_launcher.in:112 src/dock_prefs.in:148
+#: src/dock_custom_launcher.in:110 src/dock_prefs.in:146
 msgid "Ok"
 msgstr ""
 
-#: src/dock_custom_launcher.in:146
+#: src/dock_custom_launcher.in:144
 msgid "Click to select an icon"
 msgstr ""
 
-#: src/dock_custom_launcher.in:168
+#: src/dock_custom_launcher.in:166
 msgid "Name:"
 msgstr ""
 
-#: src/dock_custom_launcher.in:183
+#: src/dock_custom_launcher.in:181
 msgid "Command:"
 msgstr ""
 
-#: src/dock_custom_launcher.in:188
+#: src/dock_custom_launcher.in:186
 msgid "Browse..."
 msgstr ""
 
-#: src/dock_custom_launcher.in:195
+#: src/dock_custom_launcher.in:193
 msgid "Run in terminal:"
 msgstr ""
 
-#: src/dock_custom_launcher.in:203
+#: src/dock_custom_launcher.in:201
 msgid "Comment:"
 msgstr ""
 
-#: src/dock_custom_launcher.in:209
+#: src/dock_custom_launcher.in:207
 msgid "<b>Window Class</b>"
 msgstr ""
 
-#: src/dock_custom_launcher.in:342 src/dock_custom_launcher.in:392
+#: src/dock_custom_launcher.in:340 src/dock_custom_launcher.in:390
 msgid "Choose an application..."
 msgstr ""
 
-#: src/dock_custom_launcher.in:396
+#: src/dock_custom_launcher.in:394
 msgid "Image files"
 msgstr ""
 
-#: src/dock_custom_launcher.in:507
+#: src/dock_custom_launcher.in:505
 msgid "<span size=\"x-large\"><b>Custom Launchers</b></span>"
 msgstr ""
 
-#: src/dock_custom_launcher.in:508
+#: src/dock_custom_launcher.in:506
 msgid ""
 "Custom launchers are an advanced feature meant to be used only with apps "
 "that the dock does not recognise (i.e. they display the wrong name or "
@@ -247,107 +247,107 @@ msgid ""
 "will need to be closed and restarted for the dock to recognise it."
 msgstr ""
 
-#: src/dock_custom_launcher.in:525
+#: src/dock_custom_launcher.in:523
 msgid "My test launcher"
 msgstr ""
 
-#: src/dock_custom_launcher.in:526
+#: src/dock_custom_launcher.in:524
 msgid "This is a comment"
 msgstr ""
 
-#: src/dock_prefs.in:113
+#: src/dock_prefs.in:111
 msgid "Preferences"
 msgstr ""
 
-#: src/dock_prefs.in:172
+#: src/dock_prefs.in:170
 msgid "Indicator Type"
 msgstr ""
 
-#: src/dock_prefs.in:173
+#: src/dock_prefs.in:171
 msgid "Default light"
 msgstr ""
 
-#: src/dock_prefs.in:175
+#: src/dock_prefs.in:173
 msgid "Default Dark"
 msgstr ""
 
-#: src/dock_prefs.in:177
+#: src/dock_prefs.in:175
 msgid "Single bar"
 msgstr ""
 
-#: src/dock_prefs.in:179
+#: src/dock_prefs.in:177
 msgid "None"
 msgstr ""
 
-#: src/dock_prefs.in:182
+#: src/dock_prefs.in:180
 msgid "Circle"
 msgstr ""
 
-#: src/dock_prefs.in:184
+#: src/dock_prefs.in:182
 msgid "Square"
 msgstr ""
 
-#: src/dock_prefs.in:186
+#: src/dock_prefs.in:184
 msgid "Triangle"
 msgstr ""
 
-#: src/dock_prefs.in:188
+#: src/dock_prefs.in:186
 msgid "Diamond"
 msgstr ""
 
-#: src/dock_prefs.in:190
+#: src/dock_prefs.in:188
 msgid "Subway"
 msgstr ""
 
-#: src/dock_prefs.in:228
+#: src/dock_prefs.in:226
 msgid "Display an indicator for each open window"
 msgstr ""
 
-#: src/dock_prefs.in:229
+#: src/dock_prefs.in:227
 msgid "Display an indicator (max 4) for each open window"
 msgstr ""
 
-#: src/dock_prefs.in:300
+#: src/dock_prefs.in:298
 msgid "Active icon background"
 msgstr ""
 
-#: src/dock_prefs.in:301
+#: src/dock_prefs.in:299
 msgid "Gradient fill"
 msgstr ""
 
-#: src/dock_prefs.in:303
+#: src/dock_prefs.in:301
 msgid "Solid fill"
 msgstr ""
 
-#: src/dock_prefs.in:340
+#: src/dock_prefs.in:338
 msgid "Pinned application dock icons"
 msgstr ""
 
-#: src/dock_prefs.in:341
+#: src/dock_prefs.in:339
 msgid "Display on all workspaces"
 msgstr ""
 
-#: src/dock_prefs.in:342
+#: src/dock_prefs.in:340
 msgid "Display only on the workspace the app was pinned"
 msgstr ""
 
-#: src/dock_prefs.in:373
+#: src/dock_prefs.in:371
 msgid "Unpinned application dock icons"
 msgstr ""
 
-#: src/dock_prefs.in:374
+#: src/dock_prefs.in:372
 msgid "Display unpinned apps from all workspaces"
 msgstr ""
 
-#: src/dock_prefs.in:376
+#: src/dock_prefs.in:374
 msgid "Display unpinned apps only from current workspace"
 msgstr ""
 
-#: src/dock_prefs.in:406
+#: src/dock_prefs.in:404
 msgid "Display indicators/window list items for current workspace only"
 msgstr ""
 
-#: src/dock_prefs.in:419
+#: src/dock_prefs.in:417
 msgid ""
 "Note: when displaying pinned apps only on the workspace where they were "
 "created, it is a good idea to also select the 'Display unpinned apps' and "
@@ -355,163 +355,235 @@ msgid ""
 "options."
 msgstr ""
 
-#: src/dock_prefs.in:431
+#: src/dock_prefs.in:429
 msgid "Window selection"
 msgstr ""
 
-#: src/dock_prefs.in:432
+#: src/dock_prefs.in:430
 msgid "From applet's window list"
 msgstr ""
 
-#: src/dock_prefs.in:434
+#: src/dock_prefs.in:432
 msgid "From window thumbnail previews (requires Compiz)"
 msgstr ""
 
-#: src/dock_prefs.in:459
+#: src/dock_prefs.in:457
 msgid "App spacing"
 msgstr ""
 
-#: src/dock_prefs.in:477
+#: src/dock_prefs.in:475
 msgid "Panel colour"
 msgstr ""
 
-#: src/dock_prefs.in:478
+#: src/dock_prefs.in:476
 msgid "Change panel colour to match wallpaper"
 msgstr ""
 
-#: src/dock_prefs.in:480
+#: src/dock_prefs.in:478
 msgid "Change colour of dock's panel only"
 msgstr ""
 
-#: src/dock_prefs.in:512
+#: src/dock_prefs.in:510
 msgid ""
 "Disable popup action list and show app actions\n"
 "on panel right click menu only"
 msgstr ""
 
-#: src/dock_prefs.in:524
+#: src/dock_prefs.in:522
 msgid "Fallback bar indicator colour"
 msgstr ""
 
-#: src/dock_prefs.in:525
+#: src/dock_prefs.in:523
 msgid "Colour"
 msgstr ""
 
-#: src/dock_prefs.in:527
+#: src/dock_prefs.in:525
 msgid ""
 "Colour used for drawing bar indicators when theme colour cannot be "
 "determined or when using Gtk2"
 msgstr ""
 
-#: src/dock_prefs.in:539
+#: src/dock_prefs.in:537
 msgid "Action when apps need attention"
 msgstr ""
 
-#: src/dock_prefs.in:540
+#: src/dock_prefs.in:538
 msgid "Blink the app icon"
 msgstr ""
 
-#: src/dock_prefs.in:541
+#: src/dock_prefs.in:539
 msgid "Show a badge on the app icon"
 msgstr ""
 
-#: src/dock_prefs.in:574
+#: src/dock_prefs.in:572
 msgid "Popup Delay(s)"
 msgstr ""
 
-#: src/dock_prefs.in:601
+#: src/dock_prefs.in:599
 msgid "Appearance"
 msgstr ""
 
-#: src/dock_prefs.in:602
+#: src/dock_prefs.in:600
 msgid "Workspaces"
 msgstr ""
 
-#: src/dock_prefs.in:603
+#: src/dock_prefs.in:601
 msgid "Windows"
 msgstr ""
 
-#: src/dock_prefs.in:605
+#: src/dock_prefs.in:603
 msgid "Panel Options"
 msgstr ""
 
-#: src/dock_prefs.in:606
+#: src/dock_prefs.in:604
 msgid "Misc"
 msgstr ""
 
-#: src/docked_app_helpers.in:168
+#: src/docked_app_helpers.in:167
 msgid "Must be implemented by Indicator subclasses"
 msgstr ""
 
-#: src/docked_app_helpers.in:850
+#: src/docked_app_helpers.in:849
 msgid "Must be implemented by ActiveBackgroundDrawer descendents"
 msgstr ""
 
-#: src/dock.in:1024
+#: src/dock.in:1023
 #, python-format
 msgid "Pin %s"
 msgstr ""
 
-#: src/dock.in:1026
+#: src/dock.in:1025
 #, python-format
 msgid "Unpin %s"
 msgstr ""
 
-#: src/dock.in:1046
+#: src/dock.in:1045
 #, python-format
 msgid "Move %s up the dock"
 msgstr ""
 
-#: src/dock.in:1047
+#: src/dock.in:1046
 #, python-format
 msgid "Move %s down the dock"
 msgstr ""
 
-#: src/dock.in:1053
+#: src/dock.in:1052
 #, python-format
 msgid "Move %s to the left on the dock"
 msgstr ""
 
-#: src/dock.in:1054
+#: src/dock.in:1053
 #, python-format
 msgid "Move %s to the right on the dock"
 msgstr ""
 
-#: src/dock.in:1060
+#: src/dock.in:1059
 #, python-format
 msgid "Close %s"
 msgstr ""
 
-#: src/dock.in:1062
+#: src/dock.in:1061
 msgid "Close all windows"
 msgstr ""
 
-#: src/dock.in:1330
+#: src/dock.in:1095
+msgid "_Pin app to the dock"
+msgstr ""
+
+#: src/dock.in:1095
+msgid "Pin app to the dock"
+msgstr ""
+
+#: src/dock.in:1098
+msgid "_Unpin app from the dock"
+msgstr ""
+
+#: src/dock.in:1098
+msgid "Unpin app from the dock"
+msgstr ""
+
+#: src/dock.in:1101
+msgid "Move app _up the dock"
+msgstr ""
+
+#: src/dock.in:1101
+msgid "Move app up the dock"
+msgstr ""
+
+#: src/dock.in:1104
+msgid "Move app _down the dock"
+msgstr ""
+
+#: src/dock.in:1104
+msgid "Move app down the dock"
+msgstr ""
+
+#: src/dock.in:1107
+msgid "Move app _left in the dock"
+msgstr ""
+
+#: src/dock.in:1107
+msgid "Move app left in the dock"
+msgstr ""
+
+#: src/dock.in:1110
+msgid "Move app _right in the dock"
+msgstr ""
+
+#: src/dock.in:1110
+msgid "Move app right in the dock"
+msgstr ""
+
+#: src/dock.in:1113
+msgid "Dock P_references"
+msgstr ""
+
+#: src/dock.in:1113
+msgid "Dock Preferences"
+msgstr ""
+
+#: src/dock.in:1116
+msgid "Create custo_m launcher for this app"
+msgstr ""
+
+#: src/dock.in:1116
+msgid "Create custom launcher for this app"
+msgstr ""
+
+#: src/dock.in:1119
+msgid "About..."
+msgstr ""
+
+#: src/dock.in:1121
+msgid "_Close"
+msgstr ""
+
+#: src/dock.in:1329
 #, python-format
 msgid "%s unpinned"
 msgstr ""
 
-#: src/dock.in:1332
+#: src/dock.in:1331
 msgid "Undo"
 msgstr ""
 
-#: src/dock.in:1370
+#: src/dock.in:1369
 #, python-format
 msgid "%s re-pinned"
 msgstr ""
 
-#: src/dock.in:1837
+#: src/dock.in:1836
 msgid "The name of the launcher has not been set"
 msgstr ""
 
-#: src/dock.in:1839
+#: src/dock.in:1838
 msgid "The command of the launcher has not been set"
 msgstr ""
 
-#: src/dock.in:1841
+#: src/dock.in:1840
 msgid "The icon of the launcher has not been set"
 msgstr ""
 
-#: src/dock.in:1850
+#: src/dock.in:1849
 msgid "<span size=\"x-large\"><b>Cannot create launcher</b></span>"
 msgstr ""
