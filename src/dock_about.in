@@ -43,6 +43,13 @@ else:
 
 from gi.repository import Gtk, Pango
 
+import gettext
+import os
+
+localedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locale')
+translate = gettext.translation('mate-dock-applet', localedir, fallback=True)
+_ = translate.gettext
+
 
 class AboutWindow(Gtk.Window):
     """Provides the About window
@@ -55,15 +62,15 @@ class AboutWindow(Gtk.Window):
         Create the window and its contents
         """
 
-        super().__init__(title="About Dock Applet")
+        super().__init__(title=_("About Dock Applet"))
 
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
 
-        self.__btn_close = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
+        self.__btn_close = Gtk.Button(label=_("Close"), stock=Gtk.STOCK_CLOSE)
         self.__btn_close.connect("button-press-event", self.close_button_press)
-        self.__btn_hints = Gtk.ToggleButton.new_with_label("Hints & Tips")
+        self.__btn_hints = Gtk.ToggleButton.new_with_label(_("Hints & Tips"))
         self.__btn_hints.connect("toggled", self.hints_button_toggled)
-        self.__btn_license = Gtk.ToggleButton.new_with_label("License")
+        self.__btn_license = Gtk.ToggleButton.new_with_label(_("License"))
         self.__btn_license.connect("toggled", self.license_button_toggled)
 
         self.connect("delete-event", self.win_delete_event)
@@ -117,7 +124,7 @@ class AboutWindow(Gtk.Window):
         else:
             gtk_ver = "GTK3"
 
-        self.__lbl_title.set_markup("<b>MATE Dock Applet</b>")
+        self.__lbl_title.set_markup(_("<b>MATE Dock Applet</b>"))
         self.__lbl_ver = Gtk.Label("V" + "@VERSION@ (" + gtk_ver+ ")")
         self.__lbl_blank2 = Gtk.Label()
 
@@ -127,7 +134,7 @@ class AboutWindow(Gtk.Window):
         iter_start = self.__tb_gpl.get_start_iter()
 
         self.__tb_gpl.insert_with_tags(iter_start,
-                                       "MATE Dock Applet is free software; you can redistribute it and/or modify it " +
+                                       _("MATE Dock Applet is free software; you can redistribute it and/or modify it " +
                                        "under the terms of the GNU General Public Licence as published by the Free " +
                                        "Software Foundation; either version 3 of the Licence, or (at your option) " +
                                        "any later version. \n\nMATE Dock Applet is distributed in the hope that it " +
@@ -136,7 +143,7 @@ class AboutWindow(Gtk.Window):
                                        "Public Licence for more details.\n\nYou should have received a copy of the " +
                                        "GNU General Public Licence along with the applet; if not, write to the Free " +
                                        "Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA " +
-                                       "02110-1301 USA\n",
+                                       "02110-1301 USA\n"),
                                        self.__tag_size)
 
         self.__tv_gpl = Gtk.TextView.new_with_buffer(self.__tb_gpl)
@@ -147,11 +154,11 @@ class AboutWindow(Gtk.Window):
         self.__scrolled_win.add(self.__tv_gpl)
 
         self.__lbl_blurb1 = \
-            Gtk.Label("A dock applet for the MATE desktop")
+            Gtk.Label(_("A dock applet for the MATE desktop"))
         self.__lbl_blurb2 = \
-            Gtk.Label("This program comes with ABSOLUTELY NO WARRENTY")
-        self.__lbl_blurb3 = Gtk.Label("and is distributed under the GNU General")
-        self.__lbl_blurb4 = Gtk.Label("Public License, version 3 or later")
+            Gtk.Label(_("This program comes with ABSOLUTELY NO WARRENTY"))
+        self.__lbl_blurb3 = Gtk.Label(_("and is distributed under the GNU General"))
+        self.__lbl_blurb4 = Gtk.Label(_("Public License, version 3 or later"))
 
         if build_gtk2:
             self.__hbx_gpl = Gtk.HBox()
@@ -160,10 +167,10 @@ class AboutWindow(Gtk.Window):
             self.__hbx_gpl.set_orientation(Gtk.Orientation.HORIZONTAL)
             self.__hbx_gpl.set_spacing(0)
 
-        self.__lbl_gpl1 = Gtk.Label("For details click")
+        self.__lbl_gpl1 = Gtk.Label(_("For details click"))
         self.__lb_gpl = \
             Gtk.LinkButton.new_with_label("http://www.gnu.org/licenses/gpl-3.0.html",
-                                          "here")
+                                          _("here"))
 
         self.__hbx_gpl.pack_start(self.__lbl_gpl1, False, False, 0)
         self.__hbx_gpl.pack_start(self.__lb_gpl, False, False, 0)
@@ -221,60 +228,60 @@ class AboutWindow(Gtk.Window):
 
         if not build_gtk2:
             self.__hints_text_buf.insert_with_tags(the_iter,
-                                               "Drag and drop data between applications\n",
+                                               _("Drag and drop data between applications\n"),
                                                self.__tag_hint_bold)
-            self.__hints_text_buf.insert_with_tags(the_iter, "\n""To easily drag and drop data from one application " +
+            self.__hints_text_buf.insert_with_tags(the_iter, "\n"_("To easily drag and drop data from one application " +
                                                "to another, drag the data from the first application onto the dock " +
                                                "icon of the second application. The dock will activate the second " +
                                                "application's window, allowing the data to be dragged onto it. " +
-                                               "Note: the second application must already be running.\n\n",
+                                               "Note: the second application must already be running.\n\n"),
                                                self.__tag_hint_normal)
             self.__hints_text_buf.insert_with_tags(the_iter,
-                                               "Adding new applications to the dock\n",
+                                               _("Adding new applications to the dock\n"),
                                                self.__tag_hint_bold)
-            self.__hints_text_buf.insert_with_tags(the_iter, "\n""Applications can be dragged and dropped from any menu " +
+            self.__hints_text_buf.insert_with_tags(the_iter, "\n"_("Applications can be dragged and dropped from any menu " +
                                                "applet (i.e. the Main Menu, Menu Bar, Advanced Menu, or Brisk Menu) " +
-                                               "directly onto the dock.\n\n",
+                                               "directly onto the dock.\n\n"),
                                                self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
                                                "Activating apps with keyboard shortcuts\n",
                                                self.__tag_hint_bold)
-        self.__hints_text_buf.insert_with_tags(the_iter, "\n""Holding down the <Super> (i.e. Windows) and pressing " +
+        self.__hints_text_buf.insert_with_tags(the_iter, "\n"_("Holding down the <Super> (i.e. Windows) and pressing " +
                                                "a number key will activate an app in the dock. For example, "+
                                                "pressing ""1"" will activate the first app, ""2"" the second etc. "+
                                                "Pressing ""0"" will activate the tenth app. To activate apps 11 to 20, "+
-                                               "hold down the <Alt> key as well as <Super>.\n\n",
+                                               "hold down the <Alt> key as well as <Super>.\n\n"),
                                                self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
-                                              "Opening a new instance of a running application\n",
+                                              _("Opening a new instance of a running application\n"),
                                               self.__tag_hint_bold)
-        self.__hints_text_buf.insert_with_tags(the_iter, "\nTo quickly open a new instance of a running " +
+        self.__hints_text_buf.insert_with_tags(the_iter, "_(\nTo quickly open a new instance of a running " +
                         "application either hold down the <shift> key while clicking the " +
                         "application's dock icon, or middle click on the icon." +
-                         "\n\nNote: this works for most, but not all, apps.\n\n",
+                         "\n\nNote: this works for most, but not all, apps.\n\n"),
                                                self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
-                                              "\nWindow switching using the mouse wheel\n",
+                                              _("\nWindow switching using the mouse wheel\n"),
                                               self.__tag_hint_bold)
         self.__hints_text_buf.insert_with_tags(the_iter,
-                        "\nTo quickly switch between an application's open windows, move " +
+                        _("\nTo quickly switch between an application's open windows, move " +
                         "the mouse cursor over the apps's dock icon and use the mouse " +
                         "scroll wheel. This will activate and display each window in " +
-                        "turn, changing workspaces as necessary.\n\n",
+                        "turn, changing workspaces as necessary.\n\n"),
                                                 self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
-                                              "\nPanel colour changing\n",
+                                              _("\nPanel colour changing\n"),
                                               self.__tag_hint_bold)
-        self.__hints_text_buf.insert_with_tags(the_iter, "\nWhen the applet sets the panel colour for the " +
+        self.__hints_text_buf.insert_with_tags(the_iter, _("\nWhen the applet sets the panel colour for the " +
                         "first time, the result may not look exactly as expected. This is " +
                         "because the default opacity of custom coloured MATE panels is set " +
                         "extremely low, so that the panel appears almost transparent.\n\nTo remedy " +
                         "this, simply right click the panel, select Properties and adjust the " +
-                        "panel opacity as required.",
+                        "panel opacity as required."),
                                                 self.__tag_hint_normal)
 
     def win_delete_event(self, widget, event, data=None):

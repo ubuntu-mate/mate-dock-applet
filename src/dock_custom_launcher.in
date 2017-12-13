@@ -52,7 +52,12 @@ else:
 
 from gi.repository import Gtk, GdkPixbuf
 
+import gettext
 import os
+
+localedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locale')
+translate = gettext.translation('mate-dock-applet', localedir, fallback=True)
+_ = translate.gettext
 
 
 class DockCLWindow(Gtk.Window):
@@ -76,7 +81,7 @@ class DockCLWindow(Gtk.Window):
 
         """
 
-        super().__init__(title="Create Launcher")
+        super().__init__(title=_("Create Launcher"))
 
         self.set_skip_taskbar_hint(True)
         self.__icon_filename = ""
@@ -98,13 +103,13 @@ class DockCLWindow(Gtk.Window):
         self.__hbox.set_spacing(2)
         self.__vbox.set_spacing(2)
 
-        self.__btn_help = Gtk.Button(label="Help", stock=Gtk.STOCK_HELP)
+        self.__btn_help = Gtk.Button(label=_("Help"), stock=Gtk.STOCK_HELP)
         self.__btn_help.connect("button-press-event",
                                 self.help_btn_press)
-        self.__btn_cancel = Gtk.Button(label="Cancel", stock=Gtk.STOCK_CANCEL)
+        self.__btn_cancel = Gtk.Button(label=_("Cancel"), stock=Gtk.STOCK_CANCEL)
         self.__btn_cancel.connect("button-press-event",
                                   self.win_cancel_button_press)
-        self.__btn_ok = Gtk.Button(label="Ok", stock=Gtk.STOCK_OK)
+        self.__btn_ok = Gtk.Button(label=_("Ok"), stock=Gtk.STOCK_OK)
         self.__btn_ok.connect("button-press-event", ok_callback)
 
         if build_gtk2:
@@ -138,7 +143,7 @@ class DockCLWindow(Gtk.Window):
         self.__btn_icon = Gtk.Button()
         self.__img_icon = Gtk.Image()
         self.__btn_icon.connect("button_press_event", self.img_button_press)
-        self.__btn_icon.set_tooltip_text("Click to select an icon")
+        self.__btn_icon.set_tooltip_text(_("Click to select an icon"))
         self.__btn_icon.add(self.__img_icon)
 
         if build_gtk2:
@@ -160,7 +165,7 @@ class DockCLWindow(Gtk.Window):
 
         self.__lbl_name = Gtk.Label()
         self.__lbl_name.set_use_markup(True)
-        self.__lbl_name.set_label("<b>" + "Name:" + "</b>")
+        self.__lbl_name.set_label("<b>" + _("Name:") + "</b>")
         self.__lbl_name.set_alignment(1, 0.5)
 
         self.__entry_name = Gtk.Entry()
@@ -175,19 +180,19 @@ class DockCLWindow(Gtk.Window):
 
         self.__lbl_cmd = Gtk.Label()
         self.__lbl_cmd.set_use_markup(True)
-        self.__lbl_cmd.set_label("<b>" + "Command:" + "</b>")
+        self.__lbl_cmd.set_label("<b>" + _("Command:") + "</b>")
         self.__lbl_cmd.set_alignment(1, 0.5)
 
         self.__entry_cmd = Gtk.Entry()
         self.__entry_cmd.set_width_chars(40)
-        self.__btn_cmd = Gtk.Button(label="Browse...")
+        self.__btn_cmd = Gtk.Button(label=_("Browse..."))
         self.__btn_cmd.connect("button-press-event", self.cmd_button_press)
         self.__hbox_cmd.pack_start(self.__entry_cmd, True, True, 0)
         self.__hbox_cmd.pack_end(self.__btn_cmd, False, False, 0)
 
         self.__lbl_term = Gtk.Label()
         self.__lbl_term.set_use_markup(True)
-        self.__lbl_term.set_label("<b>" + "Run in terminal:" + "</b>")
+        self.__lbl_term.set_label("<b>" + _("Run in terminal:") + "</b>")
         self.__lbl_term.set_alignment(1, 0.5)
 
         self.__cbtn_term = Gtk.CheckButton()
@@ -195,13 +200,13 @@ class DockCLWindow(Gtk.Window):
 
         self.__lbl_comment = Gtk.Label()
         self.__lbl_comment.set_use_markup(True)
-        self.__lbl_comment.set_label("<b>" + "Comment:" + "</b>")
+        self.__lbl_comment.set_label("<b>" + _("Comment:") + "</b>")
 
         self.__entry_comment = Gtk.Entry()
 
         self.__lbl_wm_class = Gtk.Label()
         self.__lbl_wm_class.set_use_markup(True)
-        self.__lbl_wm_class.set_label("<b>Window Class</b>")
+        self.__lbl_wm_class.set_label(_("<b>Window Class</b>"))
         self.__entry_wm_class = Gtk.Entry()
         self.__entry_wm_class.set_sensitive(False)
 
@@ -334,7 +339,7 @@ class DockCLWindow(Gtk.Window):
         be associated with the laucher
         """
 
-        fdc_cmd = Gtk.FileChooserDialog(title="Choose an application...",
+        fdc_cmd = Gtk.FileChooserDialog(title=_("Choose an application..."),
                                         action=Gtk.FileChooserAction.OPEN)
 
         # set the working directory of the dialog
@@ -384,11 +389,11 @@ class DockCLWindow(Gtk.Window):
         launcher
         """
 
-        fdc_icon = Gtk.FileChooserDialog(title="Choose an application...",
+        fdc_icon = Gtk.FileChooserDialog(title=_("Choose an application..."),
                                          action=Gtk.FileChooserAction.OPEN)
 
         ff_graphic = Gtk.FileFilter()
-        ff_graphic.set_name("Image files")
+        ff_graphic.set_name(_("Image files"))
         ff_graphic.add_pattern("*.svg")
         ff_graphic.add_pattern("*.png")
         ff_graphic.add_pattern("*.SVG")
@@ -499,14 +504,14 @@ class DockCLWindow(Gtk.Window):
         md = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL,
                                Gtk.MessageType.INFO, Gtk.ButtonsType.OK,
                                None)
-        md.set_markup('<span size="x-large"><b>Custom Launchers</b></span>')
-        info_text = "Custom launchers are an advanced feature meant to be used only with apps " +\
+        md.set_markup(_('<span size="x-large"><b>Custom Launchers</b></span>'))
+        info_text = _("Custom launchers are an advanced feature meant to be used only with apps " +\
                     "that the dock does not recognise (i.e. they display the wrong name or icon). \n\n" + \
                     "Normally, this will only happen when the apps have been installed " + \
                     "to a non standard location within the file system, so for the vast majority of " + \
                     "apps this feature is not needed.\n\n" + \
                     "Note: if an app is running when a custom launcher is created for it, the app will " + \
-                    "need to be closed and restarted for the dock to recognise it."
+                    "need to be closed and restarted for the dock to recognise it.")
 
         md.format_secondary_text(info_text)
         md.run()
@@ -517,8 +522,8 @@ def main():
     """main function - debug code can go here"""
     dclw = DockCLWindow(Gtk.main_quit)
     dclw.set_skip_taskbar_hint(False)
-    dclw.name = "My test launcher"
-    dclw.comment = "This is a comment"
+    dclw.name = _("My test launcher")
+    dclw.comment = _("This is a comment")
     dclw.icon_filename = "/usr/share/pixmaps/ericWeb.png"
     dclw.command = "/usr/bin/gvim"
     dclw.wm_class = "Dock_custom_launcher.py"

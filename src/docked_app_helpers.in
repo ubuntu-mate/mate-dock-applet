@@ -51,6 +51,13 @@ from gi.repository import MatePanelApplet
 import cairo
 import math
 
+import gettext
+import os
+
+localedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locale')
+translate = gettext.translation('mate-dock-applet', localedir, fallback=True)
+_ = translate.gettext
+
 
 class IndicatorType:
     """Class to define the indicator types"""
@@ -158,7 +165,7 @@ class IndicatorDrawer(object):
                               _surface when drawing is completed
         """
 
-        raise NotImplementedError("Must be implemented by Indicator subclasses")
+        raise NotImplementedError(_("Must be implemented by Indicator subclasses"))
 
 
 class DefaultInd(IndicatorDrawer):
@@ -840,7 +847,7 @@ class ActiveBackgroundDrawer(object):
                               _surface when drawing is completed
         """
 
-        raise NotImplementedError("Must be implemented by ActiveBackgroundDrawer descendents")
+        raise NotImplementedError(_("Must be implemented by ActiveBackgroundDrawer descendents"))
 
 
 class DefaultBackgroundDrawer(ActiveBackgroundDrawer):

@@ -44,6 +44,12 @@ import sys
 
 from gi.repository import Gtk, Pango
 
+import gettext
+import os
+
+localedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locale')
+translate = gettext.translation('mate-dock-applet', localedir, fallback=True)
+_ = translate.gettext
 
 class InfoWindow(Gtk.Window):
     """Provides the Info window"""
@@ -63,11 +69,11 @@ class InfoWindow(Gtk.Window):
                                  applet's right click menu)
         """
 
-        super().__init__(title="Dock Applet hints, tips, and information")
+        super().__init__(title=_("Dock Applet hints, tips, and information"))
 
         self.__rfa = running_from_about
 
-        self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
+        self.__button = Gtk.Button(label=_("Close"), stock=Gtk.STOCK_CLOSE)
         self.__button.connect("button-press-event", self.win_button_press)
         self.set_border_width(5)
 
@@ -118,36 +124,36 @@ class InfoWindow(Gtk.Window):
 
         the_iter = self.__info_text_buf.get_end_iter()
         self.__info_text_buf.insert_with_tags(the_iter,
-                                              "Opening a new instance of a running application\n",
+                                              _("Opening a new instance of a running application\n"),
                                               self.__tag_bold)
-        self.__info_text_buf.insert(the_iter, "\nTo quickly open a new instance of a running " +
+        self.__info_text_buf.insert(the_iter, _("\nTo quickly open a new instance of a running " +
                         "application either hold down the <shift> key while clicking the " +
                         "application's dock icon, or middle click on the icon." +
-                         "\n\nNote: this works for most, but not all, apps.\n\n")
+                         "\n\nNote: this works for most, but not all, apps.\n\n"))
 
         self.__info_text_buf.insert_with_tags(the_iter,
-                                              "\nWindow switching using the mouse wheel\n",
+                                              _("\nWindow switching using the mouse wheel\n"),
                                               self.__tag_bold)
         self.__info_text_buf.insert(the_iter,
-                        "\nTo quickly switch between an application's open windows, move " +
+                        _("\nTo quickly switch between an application's open windows, move " +
                         "the mouse cursor over the apps's dock icon and use the mouse " +
                         "scroll wheel. This will activate and display each window in " +
-                        "turn, changing workspaces as necessary.\n\n")
+                        "turn, changing workspaces as necessary.\n\n"))
 
         self.__info_text_buf.insert_with_tags(the_iter,
-                                              "\nPanel colour changing\n",
+                                              _("\nPanel colour changing\n"),
                                               self.__tag_bold)
-        self.__info_text_buf.insert(the_iter, "\nWhen the applet sets the panel colour for the " +
+        self.__info_text_buf.insert(the_iter, _("\nWhen the applet sets the panel colour for the " +
                         "first time, the result may not look exactly as expected. This is " +
                         "because the default opacity of custom coloured MATE panels is set " +
                         "extremely low, so that the panel appears almost transparent.\n\nTo remedy " +
                         "this, simply right click the panel, select Properties and adjust the " +
-                        "panel opacity as required.")
+                        "panel opacity as required."))
 
         if not self.__rfa:
             self.__info_text_buf.insert_with_tags(the_iter,
-                        "\nClick the 'Hints & Tips' button on the applet 'About' dialog box "
-                        "to see this information again.",
+                        _("\nClick the 'Hints & Tips' button on the applet 'About' dialog box "
+                        "to see this information again."),
                         self.__tag_bold)
 
     def win_button_press(self, widget, event):

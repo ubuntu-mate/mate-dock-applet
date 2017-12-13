@@ -1,0 +1,500 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-12-13 09:34-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/dock_info.in:72
+msgid "Dock Applet hints, tips, and information"
+msgstr ""
+
+#: src/dock_info.in:76 src/dock_about.in:69
+msgid "Close"
+msgstr ""
+
+#: src/dock_info.in:127 src/dock_about.in:258
+msgid "Opening a new instance of a running application\n"
+msgstr ""
+
+#: src/dock_info.in:129
+msgid ""
+"\n"
+"To quickly open a new instance of a running application either hold down the "
+"<shift> key while clicking the application's dock icon, or middle click on "
+"the icon.\n"
+"\n"
+"Note: this works for most, but not all, apps.\n"
+"\n"
+msgstr ""
+
+#: src/dock_info.in:135 src/dock_about.in:267
+msgid ""
+"\n"
+"Window switching using the mouse wheel\n"
+msgstr ""
+
+#: src/dock_info.in:138 src/dock_about.in:270
+msgid ""
+"\n"
+"To quickly switch between an application's open windows, move the mouse "
+"cursor over the apps's dock icon and use the mouse scroll wheel. This will "
+"activate and display each window in turn, changing workspaces as necessary.\n"
+"\n"
+msgstr ""
+
+#: src/dock_info.in:144 src/dock_about.in:277
+msgid ""
+"\n"
+"Panel colour changing\n"
+msgstr ""
+
+#: src/dock_info.in:146 src/dock_about.in:279
+msgid ""
+"\n"
+"When the applet sets the panel colour for the first time, the result may not "
+"look exactly as expected. This is because the default opacity of custom "
+"coloured MATE panels is set extremely low, so that the panel appears almost "
+"transparent.\n"
+"\n"
+"To remedy this, simply right click the panel, select Properties and adjust "
+"the panel opacity as required."
+msgstr ""
+
+#: src/dock_info.in:155
+msgid ""
+"\n"
+"Click the 'Hints & Tips' button on the applet 'About' dialog box to see this "
+"information again."
+msgstr ""
+
+#: src/dock_about.in:65
+msgid "About Dock Applet"
+msgstr ""
+
+#: src/dock_about.in:71
+msgid "Hints & Tips"
+msgstr ""
+
+#: src/dock_about.in:73
+msgid "License"
+msgstr ""
+
+#: src/dock_about.in:127
+msgid "<b>MATE Dock Applet</b>"
+msgstr ""
+
+#: src/dock_about.in:137
+msgid ""
+"MATE Dock Applet is free software; you can redistribute it and/or modify it "
+"under the terms of the GNU General Public Licence as published by the Free "
+"Software Foundation; either version 3 of the Licence, or (at your option) "
+"any later version. \n"
+"\n"
+"MATE Dock Applet is distributed in the hope that it will be useful, but "
+"WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY "
+"or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public Licence for "
+"more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public Licence along with "
+"the applet; if not, write to the Free Software Foundation, Inc., 51 Franklin "
+"St, Fifth Floor, Boston, MA 02110-1301 USA\n"
+msgstr ""
+
+#: src/dock_about.in:157
+msgid "A dock applet for the MATE desktop"
+msgstr ""
+
+#: src/dock_about.in:159
+msgid "This program comes with ABSOLUTELY NO WARRENTY"
+msgstr ""
+
+#: src/dock_about.in:160
+msgid "and is distributed under the GNU General"
+msgstr ""
+
+#: src/dock_about.in:161
+msgid "Public License, version 3 or later"
+msgstr ""
+
+#: src/dock_about.in:170
+msgid "For details click"
+msgstr ""
+
+#: src/dock_about.in:173
+msgid "here"
+msgstr ""
+
+#: src/dock_about.in:231
+msgid "Drag and drop data between applications\n"
+msgstr ""
+
+#: src/dock_about.in:233
+msgid ""
+"To easily drag and drop data from one application to another, drag the data "
+"from the first application onto the dock icon of the second application. The "
+"dock will activate the second application's window, allowing the data to be "
+"dragged onto it. Note: the second application must already be running.\n"
+"\n"
+msgstr ""
+
+#: src/dock_about.in:240
+msgid "Adding new applications to the dock\n"
+msgstr ""
+
+#: src/dock_about.in:242
+msgid ""
+"Applications can be dragged and dropped from any menu applet (i.e. the Main "
+"Menu, Menu Bar, Advanced Menu, or Brisk Menu) directly onto the dock.\n"
+"\n"
+msgstr ""
+
+#: src/dock_about.in:250
+msgid ""
+"Holding down the <Super> (i.e. Windows) and pressing a number key will "
+"activate an app in the dock. For example, pressing 1 will activate the first "
+"app, 2 the second etc. Pressing 0 will activate the tenth app. To activate "
+"apps 11 to 20, hold down the <Alt> key as well as <Super>.\n"
+"\n"
+msgstr ""
+
+#: src/dock_custom_launcher.in:84
+msgid "Create Launcher"
+msgstr ""
+
+#: src/dock_custom_launcher.in:106
+msgid "Help"
+msgstr ""
+
+#: src/dock_custom_launcher.in:109 src/dock_prefs.in:144
+msgid "Cancel"
+msgstr ""
+
+#: src/dock_custom_launcher.in:112 src/dock_prefs.in:148
+msgid "Ok"
+msgstr ""
+
+#: src/dock_custom_launcher.in:146
+msgid "Click to select an icon"
+msgstr ""
+
+#: src/dock_custom_launcher.in:168
+msgid "Name:"
+msgstr ""
+
+#: src/dock_custom_launcher.in:183
+msgid "Command:"
+msgstr ""
+
+#: src/dock_custom_launcher.in:188
+msgid "Browse..."
+msgstr ""
+
+#: src/dock_custom_launcher.in:195
+msgid "Run in terminal:"
+msgstr ""
+
+#: src/dock_custom_launcher.in:203
+msgid "Comment:"
+msgstr ""
+
+#: src/dock_custom_launcher.in:209
+msgid "<b>Window Class</b>"
+msgstr ""
+
+#: src/dock_custom_launcher.in:342 src/dock_custom_launcher.in:392
+msgid "Choose an application..."
+msgstr ""
+
+#: src/dock_custom_launcher.in:396
+msgid "Image files"
+msgstr ""
+
+#: src/dock_custom_launcher.in:507
+msgid "<span size=\"x-large\"><b>Custom Launchers</b></span>"
+msgstr ""
+
+#: src/dock_custom_launcher.in:508
+msgid ""
+"Custom launchers are an advanced feature meant to be used only with apps "
+"that the dock does not recognise (i.e. they display the wrong name or "
+"icon). \n"
+"\n"
+"Normally, this will only happen when the apps have been installed to a non "
+"standard location within the file system, so for the vast majority of apps "
+"this feature is not needed.\n"
+"\n"
+"Note: if an app is running when a custom launcher is created for it, the app "
+"will need to be closed and restarted for the dock to recognise it."
+msgstr ""
+
+#: src/dock_custom_launcher.in:525
+msgid "My test launcher"
+msgstr ""
+
+#: src/dock_custom_launcher.in:526
+msgid "This is a comment"
+msgstr ""
+
+#: src/dock_prefs.in:113
+msgid "Preferences"
+msgstr ""
+
+#: src/dock_prefs.in:172
+msgid "Indicator Type"
+msgstr ""
+
+#: src/dock_prefs.in:173
+msgid "Default light"
+msgstr ""
+
+#: src/dock_prefs.in:175
+msgid "Default Dark"
+msgstr ""
+
+#: src/dock_prefs.in:177
+msgid "Single bar"
+msgstr ""
+
+#: src/dock_prefs.in:179
+msgid "None"
+msgstr ""
+
+#: src/dock_prefs.in:182
+msgid "Circle"
+msgstr ""
+
+#: src/dock_prefs.in:184
+msgid "Square"
+msgstr ""
+
+#: src/dock_prefs.in:186
+msgid "Triangle"
+msgstr ""
+
+#: src/dock_prefs.in:188
+msgid "Diamond"
+msgstr ""
+
+#: src/dock_prefs.in:190
+msgid "Subway"
+msgstr ""
+
+#: src/dock_prefs.in:228
+msgid "Display an indicator for each open window"
+msgstr ""
+
+#: src/dock_prefs.in:229
+msgid "Display an indicator (max 4) for each open window"
+msgstr ""
+
+#: src/dock_prefs.in:300
+msgid "Active icon background"
+msgstr ""
+
+#: src/dock_prefs.in:301
+msgid "Gradient fill"
+msgstr ""
+
+#: src/dock_prefs.in:303
+msgid "Solid fill"
+msgstr ""
+
+#: src/dock_prefs.in:340
+msgid "Pinned application dock icons"
+msgstr ""
+
+#: src/dock_prefs.in:341
+msgid "Display on all workspaces"
+msgstr ""
+
+#: src/dock_prefs.in:342
+msgid "Display only on the workspace the app was pinned"
+msgstr ""
+
+#: src/dock_prefs.in:373
+msgid "Unpinned application dock icons"
+msgstr ""
+
+#: src/dock_prefs.in:374
+msgid "Display unpinned apps from all workspaces"
+msgstr ""
+
+#: src/dock_prefs.in:376
+msgid "Display unpinned apps only from current workspace"
+msgstr ""
+
+#: src/dock_prefs.in:406
+msgid "Display indicators/window list items for current workspace only"
+msgstr ""
+
+#: src/dock_prefs.in:419
+msgid ""
+"Note: when displaying pinned apps only on the workspace where they were "
+"created, it is a good idea to also select the 'Display unpinned apps' and "
+"'Display indicators/window list' items for the current workspace only "
+"options."
+msgstr ""
+
+#: src/dock_prefs.in:431
+msgid "Window selection"
+msgstr ""
+
+#: src/dock_prefs.in:432
+msgid "From applet's window list"
+msgstr ""
+
+#: src/dock_prefs.in:434
+msgid "From window thumbnail previews (requires Compiz)"
+msgstr ""
+
+#: src/dock_prefs.in:459
+msgid "App spacing"
+msgstr ""
+
+#: src/dock_prefs.in:477
+msgid "Panel colour"
+msgstr ""
+
+#: src/dock_prefs.in:478
+msgid "Change panel colour to match wallpaper"
+msgstr ""
+
+#: src/dock_prefs.in:480
+msgid "Change colour of dock's panel only"
+msgstr ""
+
+#: src/dock_prefs.in:512
+msgid ""
+"Disable popup action list and show app actions\n"
+"on panel right click menu only"
+msgstr ""
+
+#: src/dock_prefs.in:524
+msgid "Fallback bar indicator colour"
+msgstr ""
+
+#: src/dock_prefs.in:525
+msgid "Colour"
+msgstr ""
+
+#: src/dock_prefs.in:527
+msgid ""
+"Colour used for drawing bar indicators when theme colour cannot be "
+"determined or when using Gtk2"
+msgstr ""
+
+#: src/dock_prefs.in:539
+msgid "Action when apps need attention"
+msgstr ""
+
+#: src/dock_prefs.in:540
+msgid "Blink the app icon"
+msgstr ""
+
+#: src/dock_prefs.in:541
+msgid "Show a badge on the app icon"
+msgstr ""
+
+#: src/dock_prefs.in:574
+msgid "Popup Delay(s)"
+msgstr ""
+
+#: src/dock_prefs.in:601
+msgid "Appearance"
+msgstr ""
+
+#: src/dock_prefs.in:602
+msgid "Workspaces"
+msgstr ""
+
+#: src/dock_prefs.in:603
+msgid "Windows"
+msgstr ""
+
+#: src/dock_prefs.in:605
+msgid "Panel Options"
+msgstr ""
+
+#: src/dock_prefs.in:606
+msgid "Misc"
+msgstr ""
+
+#: src/docked_app_helpers.in:168
+msgid "Must be implemented by Indicator subclasses"
+msgstr ""
+
+#: src/docked_app_helpers.in:850
+msgid "Must be implemented by ActiveBackgroundDrawer descendents"
+msgstr ""
+
+#: src/dock.in:1046
+#, python-format
+msgid "Move %s up the dock"
+msgstr ""
+
+#: src/dock.in:1047
+#, python-format
+msgid "Move %s down the dock"
+msgstr ""
+
+#: src/dock.in:1053
+#, python-format
+msgid "Move %s to the left on the dock"
+msgstr ""
+
+#: src/dock.in:1054
+#, python-format
+msgid "Move %s to the right on the dock"
+msgstr ""
+
+#: src/dock.in:1060
+#, python-format
+msgid "Close %s"
+msgstr ""
+
+#: src/dock.in:1062
+msgid "Close all windows"
+msgstr ""
+
+#: src/dock.in:1330
+#, python-format
+msgid "%s unpinned"
+msgstr ""
+
+#: src/dock.in:1332
+msgid "Undo"
+msgstr ""
+
+#: src/dock.in:1370
+#, python-format
+msgid "%s re-pinned"
+msgstr ""
+
+#: src/dock.in:1837
+msgid "The name of the launcher has not been set"
+msgstr ""
+
+#: src/dock.in:1839
+msgid "The command of the launcher has not been set"
+msgstr ""
+
+#: src/dock.in:1841
+msgid "The icon of the launcher has not been set"
+msgstr ""
+
+#: src/dock.in:1850
+msgid "<span size=\"x-large\"><b>Cannot create launcher</b></span>"
+msgstr ""

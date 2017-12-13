@@ -1,0 +1,7 @@
+src/dock_info.in
+src/dock_about.in
+src/dock_custom_launcher.in
+src/dock_applet.in
+src/dock_prefs.in
+src/docked_app_helpers.in
+src/dock.in
