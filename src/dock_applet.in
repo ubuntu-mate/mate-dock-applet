@@ -51,12 +51,11 @@ import sys
 import threading
 sys.path.insert(1, '@pythondir@')
 
-# Localization
-import locale
-locale.setlocale(locale.LC_ALL, '')
-
 import gettext
-_ = lambda x: gettext.ldgettext("mate-dock-applet", x
+
+localedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locale')
+translate = gettext.translation('mate-dock-applet', localedir, fallback=True)
+_ = translate.gettext
 
 from Xlib.display import Display
 from Xlib import X, error
