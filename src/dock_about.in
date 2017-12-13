@@ -230,7 +230,7 @@ class AboutWindow(Gtk.Window):
             self.__hints_text_buf.insert_with_tags(the_iter,
                                                _("Drag and drop data between applications\n"),
                                                self.__tag_hint_bold)
-            self.__hints_text_buf.insert_with_tags(the_iter, "\n"_("To easily drag and drop data from one application " +
+            self.__hints_text_buf.insert_with_tags(the_iter, _("\n""To easily drag and drop data from one application " +
                                                "to another, drag the data from the first application onto the dock " +
                                                "icon of the second application. The dock will activate the second " +
                                                "application's window, allowing the data to be dragged onto it. " +
@@ -239,7 +239,7 @@ class AboutWindow(Gtk.Window):
             self.__hints_text_buf.insert_with_tags(the_iter,
                                                _("Adding new applications to the dock\n"),
                                                self.__tag_hint_bold)
-            self.__hints_text_buf.insert_with_tags(the_iter, "\n"_("Applications can be dragged and dropped from any menu " +
+            self.__hints_text_buf.insert_with_tags(the_iter, _("\n""Applications can be dragged and dropped from any menu " +
                                                "applet (i.e. the Main Menu, Menu Bar, Advanced Menu, or Brisk Menu) " +
                                                "directly onto the dock.\n\n"),
                                                self.__tag_hint_normal)
@@ -247,7 +247,7 @@ class AboutWindow(Gtk.Window):
         self.__hints_text_buf.insert_with_tags(the_iter,
                                                "Activating apps with keyboard shortcuts\n",
                                                self.__tag_hint_bold)
-        self.__hints_text_buf.insert_with_tags(the_iter, "\n"_("Holding down the <Super> (i.e. Windows) and pressing " +
+        self.__hints_text_buf.insert_with_tags(the_iter, _("\n""Holding down the <Super> (i.e. Windows) and pressing " +
                                                "a number key will activate an app in the dock. For example, "+
                                                "pressing ""1"" will activate the first app, ""2"" the second etc. "+
                                                "Pressing ""0"" will activate the tenth app. To activate apps 11 to 20, "+
@@ -257,7 +257,7 @@ class AboutWindow(Gtk.Window):
         self.__hints_text_buf.insert_with_tags(the_iter,
                                               _("Opening a new instance of a running application\n"),
                                               self.__tag_hint_bold)
-        self.__hints_text_buf.insert_with_tags(the_iter, "_(\nTo quickly open a new instance of a running " +
+        self.__hints_text_buf.insert_with_tags(the_iter, _("\nTo quickly open a new instance of a running " +
                         "application either hold down the <shift> key while clicking the " +
                         "application's dock icon, or middle click on the icon." +
                          "\n\nNote: this works for most, but not all, apps.\n\n"),
