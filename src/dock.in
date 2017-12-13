@@ -85,11 +85,12 @@ import docked_app_helpers
 
 from log_it import log_it as log_it
 
-import gettext
+# Localization
+import locale
+locale.setlocale(locale.LC_ALL, '')
 
-localedir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'locale')
-translate = gettext.translation('mate-dock-applet', localedir, fallback=True)
-_ = translate.gettext
+import gettext
+_ = lambda x: gettext.ldgettext("mate-dock-applet", x
 
 
 class DragMotionTimer(object):
