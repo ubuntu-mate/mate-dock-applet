@@ -499,7 +499,7 @@ msgstr "Mover %s arriba"
 #: src/dock.in:1046
 #, python-format
 msgid "Move %s down the dock"
-msgstr "Mover %d abajo"
+msgstr "Mover %s abajo"
 
 #: src/dock.in:1052
 #, python-format
@@ -604,7 +604,7 @@ msgstr "Deshacer"
 #: src/dock.in:1369
 #, python-format
 msgid "%s re-pinned"
-msgstr "%s se ha vuelto a prender"
+msgstr "Se ha vuelto a prender %s"
 
 #: src/dock.in:1836
 msgid "The name of the launcher has not been set"
