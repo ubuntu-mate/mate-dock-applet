@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-13 12:57-0600\n"
+"POT-Creation-Date: 2017-12-14 12:30-0600\n"
 "PO-Revision-Date: 2017-12-13 09:34-0600\n"
 "Last-Translator: Joel Barrios <darkshram@gmail.com>\n"
 "Language-Team: English <darkshram@gmail.com>\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "Dock Applet hints, tips, and information"
 msgstr ""
 
-#: src/dock_info.in:75 src/dock_about.in:68 src/dock.in:1121
+#: src/dock_info.in:75 src/dock_about.in:68 src/dock.in:1120
 msgid "Close"
 msgstr ""
 
@@ -447,143 +447,143 @@ msgstr ""
 msgid "Must be implemented by ActiveBackgroundDrawer descendents"
 msgstr ""
 
-#: src/dock.in:1023
+#: src/dock.in:1022
 #, python-format
 msgid "Pin %s"
 msgstr ""
 
-#: src/dock.in:1025
+#: src/dock.in:1024
 #, python-format
 msgid "Unpin %s"
 msgstr ""
 
-#: src/dock.in:1045
+#: src/dock.in:1044
 #, python-format
 msgid "Move %s up the dock"
 msgstr ""
 
-#: src/dock.in:1046
+#: src/dock.in:1045
 #, python-format
 msgid "Move %s down the dock"
 msgstr ""
 
-#: src/dock.in:1052
+#: src/dock.in:1051
 #, python-format
 msgid "Move %s to the left on the dock"
 msgstr ""
 
-#: src/dock.in:1053
+#: src/dock.in:1052
 #, python-format
 msgid "Move %s to the right on the dock"
 msgstr ""
 
-#: src/dock.in:1059
+#: src/dock.in:1058
 #, python-format
 msgid "Close %s"
 msgstr ""
 
-#: src/dock.in:1061
+#: src/dock.in:1060
 msgid "Close all windows"
 msgstr ""
 
-#: src/dock.in:1095
+#: src/dock.in:1094
 msgid "_Pin app to the dock"
 msgstr ""
 
-#: src/dock.in:1095
+#: src/dock.in:1094
 msgid "Pin app to the dock"
 msgstr ""
 
-#: src/dock.in:1098
+#: src/dock.in:1097
 msgid "_Unpin app from the dock"
 msgstr ""
 
-#: src/dock.in:1098
+#: src/dock.in:1097
 msgid "Unpin app from the dock"
 msgstr ""
 
-#: src/dock.in:1101
+#: src/dock.in:1100
 msgid "Move app _up the dock"
 msgstr ""
 
-#: src/dock.in:1101
+#: src/dock.in:1100
 msgid "Move app up the dock"
 msgstr ""
 
-#: src/dock.in:1104
+#: src/dock.in:1103
 msgid "Move app _down the dock"
 msgstr ""
 
-#: src/dock.in:1104
+#: src/dock.in:1103
 msgid "Move app down the dock"
 msgstr ""
 
-#: src/dock.in:1107
+#: src/dock.in:1106
 msgid "Move app _left in the dock"
 msgstr ""
 
-#: src/dock.in:1107
+#: src/dock.in:1106
 msgid "Move app left in the dock"
 msgstr ""
 
-#: src/dock.in:1110
+#: src/dock.in:1109
 msgid "Move app _right in the dock"
 msgstr ""
 
-#: src/dock.in:1110
+#: src/dock.in:1109
 msgid "Move app right in the dock"
 msgstr ""
 
-#: src/dock.in:1113
+#: src/dock.in:1112
 msgid "Dock P_references"
 msgstr ""
 
-#: src/dock.in:1113
+#: src/dock.in:1112
 msgid "Dock Preferences"
 msgstr ""
 
-#: src/dock.in:1116
+#: src/dock.in:1115
 msgid "Create custo_m launcher for this app"
 msgstr ""
 
-#: src/dock.in:1116
+#: src/dock.in:1115
 msgid "Create custom launcher for this app"
 msgstr ""
 
-#: src/dock.in:1119
+#: src/dock.in:1118
 msgid "About..."
 msgstr ""
 
-#: src/dock.in:1121
+#: src/dock.in:1120
 msgid "_Close"
 msgstr ""
 
-#: src/dock.in:1329
+#: src/dock.in:1328
 #, python-format
 msgid "%s unpinned"
 msgstr ""
 
-#: src/dock.in:1331
+#: src/dock.in:1330
 msgid "Undo"
 msgstr ""
 
-#: src/dock.in:1369
+#: src/dock.in:1368
 #, python-format
 msgid "%s re-pinned"
 msgstr ""
 
-#: src/dock.in:1836
+#: src/dock.in:1835
 msgid "The name of the launcher has not been set"
 msgstr ""
 
-#: src/dock.in:1838
+#: src/dock.in:1837
 msgid "The command of the launcher has not been set"
 msgstr ""
 
-#: src/dock.in:1840
+#: src/dock.in:1839
 msgid "The icon of the launcher has not been set"
 msgstr ""
 
-#: src/dock.in:1849
+#: src/dock.in:1848
 msgid "<span size=\"x-large\"><b>Cannot create launcher</b></span>"
 msgstr ""

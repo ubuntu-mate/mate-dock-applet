@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-13 12:57-0600\n"
-"PO-Revision-Date: 2017-12-13 13:04-0600\n"
+"POT-Creation-Date: 2017-12-14 12:30-0600\n"
+"PO-Revision-Date: 2017-12-14 13:03-0600\n"
 "Last-Translator: Joel Barrios <darkshram@gmail.com>\n"
 "Language-Team: Spanish <darkshram@gmail.com>\n"
 "Language: es\n"
@@ -21,13 +21,13 @@ msgstr ""
 msgid "Dock Applet hints, tips, and information"
 msgstr "Consejos, información y trucos para Dock Applet"
 
-#: src/dock_info.in:75 src/dock_about.in:68 src/dock.in:1121
+#: src/dock_info.in:75 src/dock_about.in:68 src/dock.in:1120
 msgid "Close"
 msgstr "Cerrar"
 
 #: src/dock_info.in:126 src/dock_about.in:257
 msgid "Opening a new instance of a running application\n"
-msgstr "Abrir ina nueva instancia de una aplicación en ejecución\n"
+msgstr "Abrir una nueva instancia de una aplicación en ejecución\n"
 
 #: src/dock_info.in:128 src/dock_about.in:259
 msgid ""
@@ -39,6 +39,12 @@ msgid ""
 "Note: this works for most, but not all, apps.\n"
 "\n"
 msgstr ""
+"\n"
+"Para abrir rápidamente una nueva instancia de una aplicación en ejecución"
+"pulse y sostenga la tecla <Mayús> mientras mientras hace clic sobre"
+"el icono de ésta o bien haga clic central sobre el icono.\n"
+"Nota: ésto funciona para la mayoría —pero no todas— las aplicaciones.\n"
+"\n"
 
 #: src/dock_info.in:134 src/dock_about.in:266
 msgid ""
@@ -56,6 +62,12 @@ msgid ""
 "activate and display each window in turn, changing workspaces as necessary.\n"
 "\n"
 msgstr ""
+"\n"
+"Para cambiar rápidamente entre ventanas abiertas de una aplicación, mueva "
+"el puntero del ratón sobre el icono de ésta y utilice la rueda del ratón. "
+"Ésto activará y mostrará cada ventana en turno, incluyendo espacios de "
+"trabajo.\n"
+"\n"
 
 #: src/dock_info.in:143 src/dock_about.in:276
 msgid ""
@@ -76,6 +88,14 @@ msgid ""
 "To remedy this, simply right click the panel, select Properties and adjust "
 "the panel opacity as required."
 msgstr ""
+"\n"
+"Cuando la mini-aplicación establece el color del panel por primera vez, el "
+"resultado pudiera verse distinto al esperado. Ésto es debido a que la "
+"opacidad predeterminada de paneles de MATE personalizados es muy baja, de "
+"modo que el panel aparece casi transparente.\n"
+"\n"
+"Para solucionar ésto, simplemente haga clic derecho sobre el panel, "
+"seleccione Propiedades y ajuste la opacidad de panel requerida."
 
 #: src/dock_info.in:154
 msgid ""
@@ -84,7 +104,7 @@ msgid ""
 "information again."
 msgstr ""
 "\n"
-"Clic sobre el botón 'Consejos y Trucos' en el diálogo de laventana 'Acerca "
+"Clic sobre el botón 'Consejos y Trucos' en el diálogo de la ventana 'Acerca "
 "de' para ver esta información de nuevo."
 
 #: src/dock_about.in:64
@@ -119,6 +139,19 @@ msgid ""
 "the applet; if not, write to the Free Software Foundation, Inc., 51 Franklin "
 "St, Fifth Floor, Boston, MA 02110-1301 USA\n"
 msgstr ""
+"MATE Dock Applet es un software libre, puedes redistribuirlo y/o modificarlo "
+"bajo los términos de la Licencia Pública General de GNU publicada por la "
+"Fundación de Software Libre, ya sea la versión 3 de la licencia o (a su "
+"elección) cualquier versión posterior.\n"
+"\n"
+"MATE Dock Applet se distribuye con la esperanza de que sea útil, pero SIN "
+"NINGUNA GARANTÍA, incluso sin la garantía implícita de COMERCIABILIDAD o "
+"APTITUD PARA UN PROPÓSITO PARTICULAR. Consulte la Licencia Pública General de "
+" GNU para más detalles. \n"
+"\n"
+"Debes haber recibido una copia de la Licencia Pública General de GNU junto "
+"con Dock Applet; si no, escribe a Free Software Foundation, Inc., 51 Franklin "
+"St, Fifth Floor, Boston, MA 02110-1301 USA\n"
 
 #: src/dock_about.in:156
 msgid "A dock applet for the MATE desktop"
@@ -130,7 +163,7 @@ msgstr "Este programa viene ABSOLUTAMENTE SIN GARANTÍA"
 
 #: src/dock_about.in:159
 msgid "and is distributed under the GNU General"
-msgstr "y distribuido bajo los terminos de la"
+msgstr "y distribuido bajo los términos de la"
 
 #: src/dock_about.in:160
 msgid "Public License, version 3 or later"
@@ -157,6 +190,13 @@ msgid ""
 "dragged onto it. Note: the second application must already be running.\n"
 "\n"
 msgstr ""
+"\n"
+"Para arrastrar y soltar fácilemente datos de una aplicación a otra, arrastre "
+"los datos desde la primera aplicación hacia el icono en Dock Applet de la "
+"segunda aplicación. Dock Applet activará la ventana de la segunda aplicación "
+"Permitiendo que los datos sean arastrados hacia ésta. Nota: la segunda "
+"aplicación debe estar en ejecución.\n"
+"\n"
 
 #: src/dock_about.in:239
 msgid "Adding new applications to the dock\n"
@@ -171,7 +211,7 @@ msgid ""
 msgstr ""
 "\n"
 "Las aplicaciones pueden ser arrastradas y soltadas desde la mini-aplicación "
-"demenú (ejemplo: Main Menu, Advanced Menu o Brisk Menu) directamente sobre "
+"de menú (ejemplo: Main Menu, Advanced Menu o Brisk Menu) directamente sobre "
 "Dock Applet.\n"
 "\n"
 
@@ -188,6 +228,13 @@ msgid ""
 "apps 11 to 20, hold down the <Alt> key as well as <Super>.\n"
 "\n"
 msgstr ""
+"\n"
+"Sosteniendo la tecla <Super> (logo de Windows) y presionado una tecla de "
+"número activará una aplicación en Dock Applet. Por ejemplo, presionado 1 "
+"activará la primera aplicación, 2 la segunda, etc. Presionar 0 activará la "
+"décima aplicación. Para activar aplicaciones de la 11 a 20, sostenga la "
+"tecla <Alt> junto con <Super>\n"
+"\n"
 
 #: src/dock_custom_launcher.in:82
 msgid "Create Launcher"
@@ -258,17 +305,17 @@ msgid ""
 "Note: if an app is running when a custom launcher is created for it, the app "
 "will need to be closed and restarted for the dock to recognise it."
 msgstr ""
-"Los lanzadores personalizados son una función avanzada que debe ser "
-"usada sólo con aplicaciones que Dock Applet no reconozca (ej. cuando "
-"muestran nombre o icono equivocado).\n"
+"Los lanzadores personalizados son una función avanzada que debe ser usada "
+"sólo con aplicaciones que Dock Applet no reconozca (ej. cuando muestran "
+"nombre o icono equivocado).\n"
 "\n"
-"Normalmente ocurre sólo la aplicación se instaló fuera de un lugar "
-"estándar en el sistema de archivos, así que esta función es innecesaria para "
-"la mayoría de las aplicaciones.\n"
+"Normalmente ocurre sólo la aplicación se instaló fuera de un lugar estándar "
+"en el sistema de archivos, así que esta función es innecesaria para la "
+"mayoría de las aplicaciones.\n"
 "\n"
-"Nota: si está ejecutando la aplicación mientras se crea el "
-"lanzador personalizado, es necesario reiniciar ésta para ser reconocida "
-"por Dock Applet."
+"Nota: si está ejecutando la aplicación mientras se crea el lanzador "
+"personalizado, es necesario reiniciar ésta para ser reconocida por Dock "
+"Applet."
 
 #: src/dock_custom_launcher.in:523
 msgid "My test launcher"
@@ -380,10 +427,10 @@ msgid ""
 "'Display indicators/window list' items for the current workspace only "
 "options."
 msgstr ""
-"Nota: al aplicaciones prendidas en el espacio de trabajo donde "
-"fueron creadas, es buena idea seleccionar también opciones 'Mostrar "
-"aplicaciones desprendidas' y 'Mostrar lista de indicadores/ventanas' para "
-"el espacio de trabajo actual"
+"Nota: al aplicaciones prendidas en el espacio de trabajo donde fueron "
+"creadas, es buena idea seleccionar también opciones 'Mostrar aplicaciones "
+"desprendidas' y 'Mostrar lista de indicadores/ventanas' para el espacio de "
+"trabajo actual"
 
 #: src/dock_prefs.in:429
 msgid "Window selection"
@@ -481,143 +528,143 @@ msgstr "Debe se implementado por las subclases del Indicador"
 msgid "Must be implemented by ActiveBackgroundDrawer descendents"
 msgstr "Debe ser implementado por los descendientes de ActiveBackgroundDrawer"
 
-#: src/dock.in:1023
+#: src/dock.in:1022
 #, python-format
 msgid "Pin %s"
 msgstr "Prender %s"
 
-#: src/dock.in:1025
+#: src/dock.in:1024
 #, python-format
 msgid "Unpin %s"
 msgstr "Desprender %s"
 
-#: src/dock.in:1045
+#: src/dock.in:1044
 #, python-format
 msgid "Move %s up the dock"
 msgstr "Mover %s arriba"
 
-#: src/dock.in:1046
+#: src/dock.in:1045
 #, python-format
 msgid "Move %s down the dock"
 msgstr "Mover %s abajo"
 
-#: src/dock.in:1052
+#: src/dock.in:1051
 #, python-format
 msgid "Move %s to the left on the dock"
 msgstr "Mover %s a la izquierda"
 
-#: src/dock.in:1053
+#: src/dock.in:1052
 #, python-format
 msgid "Move %s to the right on the dock"
 msgstr "Mover %s a la derecha"
 
-#: src/dock.in:1059
+#: src/dock.in:1058
 #, python-format
 msgid "Close %s"
 msgstr "Cerrar %s"
 
-#: src/dock.in:1061
+#: src/dock.in:1060
 msgid "Close all windows"
 msgstr "Cerrar todas las ventanas"
 
-#: src/dock.in:1095
+#: src/dock.in:1094
 msgid "_Pin app to the dock"
 msgstr "_Prender aplicación"
 
-#: src/dock.in:1095
+#: src/dock.in:1094
 msgid "Pin app to the dock"
 msgstr "Prender aplicación"
 
-#: src/dock.in:1098
+#: src/dock.in:1097
 msgid "_Unpin app from the dock"
 msgstr "_Desprender aplicación"
 
-#: src/dock.in:1098
+#: src/dock.in:1097
 msgid "Unpin app from the dock"
 msgstr "Desprender aplicación"
 
-#: src/dock.in:1101
+#: src/dock.in:1100
 msgid "Move app _up the dock"
 msgstr "Mover _arriba"
 
-#: src/dock.in:1101
+#: src/dock.in:1100
 msgid "Move app up the dock"
 msgstr "Mover arriba"
 
-#: src/dock.in:1104
+#: src/dock.in:1103
 msgid "Move app _down the dock"
 msgstr "Mover _debajo"
 
-#: src/dock.in:1104
+#: src/dock.in:1103
 msgid "Move app down the dock"
 msgstr "Mover debajo"
 
-#: src/dock.in:1107
+#: src/dock.in:1106
 msgid "Move app _left in the dock"
 msgstr "Mover a _la izquierda"
 
-#: src/dock.in:1107
+#: src/dock.in:1106
 msgid "Move app left in the dock"
 msgstr "Mover a la izquierda"
 
-#: src/dock.in:1110
+#: src/dock.in:1109
 msgid "Move app _right in the dock"
 msgstr "Mover a la de_recha"
 
-#: src/dock.in:1110
+#: src/dock.in:1109
 msgid "Move app right in the dock"
 msgstr "Mover a las derecha"
 
-#: src/dock.in:1113
+#: src/dock.in:1112
 msgid "Dock P_references"
 msgstr "P_referencias"
 
-#: src/dock.in:1113
+#: src/dock.in:1112
 msgid "Dock Preferences"
 msgstr "Preferencias de Dock Applet"
 
-#: src/dock.in:1116
+#: src/dock.in:1115
 msgid "Create custo_m launcher for this app"
 msgstr "Crear _lanzador personalizado para esta aplicación"
 
-#: src/dock.in:1116
+#: src/dock.in:1115
 msgid "Create custom launcher for this app"
 msgstr "Crear lanzador personalizado para esta aplicación"
 
-#: src/dock.in:1119
+#: src/dock.in:1118
 msgid "About..."
 msgstr "Acerca de..."
 
-#: src/dock.in:1121
+#: src/dock.in:1120
 msgid "_Close"
 msgstr "_Cerrar"
 
-#: src/dock.in:1329
+#: src/dock.in:1328
 #, python-format
 msgid "%s unpinned"
 msgstr "%s desprendido"
 
-#: src/dock.in:1331
+#: src/dock.in:1330
 msgid "Undo"
 msgstr "Deshacer"
 
-#: src/dock.in:1369
+#: src/dock.in:1368
 #, python-format
 msgid "%s re-pinned"
 msgstr "Se ha vuelto a prender %s"
 
-#: src/dock.in:1836
+#: src/dock.in:1835
 msgid "The name of the launcher has not been set"
 msgstr "Nombre del lanzador sin establecer"
 
-#: src/dock.in:1838
+#: src/dock.in:1837
 msgid "The command of the launcher has not been set"
 msgstr "Orden del lanzador sin establecer"
 
-#: src/dock.in:1840
+#: src/dock.in:1839
 msgid "The icon of the launcher has not been set"
 msgstr "Icono del lanzador sin establecer"
 
-#: src/dock.in:1849
+#: src/dock.in:1848
 msgid "<span size=\"x-large\"><b>Cannot create launcher</b></span>"
 msgstr "<span size=\"x-large\"><b>Imposible crear lanzador</b></span>"
