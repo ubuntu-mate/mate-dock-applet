@@ -57,6 +57,7 @@ else:
     gi.require_version("Wnck", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
+gi.require_version("Bamf", "3")
 
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
@@ -65,6 +66,7 @@ from gi.repository import Wnck
 from gi.repository import Gio
 from gi.repository import GObject
 from gi.repository import GLib
+from gi.repository import Bamf
 
 import cairo
 import math
@@ -79,11 +81,11 @@ from collections import namedtuple
 
 import dock_prefs
 from docked_app_helpers import *
+import window_control
 
 from log_it import log_it as log_it
 
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
-AppInfoTup = namedtuple('AppInfoTup', ['app', 'pid', 'windows'])
 
 
 def get_avg_color(pixbuf):
@@ -149,6 +151,7 @@ def get_avg_color(pixbuf):
 
     return ravg, gavg, bavg
 
+
 CONST_PULSE_STEPS = 20
 CONST_PULSE_DELAY = 40
 
@@ -195,6 +198,12 @@ class PulseTimer(object):
         Redraw the app's icon
         """
 
+        # the docked app may indicate it no longer wants to pulse...
+        if not self.app.is_pulsing:
+            self.remove_timer()
+            self.app.queue_draw()
+            return False
+
         self.timer_count += 1
         if self.timer_count / int(1000/CONST_PULSE_DELAY) == 45:
             # we've been pulsing for long enough, the user will be getting a headache
@@ -228,6 +237,7 @@ class PulseTimer(object):
 
         self.app.is_pulsing = False
         GObject.source_remove(self.timer_id)
+
 
 CONST_BLINK_DELAY = 330
 
@@ -287,9 +297,8 @@ class DockedApp(object):
     """Provide a docked app class
 
     Attributes:
-        app_info    : list of AppInfoTups to hold details of all running
-                      processes the app has
-        wnck_class  : the WnckClass object relating to the app
+
+        bamf_app    : the Bamf.Applications related to the running app
         app_name    : e.g. Google Chrome, used for tooltips and the applet
                       right click menu etc
         rc_actions  : A list of strings containing the names of the additional application
@@ -300,8 +309,6 @@ class DockedApp(object):
         desktop_file : the filename of the app's .desktop file
         desktop_ai   : a Gio.GDesktopAppInfo read from the .desktop file
         startup_id   : id used for startup notifications
-        wm_class_name:
-        wm_class_group_name:
         applet_win  : the Gdk.Window of the panel applet
         applet      : the panel applet
         applet_orient : the applet orientation
@@ -325,7 +332,7 @@ class DockedApp(object):
                       be drawn when the app is the active app
         ind_ws      : wnck_workspace or None - if set, indicators are to be
                       drawn for windows on the specified workspace
-        last_active_win : the wnck_window of the app's last active window
+        last_active_win : the Bamf.Window of the app's last active window
 
         is_dragee  : boolean - indicates whether or not the app's icon is
                      being dragged to a new position on the dock
@@ -352,8 +359,8 @@ class DockedApp(object):
 
         super().__init__()
 
+        self.bamf_app = None
         self.app_info = []
-        self.wnck_class = None
         self.app_name = ""
         self.rc_actions = []
         self.cmd_line = ""
@@ -361,8 +368,6 @@ class DockedApp(object):
         self.icon_filename = ""
         self.desktop_file = ""
         self.desktop_ai = None
-        self.wm_class_name = ""
-        self.wm_class_group_name = ""
         self.icon_geometry_set = False
         self.applet_win = None
         self.applet_orient = None
@@ -417,6 +422,59 @@ class DockedApp(object):
         self.show_count = False
         self.count_val = 0
 
+    def set_bamf_app(self, b_app):
+        """ Sets the Bamf.Application related to this docked app
+
+        Params: b_app : the Bamf.Application to be added
+        """
+
+        self.bamf_app = b_app
+
+    def clear_bamf_app(self):
+        """ Unsets the Bamf.Application related to this docked app
+
+        Params: b_app : the Bamf.Application to removed """
+
+        self.bamf_app = None
+
+    def has_bamf_app(self, b_app):
+        """ Returns True if b_app is associated with this docked_app, False otherwise
+
+            Params: b_app - a Bamf.Application
+        """
+
+        return b_app == self.bamf_app
+
+    def get_windows(self):
+        """ Convenience function to return a list of the app's Bamf.Windows
+
+        Returns : an empty list if the app is not running or if self.bamf_app is None,
+                  otherwise the window list
+
+        """
+
+        ret_val = []
+        if (self.bamf_app is not None) and (self.bamf_app.is_running() or self.bamf_app.is_starting()):
+            ret_val = self.bamf_app.get_windows()
+
+        return ret_val
+
+    def get_first_normal_win(self):
+        """ Returns the app's first 'normal' window i.e. a window or dialog
+            
+            Returns:
+                a Bamf.Window, or None 
+        """
+
+        if (self.bamf_app is not None) and (self.bamf_app.is_running()):
+            for win in self.get_windows():
+                win_type = win.get_window_type()
+                if win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or \
+                    win.is_user_visible():
+                    return win
+
+        return None
+
     def has_wnck_app(self, wnck_app):
         """ see if this app has a process with the specified wnck_app
 
@@ -431,30 +489,29 @@ class DockedApp(object):
 
         return ret_val
 
-    def setup_from_wnck(self, wnck_app, wnck_class, app_match_list, win_ws_changed_cb):
-        """Set up for an already running app, obtaining info from libWnck.
+    def has_bamf_window(self, win):
+        """
+            Checks to see if a window belongs to the app
 
-        Will attempt to get the app path, icon path, .desktop file, currently
-        open windows and pids.
+        Params:
+            win : the Bamf.Window we're interested in
 
-        Args:
-            wnck_app    : a WnckApplication object relating to the app
-            wnck_class  : a WnckClass obect relating to the app
-            app_match_list : a list of tuples containing details of apps which
-                             are hard to match with their .desktop files
-            wnck_ws_changed_cb : workspace changed callback
+        Returns:
+            True if the window belongs to the app, False otherwise
 
-        Returns: True if successful, False otherwise
         """
 
-        new_app_info = AppInfoTup(app=wnck_app,
-                                  pid=wnck_app.get_pid(), windows=[])
-        self.wnck_class = wnck_class
-        self.set_app_name(wnck_app.get_name())
-#        if build_gtk2:
-        self.wm_class_name = wnck_class.get_res_class()
-#        else:
-#            self.wm_class_name = wnck_class.get_id()
+        windows = self.get_windows()
+        return win in windows
+
+    def setup_from_bamf(self, app_match_list):
+        """ Setup an already running app using info from self.bamf_app
+
+        This is only called when bamf cannot match an app with it's .desktop file,
+        so we can also do some extra checking from the list of hard to match
+        .desktop files
+
+        """
 
         # get a list of all the possible locations of .desktop files
         data_dirs = BaseDirectory.xdg_data_dirs
@@ -462,52 +519,20 @@ class DockedApp(object):
         for dir in data_dirs:
             app_dirs.append(os.path.join(dir, "applications/"))
 
-        # get the currently open windows
-        for win in wnck_app.get_windows():
-            win.connect("state-changed", self.win_state_changed)
-            win.connect("workspace-changed", win_ws_changed_cb)
-            win_class = win.get_class_group()
-            win_class_name = win_class.get_res_class()
-            # if self.wm_class_group_name == "":
-            #    self.wm_class_group_name = win.get_class_group_name()
-
-            if ((win.get_window_type() == Wnck.WindowType.NORMAL) or
-                    (win.get_window_type() == Wnck.WindowType.DIALOG)) and \
-                    (self.wm_class_name == win_class_name) and \
-                    (win.is_skip_tasklist() is False):
-                new_app_info.windows.append(win.get_xid())
-        self.app_info.append(new_app_info)
-        if new_app_info.pid != 0:
-            self.get_cmdline_from_pid(new_app_info.pid)
-
-        # first of all, see if we can get this app's .desktop file from the
-        # list of hard to match apps
-        # Note: this is not intended to be a permanent feature. Hopefully the
-        # Gtk3 version of wnck will allow better app matching and if not, other
-        # window managing libraries can be investigated
+        # search for a match in
         for app in app_match_list:
-            if (wnck_app.get_name() == app[0]) or (win_class_name == app[1]):
+            if self.bamf_app.get_name() == app[0]:
 
                 for dir in app_dirs:
                     desktop_file = os.path.join(dir, app[2])
                     if os.path.exists(desktop_file):
                         self.desktop_file = desktop_file
-                        return self.read_info_from_desktop_file()
+                        if self.read_info_from_desktop_file():
+                            return
 
-        # secondly, search for custom launchers
-        if self.get_desktop_from_custom_launcher(os.path.expanduser("~/.local/share/applications/")):
-            return self.read_info_from_desktop_file()
-
-        # lastly, look through all of the possible locations of .desktop files
-        for dir in app_dirs:
-            if self.get_desktop_from_app_info(dir) or self.brute_force_find_desktop_file(dir):
-                return self.read_info_from_desktop_file()
-
-        log_it("Unable to match app")
-        log_it("App name: %s" % wnck_app.get_name())
-        log_it("Wm class: %s" % win_class_name)
-        log_it("cmd line: %s" % self.cmd_line)
-        return False
+        # no match, so just get basic info
+        self.app_name = self.bamf_app.get_name()
+        self.icon_name = self.bamf_app.get_icon()
 
     def set_app_name(self, app_name):
         """sets the app name.
@@ -521,6 +546,30 @@ class DockedApp(object):
         """
 
         self.app_name = app_name
+
+    def set_urgency(self, urgent):
+        """ Sets the app's urgency state
+
+        Params : urgent - bool, whether or not the app is signalling urgency
+        """
+
+        if urgent:
+            if not self.needs_attention:
+                self.needs_attention = True
+                self.attention_blink_on = False  # initial blink state = off
+                timer = AttentionTimer(self)
+
+                if not self.is_visible():
+                    self.show_icon()
+        else:
+            if self.needs_attention:
+                # we need to turn flashing off
+                self.needs_attention = False
+                self.queue_draw()
+
+                # the timer will handle the rest ....
+                # hiding the icon (if necessary) will be taken care of next
+                # time the user changes workspace
 
     def get_cmdline_from_pid(self, pid):
         """ Find the command line and arguments used to launch the app
@@ -545,56 +594,6 @@ class DockedApp(object):
         if line is not None:
             self.cmd_line = line.decode("utf-8")
 
-    def get_num_windows(self):
-        """Return the number of windows this app and all of its processes have open
-
-        Returns:
-            the number of windows
-        """
-
-        num_win = 0
-        for app_list in self.app_info:
-            for wnck_win in app_list.app.get_windows():
-                win_type = wnck_win.get_window_type()
-                win_cg = wnck_win.get_class_group()
-                win_wm_class_name = win_cg.get_res_class()
-                if ((win_type == Wnck.WindowType.NORMAL) or
-                    (win_type == Wnck.WindowType.DIALOG)) and \
-                    (win_wm_class_name.lower() == self.wm_class_name.lower()) \
-                                                  and (wnck_win.is_skip_tasklist() is False):
-                    num_win += 1
-
-        return num_win
-
-    def get_wnck_windows(self):
-        """Return a list of all of the wnck_windows the app has open"""
-
-        win_list = []
-        for app_list in self.app_info:
-            for wnck_win in app_list.app.get_windows():
-                win_type = wnck_win.get_window_type()
-                win_cg = wnck_win.get_class_group()
-                win_wm_class_name = win_cg.get_res_class()
-                if ((win_type == Wnck.WindowType.NORMAL) or
-                    (win_type == Wnck.WindowType.DIALOG)) and \
-                    (win_wm_class_name.lower() == self.wm_class_name.lower()) and \
-                                                  (wnck_win.is_skip_tasklist() is False):
-                    win_list.append(wnck_win)
-
-        return win_list
-
-    def get_first_window(self):
-        """ Return the first window the app has open
-
-        Returns: a wnck.window, or None (if the app has no open windows)
-        """
-
-        if self.get_num_windows() == 0:
-            return None
-        else:
-            win_list = self.get_wnck_windows()
-            return win_list[0]
-
     def has_windows_on_workspace(self, wnck_workspace):
         """ test whether the app has at least one window open on a specified
             workspace
@@ -606,11 +605,12 @@ class DockedApp(object):
             boolean
         """
 
-        win_list = self.get_wnck_windows()
-        for win in win_list:
-            win_ws = win.get_workspace()
-            if win_ws == wnck_workspace:
-                return True
+        for win in self.get_windows():
+            wnck_win = Wnck.Window.get(win.get_xid())
+            if wnck_win is not None:
+                win_ws = wnck_win.get_workspace()
+                if win_ws == wnck_workspace:
+                    return True
 
         return False
 
@@ -621,9 +621,10 @@ class DockedApp(object):
             boolean
         """
 
-        win_list = self.get_wnck_windows()
+        win_list = self.get_windows()
         for win in win_list:
-            if not win.is_minimized():
+            wnck_win = Wnck.Window.get(win.get_xid())
+            if (wnck_win is not None) and (not wnck_win.is_minimized()):
                 return True
 
         return False
@@ -645,207 +646,6 @@ class DockedApp(object):
             boolean
         """
         return self.drawing_area.get_visible()
-
-    def get_desktop_from_app_info(self, srch_dir):
-        """Attempt to find the .desktop file for the app based on the app
-           wm_class and app name. Will search for files in srch_dir and its
-           sub directories.
-
-        In addition to <self.wm_class_name>.desktop looks for the following
-        variations of name for the desktop flie:
-            lowercase<self.wm_class_name>.desktop
-            uppercase<self.wm_class_name>.desktop
-            <self.app_name>.desktop
-            lowercase<self.app_name>.desktop
-            <self.app_name> with space characters replaced by '-'.desktop
-            lowercase<self.app_name> with space characters replaced by
-                "-",desktop
-            <self.wm_class_name>.desktop
-
-        If the destop file is found, self.desktop_file is set accordingly,
-        otherwise self.desktop_file is set to None
-
-        Args:
-            srch_dir : The directory to be searced for the desktop file
-
-        Returns:
-            True if the desktop file was found, False otherwise
-
-        """
-        for the_dir, dir_list, file_list in os.walk(srch_dir):
-
-            dfname = the_dir + self.wm_class_name + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.wm_class_name.lower() + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.wm_class_name.upper() + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name.lower() + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name.replace(" ", "-") + ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-            dfname = the_dir + self.app_name.replace(" ", "-").lower() + \
-                ".desktop"
-            if os.path.isfile(dfname):
-                self.desktop_file = dfname
-                return True
-
-        self.desktop_file = None
-        return False
-
-    def brute_force_find_desktop_file(self, srch_dir):
-        """Attempt to find the .desktop file for an app by examining
-           all of the .desktop files in a specified directory and its
-           subdirectories.
-
-        A match occurs when any of the following condition are met:
-
-        the name field in the .desktop file is the same as self.app_name
-        the uppercased first word of self.app_name is the same as the
-        the uppercased name field of the .desktop file
-        the Exec field is found within self.cmd_line
-        the StartupWMClass is the same as self.wm_class_name
-
-        If a match is found, self.desktop_file is set accordingly
-
-        Note - the app must be running, and self.pid, self.cmd_line and
-        self.app_name must have been set up
-
-        Args:
-            srch_dir  - the directory to search
-
-        Returns:
-            True if the .desktop file was found, False otherwise
-
-        """
-
-        # TODO: replace DesktopEntry with Gio.DesktopAppInfo...
-
-        # if the search dir doesn't exist, don't do anything
-        if os.path.isdir(srch_dir) is False:
-            return False
-
-        # split the app name into it's various parts using ' - ' as a
-        # delimeter
-        name_parts = self.app_name.upper().split(" - ")
-        for name in name_parts:
-            name = name.strip()
-
-        # split the command line into the command and various arguments
-        # note: strings that contain spaces will obviously be split into
-        # more than one part, but that's not a problem as we don't care
-        # about string aguments
-        cmd_parts = self.cmd_line.split()
-
-        # search search_dir and any sub-directories it contains for .desktop
-        # files
-        for the_dir, dir_list, file_list in os.walk(srch_dir):
-            for the_file in file_list:
-
-                if the_file.endswith(".desktop"):
-
-                    the_de = DesktopEntry.DesktopEntry(os.path.join(the_dir,
-                                                                    the_file))
-
-                    # if the app name in the desktop file matches any of the
-                    # parts of the app name, we have a match
-                    try:
-                        unused_var = name_parts.index(the_de.getName().upper())
-                        name_part_found = True
-                    except ValueError:
-                        name_part_found = False
-
-                    # remove command line args from the Exec field of the
-                    # .desktop
-                    de_exec = the_de.getExec()
-                    exec_found = False
-
-                    if de_exec:
-                        # if the exec line specfies an environment variable to
-                        # set, we need to get rid of this part
-                        if de_exec.startswith("env"):
-                            cmd_parts = de_exec.split(" ", 2)
-                            de_exec = cmd_parts[2]
-
-                        de_exec = de_exec.split()
-                        # now that we have the app command line we can simply
-                        # check that it ends with the same command as the
-                        # .desktop file contains. So...
-                        exec_found = self.cmd_line.strip().endswith(de_exec[0])
-
-                        if not exec_found:
-                            # we can now search within self.cmd_line for
-                            # de_exec
-                            # Note: we don't test for equality because some
-                            # apps are launched via another (e.g. python apps)
-                            # and therefore will be one of the command line
-                            # args. An example of this is Ubuntu Software
-                            # Center - in the .desktop file the Exec field is
-                            # '/usr/bin/software-center' whilst its command
-                            # line while running is
-                            # 'usr/bin/python /usr/bin/software-center'
-                            for exec_part in de_exec:
-                                try:
-                                    unused_var = cmd_parts.index(exec_part)
-                                    exec_found = True
-                                except ValueError:
-                                    pass
-
-                                if exec_found:
-                                    break
-                        # try matching just the last part, removing -bin from the name
-                        if not exec_found:
-                            de_exec = de_exec[0]
-                            de_exec = re.sub("-bin", "", de_exec)
-
-                            if "/" in de_exec:
-                                if de_exec.split("/")[-1] in self.cmd_line:
-                                    exec_found = True
-
-                    # check that the wm_classes match
-                    wm_class_found = False
-                    de_wm_class = the_de.getStartupWMClass()
-                    if ((de_wm_class is not None) and (de_wm_class != "")) and \
-                        ((self.wm_class_name is not None) and
-                         (self.wm_class_name != "")):
-                        # if both the .desktop and the app have a wm_class then
-                        # they MUST match for the app to be found, and
-                        # nm_part_found and exec_found become irrelevant
-
-                        if de_wm_class.lower() == self.wm_class_name.lower():
-                            wm_class_found = True
-
-                        exec_found = wm_class_found
-                        name_part_found = wm_class_found
-
-                    if (name_part_found is True) or \
-                       (exec_found is True) or \
-                       (wm_class_found is True):
-                        self.desktop_file = os.path.join(the_dir, the_file)
-                        return True
-
-        self.desktop_file = None
-        return False
 
     def get_desktop_from_custom_launcher(self, srch_dir):
         """ Search the custom launchers in a specified directory for
@@ -877,8 +677,7 @@ class DockedApp(object):
                 # remove command line args from the Exec field of the .desktop
                 de_exec = the_de.getExec().split(None, 1)[0]
 
-                if (self.cmd_line.find(de_exec) != -1) and \
-                   (self.wm_class_name.upper() == the_de.getStartupWMClass().upper()):
+                if self.cmd_line.find(de_exec) != -1:
                     self.desktop_file = srch_dir+the_file
                     return True
 
@@ -894,15 +693,8 @@ class DockedApp(object):
 
         """
 
-        # iterate through of the windows this process has open and set their
-        # minimize location
-        for window in self.get_wnck_windows():
-            win_type = window.get_window_type()
-            if ((win_type == Wnck.WindowType.NORMAL) or
-                (win_type == Wnck.WindowType.DIALOG)) and \
-               (window.is_skip_tasklist() is False):
-
-                window.set_icon_geometry(x, y, width, height)
+        for win in self.get_windows():
+            window_control.set_minimise_target(win, x, y, width, height)
 
         return True
 
@@ -973,19 +765,17 @@ class DockedApp(object):
         self.attention_type = attention_type
 
     def is_running(self):
-        """Is the app running or not?
+        """
+            Is the app running ?
 
-        Returns:
-            True if the app is running, False if not
+        Returns: True if the app is running, False if not
+
         """
 
-        ret_val = False
-        for ainf in self.app_info:
-            if ainf.pid != -1:
-                ret_val = True
-                break
+        if self.bamf_app is None:
+            return False
 
-        return ret_val
+        return self.bamf_app.is_running()
 
     def has_desktop_file(self):
         """ Does the app have a .desktop file?
@@ -1081,6 +871,32 @@ class DockedApp(object):
                 # hiding the icon (if necessary) will be taken care of next
                 # time the user changes workspace
 
+    def get_num_windows(self, cur_ws=None):
+        """
+            Get the number of normal and dialog windows the app has open.
+            If cur_ws is specfied, then only windows on the specified workspace are counted
+
+            Params: cur_ws - an int representing the workspace number:
+
+            Returns: an int
+
+        """
+
+        num_win = 0
+
+        if self.bamf_app is not None:
+            for win in self.get_windows():
+                win_type = win.get_window_type()
+                if win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or win.is_user_visible():
+                    if cur_ws is None:
+                        num_win += 1
+                    else:
+                        xid = win.get_xid()
+                        wnck_win = Wnck.Window.get(xid)
+                        if (wnck_win is not None) and wnck_win.is_on_workspace(cur_ws):
+                            num_win += 1
+        return num_win
+
     def do_expose_event(self, drawing_area, event):
         """The main drawing event for the docked app.
 
@@ -1175,27 +991,13 @@ class DockedApp(object):
             # account the fact that we might only be showing indicators from
             # the current workspace
 
-            if self.ind_ws is None:
-                # show indicators for windows from all workspaces
-                if self.multi_ind is False and self.indicator != IndicatorType.SUBWAY:
-                    num_ind = 1
-                else:
-                    num_ind = self.get_num_windows()
-                    if num_ind > 4:
-                        num_ind = 4
+            # get the number of indicators to show...
+            if self.multi_ind is False and self.indicator != IndicatorType.SUBWAY:
+                num_ind = 1
             else:
-                # get the number of windows on the current workspace
-                num_ind = 0
-                for win in self.get_wnck_windows():
-                    if win.is_on_workspace(self.ind_ws):
-                        num_ind += 1
-
-                if self.multi_ind is False and self.indicator != IndicatorType.SUBWAY:
-                    if num_ind > 1:
-                        num_ind = 1
-                else:
-                    if num_ind > 4:
-                        num_ind = 4
+                num_ind = self.get_num_windows(self.ind_ws)
+                if num_ind > 4:
+                    num_ind = 4
 
             ind = None
             if self.indicator == IndicatorType.LIGHT:
@@ -1391,13 +1193,13 @@ class DockedApp(object):
         left = 8.5
         width = draw_size - left * 2   # width of the progress bar
 
-        top = (draw_size/8) * 5 +0.5
+        top = (draw_size/8) * 5 + 0.5
 
         ctx.save()
         ctx.scale(self.drawing_area_size/draw_size, self.drawing_area_size/draw_size)
 
         # fill the interior with the background colour
-        ctx.set_line_width((1))
+        ctx.set_line_width(1)
         ctx.set_source_rgb(bk_red, bk_green, bk_blue)
         rounded_rectangle(ctx, left, top, width, height, 7)
         ctx.stroke_preserve()
@@ -1417,22 +1219,6 @@ class DockedApp(object):
         rounded_rectangle(ctx, left, top, width, height, 7)
         ctx.stroke()
 
-
-        #ctx.set_line_width(1)
-        #ctx.set_source_rgb(bk_red, bk_green, bk_blue)
-        #rounded_rectangle(ctx, left + line_width, top + line_width,
-        #                  width - line_width*2, height-line_width*2,
-         #                 2)
-
-        #ctx.fill()
-
-        # fill part of the interior with a different colour, depending on
-        # the progress value
-        #ctx.set_source_rgb(fred, fgreen, fblue)
-        #rounded_rectangle(ctx, left + line_width, top + line_width,
-        #                  (width - line_width*2) * self.progress_val,
-        #                  height-line_width*2, 2)
-        #ctx.fill()
         ctx.restore()
 
     def draw_attention_badge(self, ctx):
@@ -1585,6 +1371,7 @@ class DockedApp(object):
         """
             Cancel any startup notification
         """
+
         if build_gtk2:
             Gdk.notify_startup_complete_with_id(self.startup_id)
         else:
@@ -1596,7 +1383,7 @@ class DockedApp(object):
     def launch_failed(self, app_launch_context, startup_id):
         """Handler for app launch failure events
 
-        Cancel the satartup notification
+        Cancel the startup notification
 
             Args:
                 app_launch_context : the Gdk.AppLaunchContext that failed
@@ -1718,6 +1505,11 @@ class DockedApp(object):
 
         throbber = PulseTimer(self)
 
+    def pulse_once(self):
+        """ Make the dock icon pulse once"""
+
+        throbber = PulseTimer(self, True)
+
     def set_dragee(self, is_dragee):
         """ Set the flag which indicates whether or not this app is being
             dragged to a new position on the dock
@@ -1793,6 +1585,7 @@ def main():
     Debugging code can go here
     """
     pass
+
 
 if __name__ == "__main__":
     main()

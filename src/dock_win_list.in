@@ -49,12 +49,14 @@ else:
     gi.require_version("Wnck", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
+gi.require_version("Bamf", "3")
 
 from gi.repository import Gtk
 from gi.repository import Wnck
 from gi.repository import GdkPixbuf
 from gi.repository import Gdk
 from gi.repository import Pango
+from gi.repository import Bamf
 
 import os
 import cairo
@@ -62,6 +64,7 @@ import tempfile
 from time import sleep
 
 from dock_popup import DockPopup
+import window_control
 
 from log_it import log_it as log_it
 
@@ -89,6 +92,8 @@ class DockWinList(DockPopup):
         # call the base classes constructor
         DockPopup.__init__(self, wnck_screen, panel_orient)
 
+        self.menu = None
+
         self.__bg_str = ""
         self.__fg_str = ""
 
@@ -112,11 +117,11 @@ class DockWinList(DockPopup):
 
         # the list consists of open windows (click to select the window)
         # the liststore therefore needs to contain an active indictor,
-        # window title/item text, a Wnck window, a GdxPixbuf
+        # window title/item text, a Bamf window, a GdxPixbuf
         # (an icon for the user to click to close the window,
 
         self.__list_store = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf,
-                                          Wnck.Window,
+                                          Bamf.Window,
                                           GdkPixbuf.Pixbuf)
 
         self.__active_renderer = Gtk.CellRendererText()
@@ -355,6 +360,7 @@ class DockWinList(DockPopup):
             cell_area = self.__tree_view.get_cell_area(path, col)
             if (event.x >= cell_area.x + cell_area.width - CONST_CLOSE_ICON_SIZE) and \
                (event.y <= cell_area.y + CONST_CLOSE_ICON_SIZE):
+                window_control.close_win(win, event.time)
                 win.close(event.time)
                 self.hide()
                 return True
@@ -362,8 +368,9 @@ class DockWinList(DockPopup):
         if win is not None:
             # if the window to be activated is not on the current workspace,
             # switchto that workspace
+            wnck_win = Wnck.Window.get(win.get_xid())
             wnck_aws = self.wnck_screen.get_active_workspace()
-            wnck_ws = win.get_workspace()
+            wnck_ws = wnck_win.get_workspace()
 
             # the windows's current workspace can be None if it is pinned to all
             # workspaces or it is not on any at all...
@@ -373,7 +380,7 @@ class DockWinList(DockPopup):
                (wnck_aws != wnck_ws):
                     wnck_ws.activate(0)
                     sleep(0.01)
-            win.activate(0)
+            wnck_win.activate(0)
 
             # set the active indicator on the newly activated window
             # first, reset the current active indicator in the list store
@@ -466,22 +473,26 @@ class DockWinList(DockPopup):
             self.resize(100, 10)
             self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
 
-        win_list = self.the_app.get_wnck_windows()
+        win_list = self.the_app.get_windows()
 
         wnck_aws = self.wnck_screen.get_active_workspace()
         add_to_list = False
         for win in win_list:
-            if win_on_cur_ws_only:
-                # only add if the window is on the current workspace
-                add_to_list = win.is_on_workspace(wnck_aws)
-            else:
-                add_to_list = True
+            win_type = win.get_window_type()
 
-            if add_to_list:
-                is_active = (len(win_list) == 1) or \
-                            (win == self.the_app.last_active_win)
+            if (win_type == Bamf.WindowType.NORMAL) or (win_type == Bamf.WindowType.DIALOG):
+                if win_on_cur_ws_only:
+                    # only add if the window is on the current workspace
+                    wnck_win = Wnck.Window.get(win.get_xid())
+                    add_to_list = wnck_win.is_on_workspace(wnck_aws)
+                else:
+                    add_to_list = True
 
-                self.add_to_list(is_active, win.get_name(), win)
+                if add_to_list:
+                    is_active = (len(win_list) == 1) or \
+                                (win == self.the_app.last_active_win)
+
+                    self.add_to_list(is_active, win.get_name(), win)
 
     def mbutton_press(self, widget, event):
         """ this is for debug purposes only and demonstrates that menu.popup does

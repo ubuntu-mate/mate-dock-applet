@@ -54,6 +54,7 @@ else:
 
 gi.require_version("MatePanelApplet", "4.0")
 gi.require_version("Notify", "0.7")
+gi.require_version("Bamf", "3")
 
 from gi.repository import Gtk
 from gi.repository import Gdk
@@ -64,6 +65,7 @@ from gi.repository import GdkPixbuf
 from gi.repository import Gio
 from gi.repository import GLib
 from gi.repository import Notify
+from gi.repository import Bamf
 
 import os
 import os.path
@@ -82,6 +84,7 @@ import dock_action_list
 import dock_xml
 import dock_color_changer
 import docked_app_helpers
+import window_control
 
 from log_it import log_it as log_it
 
@@ -349,6 +352,8 @@ class Dock(object):
                                      If false, pinned apps are set according to the current workspace
             notification : the latest unpin notification
 
+            matcher : a Bamf.Matcher for matching apps with their windows and .desktop files etc.
+
     """
 
     def __init__(self, applet):
@@ -462,6 +467,9 @@ class Dock(object):
                                              dbus_interface="com.canonical.Unity.LauncherEntry",
                                              signal_name="Update")
 
+        # create a Bamf.Matcher for matching windows to running apps
+        self.matcher = Bamf.Matcher.get_default()
+
         # instantiate a timer to perform further setup once the applet has been
         # fully created
         GObject.timeout_add(1000, self.do_delayed_setup)
@@ -566,7 +574,6 @@ class Dock(object):
                 The height of a top panel, or 0 is there is no top panel
             """
 
-            settings_path = "/org/mate/panel/toplevels/"
             # get this panel's settings
             plist = Gio.Settings.new("org.mate.panel")
 
@@ -755,6 +762,7 @@ class Dock(object):
                                    self.popup_delay,
                                    self.pa_configs,
                                    self.pa_on_all_ws)
+
                 return
 
         # we get here if there was no previous configuration, or the
@@ -814,7 +822,7 @@ class Dock(object):
             # it can be written to the .xml config file.
             # Doing so allows the pinned app configuration to be restored on
             # if the user reverts the pa_on_all_ws setting, even if the applet
-            # is deleted from the panel and then adds it again
+            # is deleted from the panel and then add it again
             pinned_apps = self.settings.get_value("pinned-apps").unpack()
 
         pa_configs = self.configs_to_settings()
@@ -892,6 +900,58 @@ class Dock(object):
         b = int(self.fallback_bar_col[2]) / 255
 
         docked_app_helpers.fallback_ind_col = [r, g, b]
+
+    def get_docked_app_by_desktop_file(self, dfname):
+        """ Returns the docked app which has the same destop file name as dfname
+
+        Params: dfname - the filename of the .desktop file (note: any path is ignored, only
+                         the actual file name is taken into account
+
+        Returns a docked app if a match for dfname is found, None otherwise
+        """
+
+        df = os.path.basename(dfname)
+        for app in self.app_list:
+            if app.desktop_file is not None:
+                if os.path.basename(app.desktop_file) == df:
+                    return app
+
+        return None
+
+    def get_docked_app_by_bamf_app(self, bamf_app):
+        """
+            Returns the docked_app relating to the running bamf_app
+
+            Params:
+                bamf_app: the bamf_app of the application
+
+            Returns a docked_app, or None if it could not be found
+
+        """
+
+        if bamf_app is not None:
+            for app in self.app_list:
+                if app.has_bamf_app(bamf_app):
+                    return app
+
+        return None
+
+    def get_docked_app_by_bamf_window(self, bamf_win):
+        """ Returns the docked app which owns the specified window
+
+        Params:
+            bamf_window: the Bamf.Window in
+
+        Returns a docked app, or None if it could not be found
+
+        """
+
+        if bamf_win is not None:
+            for app in self.app_list:
+                if app.has_bamf_window(bamf_win):
+                    return app
+
+        return None
 
     def set_actions_for_app(self, app):
         """Show or hide actions in the context menu and action list so that only relevant ones
@@ -1011,8 +1071,13 @@ class Dock(object):
             pin_action = self.popup_action_group.get_action("pin_action")
             unpin_action = self.popup_action_group.get_action("unpin_action")
 
-        pin_action.set_visible(not app.is_pinned)
-        unpin_action.set_visible(app.is_pinned)
+        # pin/unpin actions don't appear when we don't have a .desktop file...
+        if not app.has_desktop_file():
+            pin_action.set_visible(False)
+            unpin_action.set_visible(False)
+        else:
+            pin_action.set_visible(not app.is_pinned)
+            unpin_action.set_visible(app.is_pinned)
 
         if pin_action.is_visible():
             pin_action.set_label("Pin %s" % app.app_name)
@@ -1058,8 +1123,10 @@ class Dock(object):
         if num_win > 0:
             close_win_action.set_visible(True)
 
+    # TODO: decide - do we need ccl anymore???
         ccl_action = self.dock_action_group.get_action("ccl_action")
-        ccl_action.set_visible(not app.has_desktop_file())
+        ccl_action.set_visible(False)
+        # ccl_action.set_visible(not app.has_desktop_file())
 
         # now setup the actions which can appear in either the right click menu or
         # action list, depending on which is being used
@@ -1454,7 +1521,7 @@ class Dock(object):
                 self.app_list[index-1] = self.app_list[index]
                 self.app_list[index] = app
 
-                # allow Gtk to move perform the move
+                # allow Gtk to perform the move
                 while Gtk.events_pending():
                     Gtk.main_iteration()
 
@@ -1565,11 +1632,13 @@ class Dock(object):
 
         return dock_x, dock_y
 
-    def set_minimise_target(self, app):
-        """ Calculate and set the minimise locations for an app's windows
+    def set_minimise_target(self, app, win=None):
+        """ Calculate and set the minimise locations for an app's windows,
+            or just for a single window
 
         Args:
             app: the docked_app
+            win : a single window which needs its minimise location set
         """
 
         min_x, min_y = self.get_app_root_coords(app)
@@ -1582,7 +1651,10 @@ class Dock(object):
         min_y += adj
         app_w = app_h = app.drawing_area_size - (adj*2)
 
-        app.set_all_windows_icon_geometry(min_x, min_y, app_w, app_h)
+        if win is None:
+            app.set_all_windows_icon_geometry(min_x, min_y, app_w, app_h)
+        else:
+            window_control.set_minimise_target(win, min_x, min_y, app_w, app_h)
 
     def set_all_apps_minimise_targets(self):
         """ Calculate and set the window minimise locations for all app's
@@ -1924,7 +1996,36 @@ class Dock(object):
         dock_app = docked_app.DockedApp()
         dock_app.desktop_file = desktop_file
         dock_app.read_info_from_desktop_file()
-        dock_app.is_pinned = True
+        if dock_app.read_info_from_desktop_file():
+            if build_gtk2:
+                dock_app.applet_win = self.applet.window
+            else:
+                dock_app.applet_win = self.applet.get_window()
+
+            dock_app.applet = self.applet
+            dock_app.applet_orient = self.applet.get_orient()
+            size = self.applet.get_size()
+            self.set_app_icon(dock_app, size)
+            self.app_list.append(dock_app)
+            self.add_app(dock_app)
+
+            if self.show_all_apps:
+                dock_app.show_icon()
+            else:
+                self.show_or_hide_app_icons()
+                self.show_or_hide_indicators()
+
+            self.set_all_apps_minimise_targets()
+
+            dock_app.applet_orient = self.applet.get_orient()
+            dock_app.set_indicator(self.indicator)
+            dock_app.set_multi_ind(self.multi_ind)
+            dock_app.set_active_bg(self.active_bg)
+            dock_app.set_attention_type(self.attention_type)
+
+            dock_app.is_pinned = True
+            self.write_settings()
+            return
 
         if build_gtk2:
             dock_app.applet_win = self.applet.window
@@ -1945,6 +2046,7 @@ class Dock(object):
         self.add_app(dock_app)
         self.show_or_hide_app_icons()
         self.show_or_hide_indicators()
+        self.set_all_apps_minimise_targets()
         self.write_settings()
 
     def show_win(self, win_no):
@@ -1956,17 +2058,16 @@ class Dock(object):
 
         """
 
-        win_list = self.right_clicked_app.get_wnck_windows()
-        wnck_win = win_list[win_no-1]
-        wnck_win.activate(0)
+        win_list = self.right_clicked_app.get_windows()
+        win = win_list[win_no-1]
+        window.control.activate(win)
 
     def close_win(self, data=None):
         """Close all windows for the right clicked app"""
 
-        win_list = self.right_clicked_app.get_wnck_windows()
-        for wnck_win in win_list:
-            # have to send 0 as the event time because we have no event time to send
-            wnck_win.close(0)
+        win_list = self.right_clicked_app.get_windows()
+        for win in win_list:
+            window_control.close_win(win)
 
     def icon_theme_changed(self, icontheme):
         """ Callback for when the Gtk icon theme changes
@@ -1982,56 +2083,6 @@ class Dock(object):
         for app in self.app_list:
             self.set_app_icon(app, size)
 
-    def copy_wnck_info_to_app(self, app_from_dock, app_from_wnck, wnck_window):
-        """Copy info from wnck into a docked applet
-
-        If the wnck app pid is already present in the docked app, just
-        copy the windows xids that are not in the docked app
-
-        If the wnck app pid is not present, copy all of the the app_info
-        """
-
-        if app_from_dock.wnck_class is None:
-            app_from_dock.wnck_class = app_from_wnck.wnck_class
-        app_from_dock.set_app_name(app_from_wnck.app_name)
-        if app_from_dock.wm_class_name == "":
-            app_from_dock.wm_class_name = app_from_wnck.wm_class_name
-
-        if app_from_dock.wm_class_group_name == "":
-            app_from_dock.wm_class_group_name = app_from_wnck.wm_class_group_name
-
-        for wai in app_from_wnck.app_info:
-            # look for a process in the docked app with an identical pid
-
-            existing_pid = False
-            for dai in app_from_dock.app_info:
-
-                # different wnck_apps for a single app can share the same pid
-                # so just check the wnck_apps for equivalency
-                if dai.app == wai.app:
-                    existing_pid = True
-
-                if existing_pid is True:
-                    # we need to merge info from the new details into the
-                    # dock_app
-
-                    for xid in wai.windows:
-                        try:
-                            unused_var = dai.windows.index(xid)
-                            # if we get here, the window was found, so there's
-                            # no need to do anything else
-
-                        except ValueError:
-                            # if we get here, the window wasn't found so it
-                            # needs to be added
-                            dai.windows.append(xid)
-
-                    break
-
-            if existing_pid is False:
-                # add the info for the new process
-                app_from_dock.app_info.append(wai)
-
     def find_desktop_file(self, df_name):
         """ Find the full filename of a specified .desktop file
 
@@ -2039,6 +2090,7 @@ class Dock(object):
         the specified filename
             /usr/share/applications
             /usr/local/share/applications
+            /var/lib/snapd/desktop/applications
             ~/.local/share/applications
 
         Args :
@@ -2052,6 +2104,7 @@ class Dock(object):
 
         srch_dirs = ["/usr/share/applications/",
                      "/usr/local/share/applications/",
+                     "/var/lib/snapd/desktop/applications/",
                      os.path.expanduser("~/.local/share/applications/")]
 
         for srch_dir in srch_dirs:
@@ -2079,8 +2132,8 @@ class Dock(object):
             if this is a pinned app, integrate the running app info with the
             pinned app details already set up
 
-        Also, set up event handlers allowing us keep track of window open and
-        close events and active window change events
+        Also, set up event handlers allowing us keep track of window added and
+        removed events, pluse change of active workspace
         """
 
         self.wnck_screen.force_update()  # recommended per Wnck documentation
@@ -2106,44 +2159,52 @@ class Dock(object):
             if full_name != "":
                 dock_app.desktop_file = full_name
                 if dock_app.read_info_from_desktop_file():
+                    b_app = self.matcher.get_application_for_desktop_file(full_name, True)
+                    dock_app.set_bamf_app(b_app)
                     self.app_list.append(dock_app)
 
                 dock_app.is_pinned = True
 
-        for wnck_window in self.wnck_screen.get_windows():
-
-            win_type = wnck_window.get_window_type()
-
-            if ((win_type == Wnck.WindowType.NORMAL) or
-                (win_type == Wnck.WindowType.DIALOG)) and \
-                    wnck_window.is_skip_tasklist() is False:
-
-                wnck_class = wnck_window.get_class_group()
-
-                wnck_app = wnck_window.get_application()
-
-                # setup a new docked app object with info from wnck
-                dock_app = docked_app.DockedApp()
-
-                if build_gtk2:
-                    dock_app.applet_win = self.applet.window
-                else:
-                    dock_app.applet_win = self.applet.get_window()
-
-                dock_app.applet = self.applet
-
-                dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match, self.window_ws_changed)
-
-                # if this is a pinned app already in the list, merge the running app details with
-                # the item already set up in app_list
-                for app in self.app_list:
-                    if app.desktop_file == dock_app.desktop_file:
-                        # copy the running app's info to the pinned dock item
-                        self.copy_wnck_info_to_app(app, dock_app, wnck_window)
+        # unpinned apps - get a list of all running apps and if an app is not already in the dock
+        # and if it is an app (and not e.g. a panel...) then add it to the dock
+        for b_app in self.matcher.get_running_applications():
+            if (self.get_docked_app_by_bamf_app(b_app) is None) and b_app.is_user_visible():
+                # we need to examine all the app's windows - if any of them are Normal/Dialogs the app needs to be
+                # added to the dock
+                add_to_dock = False
+                for b_win in b_app.get_windows():
+                    if (b_win.get_window_type() == Bamf.WindowType.NORMAL) or \
+                       (b_win.get_window_type() == Bamf.WindowType.DIALOG):
+                        add_to_dock = True
                         break
-                else:
-                    # it's not a pinned app so add it to the app list
-                    self.app_list.append(dock_app)
+
+                if add_to_dock:
+                    dock_app = docked_app.DockedApp()
+                    dock_app.set_bamf_app(b_app)
+
+                    dock_app.desktop_file = b_app.get_desktop_file()
+                    if dock_app.desktop_file is not None:
+                        if dock_app.read_info_from_desktop_file():
+                            self.app_list.append(dock_app)
+                    else:
+                        # bamf cannot match the app, so get as much info about it as we can
+                        # e.g. the icon, and use that ...
+                        dock_app.setup_from_bamf(self.app_match)
+                        self.app_list.append(dock_app)
+
+        # for all the apps we have, setup signal handlers
+        for app in self.app_list:
+            # connect signal handlers so that we detect windows being added and removed from the Bamf.App
+            b_app = app.bamf_app
+            self.set_bamf_app_handlers(b_app)
+
+            # for each window the app has open, connect workspace changed events
+            for win in app.get_windows():
+                win_type = win.get_window_type()
+                if (win_type == Bamf.WindowType.NORMAL) or (win_type == Bamf.WindowType.DIALOG):
+                    wnck_win = Wnck.Window.get(win.get_xid())
+                    if wnck_win is not None:
+                        wnck_win.connect("workspace-changed", self.window_ws_changed)
 
     def clear_dock_apps(self):
         """ Clear out the current list of apps, pinned and unpinned, restoring the
@@ -2175,6 +2236,7 @@ class Dock(object):
             return
 
         ws_name = ws.get_name()
+        update_dock = False
 
         # if we're using a different dock
         if not self.pa_on_all_ws:
@@ -2185,12 +2247,73 @@ class Dock(object):
             # setup the new dock for this workspace
             self.setup_app_list()
             self.setup_dock_apps()
+            update_dock = True
+
+        if not self.show_all_apps:
+            update_dock = True
+
+        if update_dock:
             self.show_or_hide_app_icons()
             self.show_or_hide_indicators()
             self.set_all_apps_minimise_targets()
 
-    def active_win_changed(self, wnck_screen, prev_active_window):
-        """Event handler for the window change event
+    def active_app_changed(self, matcher, object, p0):
+        """ Handler of the active app changed signal
+
+        Set the old docked app as inactive, the new one as active and redraw both
+
+        Params:
+            matcher: the Bamf.Matcher which received the event - will be the
+                     same as self.matcher
+            object : the previously active Bamf.Application
+            p0     : the new active Bamf.Application
+        """
+
+        if object is not None:
+            old_app = self. get_docked_app_by_bamf_app(object)
+            if old_app is not None:
+                old_app.is_active = False
+                old_app.queue_draw()
+
+        if p0 is not None:
+            new_app = self.get_docked_app_by_bamf_app(p0)
+            if new_app is not None:
+                new_app.is_active = True
+                new_app.queue_draw()
+
+    def set_bamf_app_handlers(self, b_app):
+        """ Set up signal handlers for a Bamf.Application
+
+        Params:
+            b_app - the Bamf.Application
+        """
+
+        if b_app is not None:
+            b_app.connect("window-added", self.window_added)
+            b_app.connect("window-removed", self.window_removed)
+            b_app.connect("running-changed", self.do_running_changed)
+            b_app.connect("starting-changed", self.do_starting_changed)
+            b_app.connect("urgent-changed", self.do_urgent_changed)
+
+    def remove_bamf_app_handlers(self, b_app):
+        """ Remove signal handlers we set up
+
+        Params:
+            b_app - the Bamf.Application
+        """
+
+        if b_app is not None:
+            try:
+                b_app.disconnect_by_func(self.window_added)
+                b_app.disconnect_by_func(self.window_removed)
+                b_app.disconnect_by_func(self.do_running_changed)
+                b_app.disconnect_by_func(self.do_starting_changed)
+                b_app.disconnect_by_func(self.do_urgent_changed)
+            except TypeError:
+                pass
+
+    def active_win_changed(self, matcher, object, p0):
+        """Event handler for the active window change event
 
         Remove the highlighted background from any prevously active app and
         redraw its icon
@@ -2198,35 +2321,345 @@ class Dock(object):
         Set the new app as active and redraw it with a highlighted background
 
         Args:
-            wnck_screen :  the screen on which the event occurred - will be the
-                           same as self.wnck_screen
-            prev_active_window : the wnck_window that was previously active
+            matcher :  the Bamf.Matcher which received the event - will be the
+                       same as self.matcher
+            object  :  a Bamf.Window - the previously active window
+            p0      :  a Bamf Window - the newly active window
+
 
         """
+
+        self.wnck_screen.force_update()
 
         for app in self.app_list:
             if app.is_active is True:
                 app.is_active = False
                 app.queue_draw()
 
-        new_win = self.wnck_screen.get_active_window()
+        if p0 is not None:
+            for app in self.app_list:
+                if app.has_bamf_window(p0):
+                    win_type = p0.get_window_type()
 
-        if new_win is not None:
-            # the desktop itself can be the new active window. we need to
-            # ignore it if so....
-            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392
-            if new_win.get_name().lower() != "x-caja-desktop":
-                new_cg = new_win.get_class_group()
-                new_wm_class_name = new_cg.get_res_class()
-                new_app = new_win.get_application()
-                for app in self.app_list:
-                    if app.wm_class_name == new_wm_class_name:
-                        for aai in app.app_info:
-                            if new_app == aai.app:
-                                app.is_active = True
-                                app.last_active_win = new_win
-                                app.queue_draw()
-                                break
+                    # we only want to allow normal and dialog windows to be the last active window
+                    if win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG]:
+                        app.last_active_win = p0
+
+                    app.is_active = True
+                    app.queue_draw()
+                    break
+
+    def match_bamf_app_to_dock_app(self, b_app):
+        """
+            Attempts to match a Bamf.Application to a docked_app
+
+        If a matching docked_app is found, the docked_app will be setup with the
+        details from the Bamf app. If a match cannot be found, a new docked app is created
+        and added to the dock as an unpinned app
+
+        Params:
+            b_app : the Bamf.Application
+
+        Returns: the docked_app that was matched or added to the dock
+
+        """
+
+        # first of all, try to match the application with those in the dock
+        # by their .desktop file
+
+        if b_app.get_desktop_file() is not None:
+            dock_app = self.get_docked_app_by_desktop_file(b_app.get_desktop_file())
+            if (dock_app is not None) and (dock_app.bamf_app is None):
+                dock_app.set_bamf_app(b_app)
+                self.set_bamf_app_handlers(b_app)
+        else:
+            # see if there's a match by Bamf.Application
+            dock_app = self.get_docked_app_by_bamf_app(b_app)
+
+        if dock_app is None:
+            # No match, so add the app to the dock
+            dock_app = docked_app.DockedApp()
+            dock_app.set_bamf_app(b_app)
+            dock_app.desktop_file = b_app.get_desktop_file()
+
+            add_to_dock = True
+
+            if dock_app.desktop_file is not None:
+                add_to_dock = dock_app.read_info_from_desktop_file()
+            else:
+                dock_app.setup_from_bamf(self.app_match)
+
+            if add_to_dock:
+                if build_gtk2:
+                    dock_app.applet_win = self.applet.window
+                else:
+                    dock_app.applet_win = self.applet.get_window()
+
+                self.set_bamf_app_handlers(b_app)
+
+                dock_app.applet = self.applet
+                dock_app.applet_orient = self.applet.get_orient()
+                size = self.applet.get_size()
+                self.set_app_icon(dock_app, size)
+                self.app_list.append(dock_app)
+                self.add_app(dock_app)
+                if self.show_all_apps:
+                    dock_app.show_icon()
+                else:
+                    self.show_or_hide_app_icons()
+                    self.show_or_hide_indicators()
+
+                self.set_all_apps_minimise_targets()
+
+                dock_app.applet_orient = self.applet.get_orient()
+                dock_app.set_indicator(self.indicator)
+                dock_app.set_multi_ind(self.multi_ind)
+                dock_app.set_active_bg(self.active_bg)
+                dock_app.set_attention_type(self.attention_type)
+                self.set_all_apps_minimise_targets()
+
+            else:
+                if dock_app.startup_id is not None:
+                    # if we have a startup id set this means the dock started the app. Since the app has
+                    # now opened a new window we can now assume the app has started and end the notification
+                    # process
+                    dock_app.cancel_startup_notification()
+
+                    # redraw the app's dock icon
+                    dock_app.queue_draw()
+
+        return dock_app
+
+    def view_opened(self, matcher, object):
+        """ Handler for the view_opened signal
+
+            If an app has been opened that isn't already in the dock, add it
+            If it is already in the dock, add it to the relevant docked_app
+
+        Params: matcher - a Bamf.Matcher
+                object -  the Bamf.Application or Bamf.Window that was opened
+        """
+
+        self.wnck_screen.force_update()
+
+        if (type(object) is Bamf.Application) and (object.is_user_visible()):
+            dock_app = self.match_bamf_app_to_dock_app(object)
+            if dock_app is not None:
+                if dock_app.startup_id is None:
+                    dock_app.pulse_once()
+
+    def window_added(self, application, object):
+        """
+            Handler for with Bamf.Application window-added signal
+
+        Get the docked_app relating to the Bamf.Application
+        If the docked_app is starting and we started it, cancel the startup notification
+        Redraw the app icon
+
+        If there isn't a docked app for the Bamf.App, add one to the dock
+
+        Params:
+            Application : the Bamf.Application the received the signal
+            Object      : the Bamf.Window that has been added
+
+        """
+
+        # get the application for the new window
+
+        dock_app = self.get_docked_app_by_bamf_app(application)
+        if dock_app is None:
+            # try and match it ourselves
+            dock_app = self.get_docked_app_by_bamf_window(object)
+
+            if dock_app is None:
+                if application.get_desktop_file() is not None:
+                    dock_app = self.get_docked_app_by_desktop_file(application.get_desktop_file())
+
+                if dock_app is None:
+                    # try again to to match the docked_app, but this time create a new one if it
+                    # can't be found
+                    dock_app = self.match_bamf_app_to_dock_app(application)
+
+            # connect a signal handler so that we can detect when a window changes workspaces
+            win_type = object.get_window_type()
+            if (win_type == Bamf.WindowType.NORMAL) or (win_type == Bamf.WindowType.DIALOG):
+                wnck_win = Wnck.Window.get(object.get_xid())
+                if wnck_win is not None:
+                    wnck_win.connect("workspace-changed", self.window_ws_changed)
+
+        # redraw the app's icon to update the number of indicators etc.
+        if dock_app is not None:
+            if self.show_all_apps:
+                dock_app.queue_draw()
+            else:
+                self.show_or_hide_app_icons()
+                self.show_or_hide_indicators()
+
+            # update minimize locations ...
+            # at this point, the window will not be returned by application.get_windows() so
+            # self.set_minimise_target(dock_app) will not work. Therefore we need to
+            # set the minimise target of the new window directly...
+            self.set_minimise_target(dock_app, object)
+
+    def window_removed(self, application, object):
+        """
+            Handler for the Bamf.Application.window-removed signal
+
+        Get the docked app relating to the bamf App
+        If the docked app is pinned, redraw it's icon
+        If it unpinned, remove the app from the dock if it has no more windows open,
+        otherwise redraw the app icon
+
+        Params:
+            application - The Bamf.Application that received the signal
+            object - the Bamf.Window that is being removed
+
+        """
+
+        dock_app = self.get_docked_app_by_bamf_app(application)
+        if dock_app is None:
+            dock_app = self.get_docked_app_by_bamf_window(object)
+            if dock_app is None:
+                df = application.get_desktop_file()
+
+                if df is not None:
+                    dock_app = self.get_docked_app_by_desktop_file(df)
+
+        if dock_app is not None:
+
+            # disconnect the signal we connected to the related wnck_window earlier
+            wnck_win = Wnck.Window.get(object.get_xid())
+            if wnck_win is not None:
+                try:
+                    wnck_win.disconnect_by_func(self.window_ws_changed)
+                except TypeError:
+                    pass
+
+            if dock_app.is_pinned:
+                dock_app.queue_draw()
+            else:
+                # note: if the app is no longer running it will be removed in the view_closed handler
+                # unpinned apps that are no longer running can be removed from the dock
+
+                if dock_app.is_running():
+                    # if the app is still running but does nor have normal or dialog windows remaining
+                    # it needs to be removed from the dock
+                    keep_in_dock = False
+                    for win in dock_app.get_windows():
+                        if (win != object) and win.get_window_type() in [Bamf.WindowType.NORMAL,
+                                                                         Bamf.WindowType.DIALOG]:
+                            keep_in_dock = True
+                            break
+
+                    if keep_in_dock:
+                        if self.show_all_apps:
+                            dock_app.queue_draw()
+                        else:
+                            self.show_or_hide_app_icons()
+                            self.show_or_hide_indicators()
+                    else:
+                        self.remove_app_from_dock(dock_app)
+
+    def view_closed(self, matcher, object):
+        """
+            If the object being closed is an app which is not pinned to the dock,
+            it needs to be removed from the dock
+
+            If the object is a window then get the associated app and:
+                if the app in pinned redraw the dock icom
+                if the app is not pinned and is no longer running, remove the app
+                from the dock
+                if the is not pinned and is still running but has no normal or
+                dialog windows open, remove it from the dock, otherwise
+                redraw the dock icon
+
+        Params: matcher - a Bamf.Matcher
+        object -  the Bamf.Application or Bamf.Window that was closed
+        """
+
+        if type(object) is Bamf.Application:
+
+            dock_app = self.get_docked_app_by_bamf_app(object)
+
+            if dock_app is not None:
+
+                if dock_app.startup_id is not None:
+                    dock_app.cancel_startup_notification()
+
+                if dock_app.is_pinned:
+                    dock_app.queue_draw()
+                elif dock_app.is_running():
+                    if self.show_all_apps:
+                        dock_app.queue_redraw()
+                    else:
+                        self.show_or_hide_app_icons()
+                        self.show_or_hide_indicators()
+                else:
+                    self.remove_app_from_dock(dock_app)
+
+                    # to prevent Bamf dbus errors remove signal handlers we added
+                    self.remove_bamf_app_handlers(object)
+
+                    self.set_all_apps_minimise_targets()
+
+    def do_urgent_changed(self, view, object):
+        """ Handler for the Bamf.Application urgent changed signal
+
+        Update the app's icon to reflect the new urgency state...
+
+        Params:
+            view: the object which received the signal (i.e. a Bamf.Application)
+
+            object - bool, whether or not this app is signalling urgency
+        """
+
+        dock_app = self.get_docked_app_by_bamf_app(view)
+
+        if dock_app is not None:
+            dock_app.set_urgency(object)
+
+    def do_running_changed(self, view, object):
+        """ Handler for the Bamf.Application running changed signal
+
+        If the app is pinned, redraw the icon to reflect the change
+
+        Params:
+            view: the object which received the signal (i.e. a Bamf.Application)
+            object : bool, whether the app is running or not
+
+        """
+
+        dock_app = self.get_docked_app_by_bamf_app(view)
+
+        if dock_app is not None:
+            if dock_app.is_pinned:
+                dock_app.queue_draw()
+
+    def do_starting_changed(self, view, object):
+        """ Handler for the Bamf.Application staring changed signal
+
+       If the related app is starting and the startup_id is not None, then we've
+       started the app ourselves so nothing further need be done. If we haven't
+       started the app ourselves, make the app icon pulse
+
+       If the app has finished started and we started it ourselves, we need to
+       cancel the startup notification process.
+
+       Params:
+           view: the object which received the signal (i.e. a Bamf.Application)
+
+           object - bool, whether or not this app is starting
+           """
+
+        dock_app = self.get_docked_app_by_bamf_app(view)
+
+        if dock_app is not None:
+            if object is True:
+                if dock_app.startup_id is None:
+                    dock_app.pulse_once()
+            else:
+                if dock_app.startup_id is not None:
+                    dock_app.cancel_startup_notification()
 
     def window_ws_changed(self, wnck_window):
         """ Handler for the wnck_window workspace changed signal
@@ -2242,178 +2675,6 @@ class Dock(object):
             self.show_or_hide_app_icons()
             self.show_or_hide_indicators()
             self.set_all_apps_minimise_targets()
-
-    def window_opened(self, wnck_screen, wnck_window):
-        """Event handler for the window_opened event
-
-        If an aready running app has opened a new window, the window
-        is added to to the running apps info
-
-        If a newly lauched app is opening a new window, setup the app on the
-        dock
-
-        Args:
-            wnck_screen : the screen on which the event occurred
-            wnck_window : the newly opened window
-
-        """
-
-        # we're only interested when normal and dialog windows
-        if (wnck_window.get_window_type() != Wnck.WindowType.NORMAL) and \
-           (wnck_window.get_window_type() != Wnck.WindowType.DIALOG):
-            return
-        wnck_app = wnck_window.get_application()
-
-        if not wnck_window.is_skip_tasklist():
-
-            # setup a new DockedApp
-            wnck_class = wnck_window.get_class_group()
-            dock_app = docked_app.DockedApp()
-            if build_gtk2:
-                dock_app.applet_win = self.applet.window
-            else:
-                dock_app.applet_win = self.applet.get_window()
-            dock_app.applet = self.applet
-
-            dock_app.applet_orient = self.applet.get_orient()
-            dock_app.set_indicator(self.indicator)
-            dock_app.set_multi_ind(self.multi_ind)
-            dock_app.set_active_bg(self.active_bg)
-            dock_app.set_attention_type(self.attention_type)
-            got_desktop = dock_app.setup_from_wnck(wnck_app, wnck_class, self.app_match, self.window_ws_changed)
-
-            # look for the app relating to the window in the dock
-            in_dock = False
-            for app in self.app_list:
-                if got_desktop is True:
-                    if app.desktop_file == dock_app.desktop_file:
-                        in_dock = True
-                # if we don't have the .desktop file then things get a little
-                #  more complicated
-                elif app.has_wnck_app(wnck_app) or \
-                    ((app.wnck_class == dock_app.wnck_class or
-                      app.wm_class_name.upper() == dock_app.wm_class_name.upper() and
-                      # test below is fix for https://bugs.launchpad.net/ubuntu-mate/+bug/1555324
-                      app.wm_class_name.strip() != "")):
-                        in_dock = True
-
-                if in_dock is True:
-                    # found it, so copy the running app's info to the pinned
-                    # dock item
-                    self.copy_wnck_info_to_app(app, dock_app, wnck_window)
-
-                    if app.startup_id is not None:
-                        # if we have a startup id set this means the dock started the app. Since the app has
-                        # now opened a new window we can now assume the app has started and end the notification
-                        # process
-                        app.cancel_startup_notification()
-
-                    # set the minimize target for the new window
-                    self.set_minimise_target(app)
-
-                    # if the mouse pointer is over the app's dock icon,
-                    # regenerate the list of right click menu items to take
-                    # account of the new window
-                    if app.has_mouse:
-                        self.set_actions_for_app(app)
-
-                    # start the dock icon pulsing to let the user know
-                    # something has happened
-                    if not app.is_pulsing:
-                        app.start_pulsing()
-                    break
-
-            if in_dock is False:
-                # append the app to the dock
-
-                size = self.applet.get_size()
-                self.set_app_icon(dock_app, size)
-                self.app_list.append(dock_app)
-                self.add_app(dock_app)
-                self.show_or_hide_app_icons()
-                self.show_or_hide_indicators()
-
-    def window_closed(self, wnck_screen, wnck_window):
-        """Event handler for the window_closed event
-
-        Find the app relating to the closed window.
-
-        If it has no more open windows mark it as not running and
-        redraw its icon without the running indicator.
-
-        If the are open windows remaining, remove the closed window from
-        the apps list of windows
-
-        Args:
-            wnck_screen : the screen on which the event occurred
-            wnck_window : the closed window
-
-        """
-
-        # we're only interested in the closure of normal and dialog windows
-        if (wnck_window.get_window_type() != Wnck.WindowType.NORMAL) and \
-           (wnck_window.get_window_type() != Wnck.WindowType.DIALOG):
-            return
-
-        wnck_app = wnck_window.get_application()
-        if wnck_app is None:
-
-            # this always seems to be the case - so we need to find the app
-            # another way - look through each of the running apps for the one
-            # which has the closed window in it's window list
-            # this is done by using xids - using wnck_windows in the app_info
-            # tuple didn't seem to work very well
-
-            xid = wnck_window.get_xid()
-            for app in self.app_list:
-                for aai in app.app_info:
-                    try:
-                        # a valueerror exception occurs if the window is not
-                        # found
-                        unused_var = aai.windows.index(xid)
-
-                        # we've found the app so remove the window from it's
-                        # list
-                        aai.windows.remove(xid)
-
-                        do_redraw = False
-
-                        # if the app has no more open windows, mark it as
-                        # closed
-                        if len(aai.windows) == 0:
-                            # there no more open windows for this process. Does
-                            # the app have any other running processes ?
-                            if len(app.app_info) == 1:
-                                # No, it doesn't ////
-
-                                app.app_info = []
-                                if not app.is_pinned:
-                                    # remove the app from the dock
-                                    self.remove_app_from_dock(app)
-                                else:
-                                    app.is_active = False
-                                    do_redraw = True
-                            else:
-                                # remove this processes info from docked app
-                                app.app_info.remove(aai)
-                                do_redraw = True
-                        else:
-                            do_redraw = True
-
-                        # was the closed window was the last active window for
-                        # the app ?
-                        if app.last_active_win == wnck_window:
-                            app.last_active_win = None
-
-                        if do_redraw:
-                            app.queue_draw()
-
-                        if app.has_mouse:
-                            self.set_actions_for_app(app)
-                        break
-
-                    except ValueError:
-                        pass
 
     def app_is_pinned_to_workspace(self, app):
         """
@@ -2745,12 +3006,15 @@ class Dock(object):
         self.show_or_hide_indicators()
 
         # set up signal handlers
-        self.wnck_screen.connect("active-window-changed",
-                                 self.active_win_changed)
+        self.matcher.connect("active-window-changed",
+                             self.active_win_changed)
+        self.matcher.connect("active_application_changed",
+                             self.active_app_changed)
+        self.matcher.connect("view-opened", self.view_opened)
+        self.matcher.connect("view-closed", self.view_closed)
+
         self.wnck_screen.connect("active-workspace-changed",
                                  self.active_workspace_changed)
-        self.wnck_screen.connect("window-opened", self.window_opened)
-        self.wnck_screen.connect("window_closed", self.window_closed)
 
     def setup_dock_apps(self):
         """ setup the apps in the app list according to the dock settings
@@ -3144,11 +3408,11 @@ class Dock(object):
         self.stop_act_list_timer()
         self.hide_win_list()
 
-        win_list = app.get_wnck_windows()
-
         restore_win = (not app.has_unminimized_windows()) or \
                       (app.has_unminimized_windows() and
                        (app.is_active is False))
+
+        last_active_win = None
         if restore_win:
             last_active_win = app.last_active_win
 
@@ -3156,33 +3420,27 @@ class Dock(object):
             # active window has been closed and no other window has been made
             # active afterwards). Therefore, if there is no active last window
             # activate the app's first normal window
-            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392)
+            # (related to https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392)
             if last_active_win is None:
-                for window in win_list:
-                    win_type = window.get_window_type()
-                    if ((win_type == Wnck.WindowType.NORMAL) or
-                            (win_type == Wnck.WindowType.DIALOG)) and \
-                            (not window.is_skip_tasklist()):
-                        last_active_win = window
-                        break
+                last_active_win = app.get_first_normal_win()
 
             # if we're restoring all windows, do this now before we finally
             # activate the last active window
             if self.click_restore_last_active is False:
-                for window in win_list:
-                    win_type = window.get_window_type()
-                    if ((win_type == Wnck.WindowType.NORMAL) or
-                            (win_type == Wnck.WindowType.DIALOG)) and \
-                            (not window.is_skip_tasklist()) and \
-                            (window != last_active_win):
-                        window.activate(0)
-                        sleep(0.01)     # allow the window manager time to  activate the window
+                for win in app.get_windows():
+                    win_type = win.get_window_type()
+                    if (win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or
+                        win.is_user_visible()) and (win != last_active_win):
+                        window_control.activate_win(win)
+                        sleep(0.01)
 
                 app.last_active_win = last_active_win
 
-            wnck_screen = last_active_win.get_screen()
-            wnck_aws = self.wnck_screen.get_active_workspace()
-            wnck_ws = last_active_win.get_workspace()
+            if last_active_win is not None:
+                wnck_win = Wnck.Window.get(last_active_win.get_xid())
+                if wnck_win is not None:
+                    wnck_aws = self.wnck_screen.get_active_workspace()
+                    wnck_ws = wnck_win.get_workspace()
 
             # the window's active workspace can be None if it is visible on
             # all workspaces or if it is not on any workspace (I'm looking at
@@ -3210,31 +3468,31 @@ class Dock(object):
             # minimize all windows and do the last active window last of all
 
             last_active_win = app.last_active_win
-
-            for window in win_list:
-                win_type = window.get_window_type()
-                if ((win_type == Wnck.WindowType.NORMAL) or
-                    (win_type == Wnck.WindowType.DIALOG)) and \
-                    (not window.is_skip_tasklist()) and (window != last_active_win):
-                    window.minimize()
+            for win in app.get_windows():
+                win_type = win.get_window_type()
+                if (win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or
+                    win.is_user_visible()) and (win != last_active_win):
+                    window_control.minimise_win(win)
                     sleep(0.01)
 
             app.last_active_win = last_active_win
+
             if last_active_win is not None:
-                last_active_win.minimize()
+                window_control.minimise_win(last_active_win)
                 sleep(0.01)
 
     def activate_window(self, win):
-        """ Activate a wnck window, switching workspace as necessary
+        """ Activate a Bamf window, switching workspace as necessary
 
             Args:
-                win : then wnck.window
+                win : the Bamf.Window
         """
         if win is not None:
             # if the window to be activated is not on the current workspace,
             # switchto that workspace
+            wnck_win = Wnck.Window.get(win.get_xid())
             wnck_aws = self.wnck_screen.get_active_workspace()
-            wnck_ws = win.get_workspace()
+            wnck_ws = wnck_win.get_workspace()
 
             # the windows's current workspace can be None if it is pinned to all
             # workspaces or it is not on any at all...
@@ -3244,7 +3502,8 @@ class Dock(object):
                (wnck_aws != wnck_ws):
                     wnck_ws.activate(0)
                     sleep(0.01)
-            win.activate(0)
+
+            window_control.activate(win)
 
     def activate_first_window(self, app):
         """ Active the specified apps's first window, changing workspace as
@@ -3305,14 +3564,14 @@ class Dock(object):
         if app.is_running() is False:
             return
 
-        windows = app.get_wnck_windows()
+        windows = app.get_windows()
         if (app.last_active_win is None) or (len(windows) == 1):
             new_index = 0
         else:
             # work out which window we want to activate
-            try:
+            if app.last_active_win in windows:
                 index = windows.index(app.last_active_win)
-            except ValueError:
+            else:
                 index = 0  # in case of error activate the first window
 
             if scroll_dir == Gdk.ScrollDirection.UP:
@@ -3326,21 +3585,23 @@ class Dock(object):
                 else:
                     new_index = index + 1
 
+        wnck_win = Wnck.Window.get(windows[new_index].get_xid())
         # hide the window list and stop any timer
         self.hide_win_list()
         self.stop_act_list_timer()
 
         # if the new window is on a different workspace, we need to switch
         # workspace
+
         wnck_aws = self.wnck_screen.get_active_workspace()
-        wnck_ws = windows[new_index].get_workspace()
+        wnck_ws = wnck_win.get_workspace()
 
         if wnck_aws is not None and (wnck_aws != wnck_ws):
             wnck_ws.activate(0)
             sleep(0.01)
 
         # activate the new window
-        windows[new_index].activate(0)
+        window_control.activate_win(windows[new_index])
 
     def get_dragee(self):
         """"
@@ -3444,11 +3705,11 @@ class Dock(object):
 
 def win_activation_timer(args):
     """ Timer function to be called by GObject.timeout_add and which
-        will activate a specified wnck window
+        will activate a specified window
 
     Args:
         args - a tuple containing these items
-               args[0] - the wnck window to activate
+               args[0] - the Bamf.Window to activate
                args[1] - the event time at which the timer was activated
 
     Returns:
@@ -3457,6 +3718,6 @@ def win_activation_timer(args):
 
     # as of MATE 1.12 it seems we need to use an event time of 0 (i.e. now)
     # to the window to activate properly
-    args[0].activate(0)
+    window_control.activate_win(args[0])
     sleep(0.01)
     return False
