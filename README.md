@@ -54,6 +54,7 @@ Users of other distros will need to install from source, so first install the re
 * GLib development files (libglib2.0-dev) 
 * Python Imaging Library (python3-pil)
 * Python 3 Cairo bindings (python3-cairo)
+* Bamf (bamfdaemon, libbamf and gir1.2-bamf)
 
 
 then cd to the directory containing all of the development files and run:
