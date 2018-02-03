@@ -62,6 +62,7 @@ gi.require_version("Bamf", "3")
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk
+from gi.repository import GdkPixbuf
 from gi.repository import Wnck
 from gi.repository import Gio
 from gi.repository import GObject
@@ -154,6 +155,13 @@ def get_avg_color(pixbuf):
 
 CONST_PULSE_STEPS = 20
 CONST_PULSE_DELAY = 40
+
+
+class ScrollType:
+    """ Class to define the ways in which the docked apps may scroll in the dock"""
+    SCROLL_NONE = 0
+    SCROLL_UP = 1    # for horizontal applets 'up' equates to 'left'
+    SCROLL_DOWN = 2  # or, for horizontal applets, right...
 
 
 class PulseTimer(object):
@@ -348,6 +356,9 @@ class DockedApp(object):
                          needs attention
         attention_blink_on : when an app blinks when it needs attention, this specfies
                              the state
+        scroll_dir : indicates the way that the dock may be scrolled (if any)
+                     if the mouse hovers over this app. Also used to draw the
+                     app icon in such a way as to indicate that scrolling is available
     """
 
     def __init__(self):
@@ -421,6 +432,8 @@ class DockedApp(object):
         self.progress_val = 0.0
         self.show_count = False
         self.count_val = 0
+
+        self.scroll_dir = ScrollType.SCROLL_NONE
 
     def set_bamf_app(self, b_app):
         """ Sets the Bamf.Application related to this docked app
@@ -948,7 +961,7 @@ class DockedApp(object):
                                                self.applet_orient, red, green, blue)
             else:
                 dbgd = AlphaFillBackgroundDrawer(ctx, self.drawing_area_size,
-                                                 self.applet_orient, red, green, blue, 0.5)
+                                                 self.applet_orient, red, green, blue, 0.33)
 
             dbgd.draw()
 
@@ -975,10 +988,15 @@ class DockedApp(object):
         else:
             ctx.paint()
 
-        if (self.has_mouse is True) and (self.is_dragee is False):
+        if (self.has_mouse is True) and ((self.is_dragee is False) and (self.scroll_dir == ScrollType.SCROLL_NONE)):
             # lighten the icon
             ctx.set_operator(cairo.OPERATOR_ADD)
             ctx.paint_with_alpha(0.2)
+            ctx.set_operator(cairo.OPERATOR_OVER)
+        elif (self.has_mouse is True) and (self.scroll_dir != ScrollType.SCROLL_NONE):
+            # this app indicates the dock can scroll, so we darken it
+            ctx.set_operator(cairo.OPERATOR_DEST_OUT)
+            ctx.paint_with_alpha(0.5)
             ctx.set_operator(cairo.OPERATOR_OVER)
 
         # draw the app running indicators
@@ -1032,6 +1050,14 @@ class DockedApp(object):
 
         if self.needs_attention and self.attention_type == dock_prefs.AttentionType.SHOW_BADGE:
             self.draw_attention_badge(ctx)
+
+        if not build_gtk2:
+            # scrolling only available in GTK3
+            if self.has_mouse and (self.scroll_dir != ScrollType.SCROLL_NONE):
+                if self.scroll_dir == ScrollType.SCROLL_UP:
+                    self.draw_scroll_up(ctx)
+                elif self.scroll_dir == ScrollType.SCROLL_DOWN:
+                    self.draw_scroll_down(ctx)
 
         # now draw to the screen
         if build_gtk2:
@@ -1305,6 +1331,77 @@ class DockedApp(object):
 
         ctx.restore()
 
+    def draw_scroll_up(self, ctx):
+        """ To indicate that the docked app can scroll up (or left on horizontal panels)
+            draw an up (or left) arrow on the icon
+
+        Params :
+            context : the docked app's cairo context for us to draw on
+            size : the size of the context, in pixels
+            orient : the orientation of the dock applet
+        """
+
+        if self.drawing_area_size > 48:
+            icon_size = Gtk.IconSize.DND
+            icon_pix = 24
+        else:
+            icon_size = Gtk.IconSize.LARGE_TOOLBAR
+            icon_pix = 16
+
+        if self.applet_orient in [MatePanelApplet.AppletOrient.UP,
+                                  MatePanelApplet.AppletOrient.DOWN]:
+
+            arrow_pb = self.drawing_area.render_icon(Gtk.STOCK_GO_BACK, icon_size, None)
+            arrow_pb = arrow_pb.scale_simple(self.drawing_area_size / 2, self.drawing_area_size / 2,
+                                             GdkPixbuf.InterpType.BILINEAR)
+
+            Gdk.cairo_set_source_pixbuf(ctx, arrow_pb, 0, self.drawing_area_size/4)
+
+        else:
+            arrow_pb = self.drawing_area.render_icon(Gtk.STOCK_GO_UP, icon_size, None)
+            arrow_pb = arrow_pb.scale_simple(self.drawing_area_size / 2, self.drawing_area_size / 2,
+                                             GdkPixbuf.InterpType.BILINEAR)
+
+            Gdk.cairo_set_source_pixbuf(ctx, arrow_pb, self.drawing_area_size / 4, 0)
+
+        ctx.paint()
+
+    def draw_scroll_down(self, ctx):
+        """ To indicate that the docked app can scroll up (or left on horizontal panels)
+            draw an up (or left) arrow on the icon
+
+        Params :
+            context : the docked app's cairo context for us to draw on
+            size : the size of the context, in pixels
+            orient : the orientation of the dock applet
+        """
+
+        if self.drawing_area_size > 48:
+            icon_size = Gtk.IconSize.DND
+            icon_pix = 24
+        else:
+            icon_size = Gtk.IconSize.LARGE_TOOLBAR
+            icon_pix = 16
+
+        if self.applet_orient in [MatePanelApplet.AppletOrient.UP,
+                                  MatePanelApplet.AppletOrient.DOWN]:
+
+            arrow_pb = self.drawing_area.render_icon(Gtk.STOCK_GO_FORWARD, icon_size, None)
+            arrow_pb = arrow_pb.scale_simple(self.drawing_area_size / 2, self.drawing_area_size / 2,
+                                             GdkPixbuf.InterpType.BILINEAR)
+
+            Gdk.cairo_set_source_pixbuf(ctx, arrow_pb, self.drawing_area_size / 2,
+                                        self.drawing_area_size / 4)
+
+        else:
+            arrow_pb = self.drawing_area.render_icon(Gtk.STOCK_GO_DOWN, icon_size, None)
+            arrow_pb = arrow_pb.scale_simple(self.drawing_area_size / 2, self.drawing_area_size / 2,
+                                             GdkPixbuf.InterpType.BILINEAR)
+
+            Gdk.cairo_set_source_pixbuf(ctx, arrow_pb, self.drawing_area_size / 4, self.drawing_area_size/2)
+
+        ctx.paint()
+
     def set_pixbuf(self, pixbuf):
         """Set the app pixbuf and calculate its average colour.
         """
@@ -1577,6 +1674,15 @@ class DockedApp(object):
         if val != self.count_val:
             self.count_val = val
             self.queue_draw()
+
+    def set_scroll_dir(self, scroll_dir):
+        """
+            Sets the app's scroll direction
+
+        Param: scroll_dir - a docked_app_helpers.ScrollType
+        """
+
+        self.scroll_dir = scroll_dir
 
 
 def main():
