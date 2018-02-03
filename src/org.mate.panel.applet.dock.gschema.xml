@@ -91,5 +91,10 @@
      <summary>Whether pinned apps appear on all workspaces, or only on the workspace where they were pinned</summary>
      <description>If true, pinned apps appear on all workspaces. If false, whenever a new workspace is made active the corresponding pinned app configuration will be loaded</description>
     </key>
+    <key type = "i" name="dock-fixed-size">
+         <default>-1</default>
+         <summary>Indicates whether or not the dock should be a fixed size</summary>
+         <description>Speicifies the maximum number of app icons the can contain. If this is number is exceeded the dock not expand will instead allow the user to scroll app icons. A value of -1 indicates the dock is not a fixed size and will expand and contract and apps are open and closed</description>
+    </key>
    </schema>
 </schemalist>
