@@ -202,6 +202,8 @@ def applet_enter_notify(widget, event, the_dock):
 
         # set up the available options for the app
         the_dock.set_actions_for_app(app)
+    else:
+        the_dock.app_with_mouse = None
 
 
 def applet_leave_notify(widget, event, the_dock):
@@ -221,6 +223,8 @@ def applet_leave_notify(widget, event, the_dock):
         the_dock.app_with_mouse = None
 
         the_dock.stop_act_list_timer()
+        if the_dock.scrolling:
+            the_dock.stop_scroll_timer()
 
 
 def applet_motion_notify(widget, event, the_dock):
@@ -262,14 +266,24 @@ def applet_motion_notify(widget, event, the_dock):
 
     if app is not None:
 
+        the_dock.app_with_mouse = app
+
         # reset the window list timer
         the_dock.reset_act_list_timer()
+
+        if the_dock.scrolling and app.scroll_dir != docked_app.ScrollType.SCROLL_NONE:
+            the_dock.reset_scroll_timer()
 
         if app.has_mouse is False:
             app.has_mouse = True
             app.queue_draw()
             the_dock.app_with_mouse = app
             the_dock.set_actions_for_app(app)
+
+    else:
+        the_dock.app_with_mouse = None
+
+        the_dock.set_actions_for_app(None)
 
 
 def applet_change_orient(applet, orient, the_dock):
@@ -286,6 +300,24 @@ def applet_change_orient(applet, orient, the_dock):
     the_dock.set_new_orientation(orient)
     the_dock.applet.show_all()
     the_dock.show_or_hide_app_icons()
+
+
+def applet_size_allocate(applet, allocation, the_dock):
+    # TODO - when set_size_hints can be used, something like this will do the trick ...
+    # and would be good if the_dock had a get_size_hints method to work a set
+    # of suitable hints for itself, e.g.
+    # i = 2
+    # size_hints = []
+    # app_size = the_dock.get_app_icon_size()
+    # while i < the_dock.get_total_num_visible_apps():
+    #     size_hints.append (i + 1 * app_size)
+    #     size_hints.append (i * app_size)
+    #     i+= 1
+    #
+    # set the hints with a base size of two dock icons
+    # applet.set_size_hints(size_hints, len(size_hints), app_size*2)
+
+    return
 
 
 def applet_change_size(applet, size, the_dock):
@@ -312,7 +344,14 @@ def applet_scroll_event(applet, event, the_dock):
 
     """
 
-    the_dock.do_window_scroll(event.direction, event.time)
+    # with V0.81 the dock contains a scrolled window and we now only get
+    # a ScrollDirection of SMOOTH here ....
+    if event.direction == Gdk.ScrollDirection.SMOOTH:
+        hasdeltas, dx, dy = event.get_scroll_deltas()
+        if dy < 0:
+            the_dock.do_window_scroll(Gdk.ScrollDirection.DOWN, event.time)
+        elif dy > 0:
+            the_dock.do_window_scroll(Gdk.ScrollDirection.UP, event.time)
 
 
 def applet_drag_begin(applet, context, the_dock):
@@ -345,6 +384,7 @@ def applet_drag_begin(applet, context, the_dock):
         # finally, hide the window list if it was being shown
         the_dock.hide_win_list()
         the_dock.hide_act_list()
+        the_dock.stop_scroll_timer()
 
 
 def applet_drag_data_get(widget, drag_context, data, info, time):
@@ -375,7 +415,6 @@ def applet_drag_drop(widget, context, x, y, time, the_dock):
         app.queue_draw()
         Gtk.drag_finish(context, True, False, time)
     else:
-
         # set the drag_dropped module level var so that the drag_data_received event knows
         # the dnd needs to finish
         global drag_dropped
@@ -470,8 +509,7 @@ def applet_drag_motion(widget, context, x, y, time, the_dock):
     """
 
     # if the applet isn't dragging an app icon, we may need to examine
-    # the dragged data to see whay it contains....
-    app = the_dock.get_dragee()
+    # the dragged data to see what we are dragging
     if app is None:
         # examine the dragged data so we can decide what to do...
         tgts = context.list_targets()
@@ -550,7 +588,13 @@ def applet_fill(applet):
     the_dock = dock.Dock(applet)
     the_dock.setup_dock()
 
-    applet.add(the_dock.box)
+    applet.set_flags(#MatePanelApplet.AppletFlags.EXPAND_MAJOR | MatePanelApplet.AppletFlags.EXPAND_MINOR | \ # TODO : remove this - or is it needed for set_size_hints?
+                     MatePanelApplet.AppletFlags.FLAGS_NONE)
+    if build_gtk2:
+        applet.add(the_dock.box)
+    else:
+        applet.add(the_dock.scrolled_win)
+
     applet.show_all()
 
     # make sure that apps pinned to specific workspaces other than the current one
@@ -565,6 +609,7 @@ def applet_fill(applet):
     applet.connect("change-orient", applet_change_orient, the_dock)
     applet.connect("change-size", applet_change_size, the_dock)
     applet.connect("scroll-event", applet_scroll_event, the_dock)
+    applet.connect("size-allocate", applet_size_allocate, the_dock)
 
     if not build_gtk2:
         # set up drag and drop - gtk3 only
@@ -601,6 +646,7 @@ def applet_fill(applet):
     keybinder.start()
 
     applet.set_background_widget(applet)  # hack for panel transparency
+
 
 def applet_factory(applet, iid, data):
     """Factory routine called when an applet needs to be created
@@ -723,6 +769,7 @@ def main():
     Debugging code can go here
     """
     pass
+
 
 if __name__ == "__main__":
     main()
