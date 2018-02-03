@@ -58,6 +58,7 @@ class AboutWindow(Gtk.Window):
         super().__init__(title="About Dock Applet")
 
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
+        self.set_skip_taskbar_hint(True)  # we don't want to be in the taskbar
 
         self.__btn_close = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
         self.__btn_close.connect("button-press-event", self.close_button_press)
