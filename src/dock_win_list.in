@@ -81,16 +81,19 @@ class DockWinList(DockPopup):
 
     """
 
-    def __init__(self, wnck_screen, panel_orient):
+    def __init__(self, wnck_screen, panel_orient, scroll_adj):
         """
         create the window and its contents
 
         Args:
             wnck_screen: the wnck_screen of the applet
+            panel_orient : the orientation of the panel
+            scroll_adj   : an adjustment to be applied to the window position
+                           because the dock has scrolling enabled
         """
 
         # call the base classes constructor
-        DockPopup.__init__(self, wnck_screen, panel_orient)
+        DockPopup.__init__(self, wnck_screen, panel_orient, scroll_adj)
 
         self.menu = None
 
@@ -558,6 +561,7 @@ def main():
 #    thewin.add_mouse_area(Gdk.Rectangle(48, 110, 100, size[1]))
 #    Gtk.main()
     return
+
 
 if __name__ == "__main__":
     main()

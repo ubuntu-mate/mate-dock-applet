@@ -57,11 +57,6 @@ from gi.repository import GObject
 from gi.repository import MatePanelApplet
 from gi.repository import Pango
 
-import os
-import cairo
-from time import sleep
-
-import docked_app
 from dock_popup import DockPopup
 
 from log_it import log_it as log_it
@@ -77,16 +72,19 @@ class DockActionList(DockPopup):
 
     """
 
-    def __init__(self, wnck_screen, panel_orient):
+    def __init__(self, wnck_screen, panel_orient, scroll_adj):
         """
         create the window and its contents
 
         Args:
             wnck_screen: the wnck_screen of the applet
+            panel_orient : the orientation of the panel
+            scroll_adj   : an adjustment to be applied to the window position
+                           because the dock has scrolling enabled
         """
 
         # call the base classes constructor
-        DockPopup.__init__(self, wnck_screen, panel_orient)
+        DockPopup.__init__(self, wnck_screen, panel_orient, scroll_adj)
 
         # we use a treeview to list each action, so initialise it and its
         # liststore
@@ -180,6 +178,12 @@ class DockActionList(DockPopup):
         self.__title_renderer.set_property("foreground", fg_str)
 
         self.__icon_renderer.set_property("cell-background", bg_str)
+
+    def get_num_rows(self):
+        """ Returns the number of rows of data in the list store
+        """
+
+        return (self.__list_store.iter_n_children(None))
 
     def button_release(self, widget, event):
         """ Handler for the button release event
@@ -287,6 +291,7 @@ def main():
 #    thewin.add_mouse_area(Gdk.Rectangle(48, 110, 100, size[1]))
 #    Gtk.main()
     return
+
 
 if __name__ == "__main__":
     main()
