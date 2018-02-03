@@ -33,13 +33,13 @@ build_gtk2 = False
 import gi
 
 if build_gtk2:
-    gi.require_version("Gtk","2.0")
+    gi.require_version("Gtk", "2.0")
     gi.require_version("Wnck", "1.0")
 else:
     gi.require_version("Gtk", "3.0")
     gi.require_version("Wnck", "3.0")
 
-from gi.repository import Gtk,Wnck
+from gi.repository import Gtk, Wnck
 
 
 def activate_win(win):
@@ -54,6 +54,7 @@ def activate_win(win):
     if wnck_win is not None:
         wnck_win.activate(event_time)
 
+
 def minimise_win(win):
     """
         Minimise the specified window
@@ -66,7 +67,7 @@ def minimise_win(win):
     if wnck_win is not None:
         wnck_win.minimize()
 
-def close_win(win, event_time = 0):
+def close_win(win, event_time=0):
     """
     Close the specified window
 
@@ -78,6 +79,16 @@ def close_win(win, event_time = 0):
     wnck_win = Wnck.Window.get(win.get_xid())
     if wnck_win is not None:
         wnck_win.close(event_time)
+
+
+# we need to know what adjustments to apply when calculating minimize positions,
+# when  the dock has scrolling enabled and the variable below defines
+# a callback which the dock can set in order to provide this info
+# the callback should return four integers, the x and y adjustments to
+# be applied to the minimise position, and the max width and height of the
+# scrollable area, and a string - the panel orient
+
+adj_minimise_pos_cb = None
 
 
 def set_minimise_target(win, x, y, width, height):
@@ -98,8 +109,14 @@ def set_minimise_target(win, x, y, width, height):
     if wnck_win is None:
         return
 
+    if adj_minimise_pos_cb is not None:
+        final_x, final_y = adj_minimise_pos_cb(x, y)
+    else:
+        final_x = x
+        final_y = y
+
     win_type = wnck_win.get_window_type()
     if ((win_type == Wnck.WindowType.NORMAL) or
         (win_type == Wnck.WindowType.DIALOG)) and \
             (wnck_win.is_skip_tasklist() is False):
-        wnck_win.set_icon_geometry(x, y, width, height)
+        wnck_win.set_icon_geometry(final_x, final_y, width, height)
