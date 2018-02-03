@@ -2,9 +2,7 @@
 
 """Provide a configuration dialog for the dock panel applet
 
-    Allow the user to specify whether the application running
-    indicator is light or dark coloured, so that it can always be
-    easily seen no matter what colour the panel is
+    Allow the user to view and set various configuration options
 """
 # Copyright (C) 1997-2003 Free Software Foundation, Inc.
 #
@@ -105,6 +103,7 @@ class DockPrefsWindow(Gtk.Window):
 
         super().__init__(title="Preferences")
 
+        self.set_skip_taskbar_hint(True)  # we don't want to be in the taskbar
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
 
         self.PREVIEW_SIZE = 48    # the size of the preview of indicator and background settings
@@ -502,6 +501,44 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_color_change_align.add(self.__table_color_change)
         self.__frame_color_change.add(self.__frame_color_change_align)
 
+        if not build_gtk2:
+            self.__frame_dock_size = create_frame("Dock size")
+            self.__rb_variable_ds = Gtk.RadioButton(label="Variable - expand or contract as necessary")
+            self.__rb_fixed_ds = Gtk.RadioButton(group=self.__rb_variable_ds,
+                                                 label="Fixed")
+
+            self.__lbl_fixed_size = Gtk.Label("Display up to ")
+
+            self.__sb_fixed_size = Gtk.SpinButton.new_with_range(2, 64, 1)
+            self.__sb_fixed_size.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
+            self.__sb_fixed_size.set_numeric(True)
+            self.__sb_fixed_size.set_max_length(2)
+            self.__sb_fixed_size.set_snap_to_ticks(True)
+
+            self.__lbl_fixed_size1 = Gtk.Label(" app icons")
+
+            self.__hbox_fixed_size = self.create_hbox
+            self.__hbox_fixed_size.set_spacing(2)
+            self.__hbox_fixed_size.pack_start(self.__lbl_fixed_size, False, False, 4)
+            self.__hbox_fixed_size.pack_start(self.__sb_fixed_size, False, False, 4)
+            self.__hbox_fixed_size.pack_start(self.__lbl_fixed_size1, False, False, 4)
+
+            self.__table_dock_size = Gtk.Grid()
+            self.__table_dock_size.set_row_spacing(2)
+            self.__table_dock_size.set_column_spacing(2)
+
+            self.__table_dock_size.attach(self.__rb_variable_ds,
+                                             0, 0, 1, 1)
+            self.__table_dock_size.attach(self.__rb_fixed_ds,
+                                             0, 1, 1, 1)
+            self.__table_dock_size.attach(self.__hbox_fixed_size, 0, 2, 1, 1)
+
+            self.__frame_dock_size_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                      xscale=1.0, yscale=1.0)
+            self.__frame_dock_size_align.set_padding(0, 0, 12, 0)
+            self.__frame_dock_size_align.add(self.__table_dock_size)
+            self.__frame_dock_size.add(self.__frame_dock_size_align)
+
         self.__cb_pan_act = Gtk.CheckButton(label="Disable popup action list " +
                                             "and show app actions\non panel " +
                                             "right click menu only")
@@ -511,6 +548,10 @@ class DockPrefsWindow(Gtk.Window):
         self.__panel_vbox.pack_start(self.__frame_spc, False, False, 4)
         self.__panel_vbox.pack_start(self.__frame_color_change,
                                      False, False, 4)
+        if not build_gtk2:
+            self.__panel_vbox.pack_start(self.__frame_dock_size,
+                                         False, False, 4)
+
         self.__panel_vbox.pack_start(self.__cb_pan_act,
                                      False, False, 4)
 
@@ -995,6 +1036,64 @@ class DockPrefsWindow(Gtk.Window):
 
         return self.__cb_dock_panel_only.get_active()
 
+    def rb_variable_ds_toggled(self, widget):
+        """ Handler for dock fixed size setting changes
+
+        Update the ui according to the current settingd
+
+        """
+
+        size_fixed = self.__rb_fixed_ds.get_active()
+
+        # enable/diable the parts of the interface that allow the user to set the number
+        # of app icons in a fixed size dock
+        self.__lbl_fixed_size.set_sensitive(size_fixed)
+        self.__sb_fixed_size.set_sensitive(size_fixed)
+        self.__lbl_fixed_size1.set_sensitive(size_fixed)
+
+    def set_fixed_size(self, fixed_size, num_icons, mutiny_layout):
+        """ Set whether or not the dock is a fixed size, and if so the number
+            of app icons it can contain before enabling scrolling
+
+        If we're using the Mutiny panel layout, disable all fixed size settings
+
+        Params:
+            fixed_size : bool - whether or not the dock is a fixed size
+            num_icons  : int - the number of icons
+            mutiny_layout : bool - indicates whether or not we're using the Mutiny layour
+        """
+
+        self.__rb_variable_ds.connect("toggled", self.rb_variable_ds_toggled)
+
+        if not mutiny_layout:
+            self.__rb_fixed_ds.set_sensitive(True)
+            self.__rb_variable_ds.set_sensitive(True)
+            self.__rb_fixed_ds.set_active(fixed_size)
+            self.rb_variable_ds_toggled(self.__rb_variable_ds) # ensure ui is updated
+            self.__sb_fixed_size.set_value(num_icons)
+
+        else:
+            self.__lbl_fixed_size.set_sensitive(False)
+            self.__sb_fixed_size.set_sensitive(False)
+            self.__lbl_fixed_size1.set_sensitive(False)
+            self.__rb_fixed_ds.set_sensitive(False)
+            self.__rb_variable_ds.set_sensitive(False)
+            self.__rb_variable_ds.disconnect_by_func(self.rb_variable_ds_toggled)
+            self.__rb_fixed_ds.set_active(fixed_size)
+
+    def get_fixed_size(self):
+        """ Get the dock fixed size settings
+
+        Note: the dock should not call this method if the Mutiny panel layout is being
+              used
+
+        Returns:
+            a bool - whether or not the dock is of fixed size
+            an int - the number of app icons in a fixed size dock
+        """
+
+        return self.__rb_fixed_ds.get_active(), self.__sb_fixed_size.get_value()
+
     def set_change_dock_color_only(self, dock_only):
         """ Sets whether only the panel containing the dock is to be changed
             when settings the panel colour according to the current wallpaper
@@ -1121,8 +1220,9 @@ class DockPrefsWindow(Gtk.Window):
 
 def main():
     """main function - debug code can go here"""
-    dpw = DockPrefsWindow(Gtk.main_quit)
-    Gtk.main()
+   # dpw = DockPrefsWindow(Gtk.main_quit)
+   # Gtk.main()
+
 
 if __name__ == "__main__":
     main()
