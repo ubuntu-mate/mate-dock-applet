@@ -49,7 +49,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
               use_dock_win_list, win_from_cur_ws_only,
               panel_change_color, dock_panel_change_only, use_panel_act_list,
               active_icon_bg, fallback_bar_col, spacing, attention_type,
-              popup_delay, saved_configs, pa_on_all_ws):
+              popup_delay, saved_configs, pa_on_all_ws, dock_fixed_size):
     """ Write the xml file using the specified information
 
     The xml file will be in e.g. the following format:
@@ -73,7 +73,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
         </root>
 
     Args:
-        filename - the filename to use. If the file already exists it will be
+        filename : the filename to use. If the file already exists it will be
                    overwritten.
         desktop_files: a list containing the names of the applet's pinned app's
                        .desktop files e.g. ['pluma.desktop']
@@ -118,6 +118,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
         pa_on_all_ws : boolean - whether pinned apps appear on all workspaces or
                                  only the workspace where they were pinned
 
+        dock_fixed_size : the fixed size (if any) that the dock is to maintain
     Returns:
         Boolean - True if the file was written successfully, False otherwise
 
@@ -170,7 +171,9 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
 
         sc_el.append(cfg_el)
 
-    paoaws_el = ET.Element("pinned_apps_all_workspaces", paoaws="%s" %pa_on_all_ws)
+    paoaws_el = ET.Element("pinned_apps_all_workspaces", paoaws="%s" % pa_on_all_ws)
+
+    dfs_el = ET.Element("dock_fixed_size", dfs="%d" %dock_fixed_size)
 
     root.append(pa_el)
     root.append(ind_el)
@@ -188,6 +191,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
     root.append(pdy_el)
     root.append(sc_el)
     root.append(paoaws_el)
+    root.append(dfs_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
@@ -225,6 +229,7 @@ def read_xml(filename):
             a tuple containing the details of pinned app configs - format is the same used when
             saving...
             a boolean - the pinned apps on all workspaces setting
+            an int    - the fixed size (if any) of the dock
 
     """
 
@@ -353,12 +358,18 @@ def read_xml(filename):
     else:
         pinned_apps_all_workspaces = True
 
+    dfs_el = root.find("dock_fixed_size")
+    if dfs_el is not None:
+        dock_fixed_size = int(dfs_el.get("dfs"))
+    else:
+        dock_fixed_size = -1  # the dock has no fixed size
+
     return [True, df_list, light_ind, show_all, multi_ind,
             use_win_list, win_from_cur_ws_only,
             panel_change_color, dock_panel_change_only,
             use_panel_act_list, bg_type, fallback_bar_col,
             spacing, attention_type, popup_delay, saved_configs,
-            pinned_apps_all_workspaces]
+            pinned_apps_all_workspaces, dock_fixed_size]
 
 
 def read_app_xml(filename):
@@ -447,6 +458,7 @@ def main():
 #        print ("dock panel only = %s" %results[8])
 #    else:
 #        print ("Error reading file....")
+
 
 if __name__ == "__main__":
     main()
