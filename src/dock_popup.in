@@ -111,12 +111,15 @@ class DockPopup(Gtk.Window):
                                   Gtk3 and gi module >= 3.26.0
     """
 
-    def __init__(self, wnck_screen, panel_orient):
+    def __init__(self, wnck_screen, panel_orient, scroll_adj):
         """
         create the window and its contents
 
         Args:
             wnck_screen: the wnck_screen of the applet
+            panel_orient : the orientation of the panel
+            scroll_adj   : an adjustment to be applied to the window position
+                           because the dock has scrolling enabled
         """
 
         def create_drawing_area(width, height, draw_event):
@@ -135,8 +138,11 @@ class DockPopup(Gtk.Window):
         self.wnck_screen = wnck_screen
         self.set_decorated(False)  # we don't want a titlebar..
         self.set_skip_taskbar_hint(True)  # we don't want to be in the taskbar
+        self.set_accept_focus(False)
+
         self.set_keep_above(True)
 
+        self.__scroll_adj = scroll_adj
         self.__icontheme = None
         self.__icon_size = 16  # small default icon size
         self.__timer_id = None
@@ -402,8 +408,8 @@ class DockPopup(Gtk.Window):
 
     def set_win_position(self):
         """
-            Move the window so that it appears near the panel and centrered on
-            the app (has to be done here for Gtk3 reasons
+            Move the window so that it appears near the panel and centered on
+            the app (has to be done here for Gtk3 reasons)
 
             Create mouse areas as required so we can check when the mouse
             leaves the window
@@ -435,9 +441,9 @@ class DockPopup(Gtk.Window):
         else:
             panel_space = 10
 
-        win_border = 15 # size of the border (in pixels) around the window
-                        # list where the mouse must remain, outside of which
-                        # the window list will hide
+        win_border = 15     # size of the border (in pixels) around the window
+                            # list where the mouse must remain, outside of which
+                            # the window list will hide
 
         screen = self.get_screen()
 
@@ -464,7 +470,7 @@ class DockPopup(Gtk.Window):
         app_alloc = self.__the_app.drawing_area.get_allocation()
 
         if self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
-            centre_pos = self.__app_y + app_alloc.height / 2
+            centre_pos = self.__app_y + (app_alloc.height / 2) - self.__scroll_adj
             win_x = self.__applet_x + self.__applet_w + panel_space
             win_y = centre_pos - (self.__win_h/2)
 
@@ -486,7 +492,7 @@ class DockPopup(Gtk.Window):
                                             self.__win_h + (2*win_border)))
 
         elif self.__panel_orient == MatePanelApplet.AppletOrient.LEFT:
-            centre_pos = self.__app_y + app_alloc.height / 2
+            centre_pos = self.__app_y + (app_alloc.height / 2) - self.__scroll_adj
             win_x = self.__applet_x - panel_space - self.__win_w
             win_y = centre_pos - (self.__win_h/2)
 
@@ -508,7 +514,7 @@ class DockPopup(Gtk.Window):
                                             self.__win_h + (2 * win_border)))
 
         elif self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
-            centre_pos = self.__app_x + app_alloc.width / 2
+            centre_pos = (self.__app_x + app_alloc.width / 2) - self.__scroll_adj
             win_x = centre_pos - (self.__win_w / 2)
             win_y = self.__applet_y + self.__applet_h + panel_space
 
@@ -528,7 +534,7 @@ class DockPopup(Gtk.Window):
                                             self.__win_w + (2*win_border),
                                             win_y + self.__win_h + win_border))
         else:
-            centre_pos = self.__app_x + app_alloc.width / 2
+            centre_pos = (self.__app_x + app_alloc.width / 2) - self.__scroll_adj
             win_x = centre_pos - (self.__win_w / 2)
             win_y = self.__applet_y - panel_space - self.__win_h
 
