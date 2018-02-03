@@ -1,3 +1,16 @@
+V0.81 Removed built in app matching code and replaced it with use of the bamf
+      library
+
+      The dock can now scroll app icons. This feature is automatically
+      enabled when using the Mutiny layout of Mate Tweak, and
+      can also be manually configured by using a new preferences
+      item.
+
+      Action lists and window lists no longer steal focus from other windows.
+
+      Solid filled active app backgrounds have been adjusted to provide better
+      contrast with the panel.
+
 V0.80 With Gtk3 and Python GObject bindings 3.26.0 or greater, window lists and
       action lists now have rounded corners and point to their app's icon in the
       dock. Fix for Issues #52 and #53
