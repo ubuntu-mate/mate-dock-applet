@@ -4263,6 +4263,11 @@ class Dock(object):
                 self.set_app_scroll_dirs(False)
 
         alloc = self.applet.get_allocation()
+
+        # Scale panel size to accomodate dock on HiDPI displays
+        scale_factor = self.box.get_scale_factor()
+        panel_size = int(self.panel_size / scale_factor)
+
         if self.panel_orient in ["top", "bottom"]:
 
             # first set the min content width to 0 in case the new maximum we're going
@@ -4272,8 +4277,8 @@ class Dock(object):
             self.scrolled_win.set_min_content_width(ps)
 
             self.scrolled_win.set_min_content_height(0)
-            self.scrolled_win.set_max_content_height(self.panel_size)
-            self.scrolled_win.set_min_content_height(self.panel_size)
+            self.scrolled_win.set_max_content_height(panel_size)
+            self.scrolled_win.set_min_content_height(panel_size)
 
         else:
             self.scrolled_win.set_min_content_height(0)
@@ -4281,8 +4286,8 @@ class Dock(object):
             self.scrolled_win.set_min_content_height(ps)
 
             self.scrolled_win.set_min_content_width(0)
-            self.scrolled_win.set_max_content_width(self.panel_size)
-            self.scrolled_win.set_min_content_width(self.panel_size)
+            self.scrolled_win.set_max_content_width(panel_size)
+            self.scrolled_win.set_min_content_width(panel_size)
 
     def get_max_visible_apps(self):
         """ Gets the maximum number of whole app icons the dock can display in the available
