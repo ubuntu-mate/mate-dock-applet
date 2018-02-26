@@ -840,6 +840,15 @@ class DockPrefsWindow(Gtk.Window):
                                           self.__rb_bar_ind.get_active() is not True)
         self.setting_toggled(widget)
 
+    def set_dock_size_visible(self, vis):
+        """ Set whether the dock size frame is visible or not
+
+        Params: vis - bool
+
+        """
+
+        self.__frame_dock_size.set_visible(vis)
+
     def get_indicator_type(self):
         """Get the indicator type specified in the preferences window.
 
