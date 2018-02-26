@@ -293,16 +293,15 @@ class ScrollAnimator(object):
 
 
     Attributes:
-        scrolled_win : the window we're interested in
-        start_pos : the starting position of the scroll
-        end_pos   : the ending position
-        orient    : the panel orientation (e.g. "top") - so we know whether to scroll horizontally
-                    or vertically
-        num_frames : the number of frames
-        interval   : the interval between frames in ms
-        callback   : the callback for when the animation is finished
-        current_frame : the current animation frame number
-        next_app    : the docked app that will end up under the mouse cursor
+        __scrolled_win : the window we're interested in
+        __start_pos : the starting position of the scroll
+        __end_pos   : the ending position
+        __orient    : the panel orientation (e.g. "top") - so we know whether to scroll horizontally
+                      or vertically
+        __num_frames : the number of frames
+        __interval   : the interval between frames in ms
+        __callback   : the callback for when the animation is finished
+        __current_frame : the current animation frame number
 
     """
 
@@ -451,7 +450,18 @@ class Dock(object):
             dock_fixed_size : indicates that the dock is not to expand or contract and will instead
                               claim enough space to display the specified number of apps. If set -1
                               the dock will in fact expand or contract
-            panel_layount   : the name of the current panel layout e.g. "mutiny"
+            panel_layout   : the name of the current panel layout e.g. "mutiny"
+            nice_sizing : whether or not we can use applet.set_size_hints to allow dock to
+                          request a size from the panel
+            ns_base_apps : the minimum size of the dock (in app icons) to be used when nice_sizing
+                           is True
+            ns_new_app   : when nice_sizing is True, is used to indicate whether the last
+                           call to set_size_hints was in response to a new app being
+                           added to the dock
+            ns_app_removed : when nice_sizing is True, specifies the visible index of the app
+                             that was removed from the dock, or None if no app was removed
+            dds_done       : when True, indicates that delayed setup has been completed and
+                             the applet is now fully setup
 
 
     """
@@ -523,7 +533,9 @@ class Dock(object):
         self.pa_configs = []
         self.pa_on_all_ws = True
         self.dock_fixed_size = -1
-
+        self.ns_new_app = False
+        self.dds_done = False
+        self.ns_app_removed = None
         self.read_settings()
         self.set_fallback_bar_colour()
 
@@ -591,6 +603,15 @@ class Dock(object):
         # create a Bamf.Matcher for matching windows to running apps
         self.matcher = Bamf.Matcher.get_default()
 
+        # can we resize nicely on the panel?
+        try:
+            self.applet.set_size_hints([100, 0], 0)
+            self.nice_sizing = True
+            self.ns_base_apps = 4
+        except TypeError:
+            self.nice_sizing = False
+            self.ns_base_apps = 0
+
         # instantiate a timer to perform further setup once the applet has been
         # fully created
         GObject.timeout_add(1000, self.do_delayed_setup)
@@ -630,13 +651,18 @@ class Dock(object):
         # get info about the panel the applet is on
         self.get_applet_panel_info()
 
-        # TODO: we wonit need this when applet.set_size_hints_works ...
+        # TODO: we wont need this when applet.set_size_hints and when MATE 1.20
+        # has been rolled out to all distros...
         # get the current panel layout
         self.get_panel_layout()
 
         # constrain the dock's size so that it does not overlap any other applets
         if not build_gtk2:
-            if self.panel_layout.upper() == "MUTINY":
+            if self.nice_sizing:
+                # set the applet's size hints
+                self.set_size_hints()
+
+            elif self.panel_layout.upper() == "MUTINY":
                 self.dock_fixed_size = self.get_mutiny_fixed_size()
                 self.avail_panel_space = self.get_avail_panel_space()
                 self.set_dock_panel_size()
@@ -646,6 +672,8 @@ class Dock(object):
                 self.set_dock_panel_size()
 
         self.set_all_apps_minimise_targets()
+
+        self.dds_done = True
         return False        # cancel the timer
 
     def get_panel_id(self):
@@ -781,7 +809,7 @@ class Dock(object):
             If the panel the applet is on is changed, update our panel id and
             recalculate all docked apps minimize positions accordingly
 
-            If the appllet's position on its panel is changed, the minimize
+            If the applet's position on its panel is changed, the minimize
             positions of all docked apps also need to be minimized
         """
 
@@ -796,32 +824,36 @@ class Dock(object):
                     self.set_app_scroll_dirs(False)
                     self.reset_scroll_position()
 
-            if self.scrolling:
+            if self.scrolling and not self.nice_sizing:
                 self.set_app_scroll_dirs(True)
 
             self.get_applet_panel_info()
             self.set_all_apps_minimise_targets()
 
             if not build_gtk2:
-                self.avail_panel_space = self.get_avail_panel_space()
-                self.set_dock_panel_size()
+                if not self.nice_sizing:
+                    self.avail_panel_space = self.get_avail_panel_space()
+                    self.set_dock_panel_size()
 
         if key == "position":
             # we can get here during applet creation when we still might not
             # know out panel id so...
             if self.panel_id != "":
-                if self.scrolling:
-                    self.set_app_scroll_dirs(False)
-                    self.reset_scroll_position()
+                if not self.nice_sizing:
+                    if self.scrolling:
+                        self.set_app_scroll_dirs(False)
+                        self.reset_scroll_position()
 
                 self.get_applet_panel_info()
                 self.set_all_apps_minimise_targets()
-                if not build_gtk2:
-                    self.avail_panel_space = self.get_avail_panel_space()
-                    self.set_dock_panel_size()
 
-                    if self.scrolling:
-                      self.set_app_scroll_dirs(True)
+                if not build_gtk2:
+                    if not self.nice_sizing:
+                        self.avail_panel_space = self.get_avail_panel_space()
+                        self.set_dock_panel_size()
+
+                        if self.scrolling:
+                            self.set_app_scroll_dirs(True)
 
     def panel_settings_changed(self, settings, key):
         """ Callback for the settings of the panel the applet is on changed
@@ -1172,35 +1204,48 @@ class Dock(object):
         #
         # they'll be shown again later depending on which is being used...
 
+        # if we have have no app, set all actions invisible and exit...
+        panel_act_visible = self.panel_act_list and (app is not None)
+        popup_act_visible = (not self.panel_act_list) and (app is not None)
         # first, hide actions defined in the desktop file...
         act = self.dock_action_group.get_action("df_shortcut_1_action")
-        set_vis(act, self.panel_act_list)
+        set_vis(act, panel_act_visible)
         act = self.dock_action_group.get_action("df_shortcut_2_action")
-        set_vis(act, self.panel_act_list)
+        set_vis(act, panel_act_visible)
         act = self.dock_action_group.get_action("df_shortcut_3_action")
-        set_vis(act, self.panel_act_list)
+        set_vis(act, panel_act_visible)
         act = self.dock_action_group.get_action("df_shortcut_4_action")
-        set_vis(act, self.panel_act_list)
+        set_vis(act, panel_act_visible)
 
         act = self.popup_action_group.get_action("df_shortcut_1_action")
-        set_vis(act, not self.panel_act_list)
+        set_vis(act, popup_act_visible)
         act = self.popup_action_group.get_action("df_shortcut_2_action")
-        set_vis(act, not self.panel_act_list)
+        set_vis(act, popup_act_visible)
         act = self.popup_action_group.get_action("df_shortcut_3_action")
-        set_vis(act, not self.panel_act_list)
+        set_vis(act, popup_act_visible)
         act = self.popup_action_group.get_action("df_shortcut_4_action")
-        set_vis(act, not self.panel_act_list)
+        set_vis(act, popup_act_visible)
 
         # now do pin and unpin actions
         act = self.dock_action_group.get_action("pin_action")
-        set_vis(act, self.panel_act_list)
+        set_vis(act, panel_act_visible)
         act = self.dock_action_group.get_action("unpin_action")
-        set_vis(act, self.panel_act_list)
+        set_vis(act, panel_act_visible)
 
         act = self.popup_action_group.get_action("pin_action")
-        set_vis(act, not self.panel_act_list)
+        set_vis(act, popup_act_visible)
         act = self.popup_action_group.get_action("unpin_action")
-        set_vis(act, not self.panel_act_list)
+        set_vis(act, popup_act_visible)
+
+        close_win_action = self.dock_action_group.get_action("close_win_action")
+        close_win_action.set_visible(False)
+
+        # TODO: decide - do we need ccl anymore???
+        ccl_action = self.dock_action_group.get_action("ccl_action")
+        ccl_action.set_visible(False)
+
+        if app is None:
+            return
 
         # now setup the relevant actions panel/action list items
         if self.panel_act_list:
@@ -1213,12 +1258,6 @@ class Dock(object):
             df_shortcut_2_action = self.popup_action_group.get_action("df_shortcut_2_action")
             df_shortcut_3_action = self.popup_action_group.get_action("df_shortcut_3_action")
             df_shortcut_4_action = self.popup_action_group.get_action("df_shortcut_4_action")
-
-        close_win_action = self.dock_action_group.get_action("close_win_action")
-        close_win_action.set_visible(False)
-
-        if app is None:
-            return
 
         act_exists, act_name = app.get_rc_action(1)
         df_shortcut_1_action.set_visible(act_exists)
@@ -1300,11 +1339,7 @@ class Dock(object):
         if num_win > 0:
             close_win_action.set_visible(True)
 
-    # TODO: decide - do we need ccl anymore???
-        ccl_action = self.dock_action_group.get_action("ccl_action")
-        ccl_action.set_visible(False)
         # ccl_action.set_visible(not app.has_desktop_file())
-
         # now setup the actions which can appear in either the right click menu or
         # action list, depending on which is being used
 
@@ -1918,8 +1953,12 @@ class Dock(object):
             self.prefs_win.set_popup_delay(self.popup_delay)
             self.prefs_win.set_show_pinned_apps_on_all_ws(self.pa_on_all_ws)
             if not build_gtk2:
-                self.prefs_win.set_fixed_size(self.dock_fixed_size != -1, self.dock_fixed_size,
-                                          self.panel_layout.upper() == "MUTINY")
+                if self.nice_sizing:
+                    # we don't need the dock size options
+                    self.prefs_win.set_dock_size_visible(False)
+                else:
+                    self.prefs_win.set_fixed_size(self.dock_fixed_size != -1, self.dock_fixed_size,
+                                                  self.panel_layout.upper() == "MUTINY")
         else:
             self.prefs_win.show_all()
 
@@ -2266,7 +2305,7 @@ class Dock(object):
 
         win_list = self.right_clicked_app.get_windows()
         win = win_list[win_no-1]
-        window.control.activate(win)
+        window_control.activate(win)
 
     def close_win(self, data=None):
         """Close all windows for the right clicked app"""
@@ -2978,6 +3017,7 @@ class Dock(object):
 
         """
 
+        app_pos = None
         if not build_gtk2:
             if self.scrolling:
                 # clear the scroll indicators
@@ -3018,12 +3058,15 @@ class Dock(object):
             app = None
 
             # if we're scrolling things get a bit complicated now...
-            if self.scrolling:
+            # (if nice_sizing then we handle things in fit_to_alloc)
+            if self.nice_sizing:
+                self.ns_app_removed = app_pos
+                self.set_size_hints()
+
+            elif self.scrolling:
 
                 # do we now have enough space to show all visible apps?
                 if self.get_total_num_visible_apps() < self.dock_fixed_size:
-                    self.scrolling = False
-
                     self.scrolling = False
                     if self.panel_orient in ["top", "bottom"]:
                         self.scrolled_win.get_hadjustment().set_value(0)
@@ -3182,6 +3225,103 @@ class Dock(object):
         dock_app.set_drawing_area_size(size)
         dock_app.set_pixbuf(pixbuf)
 
+    def set_size_hints(self):
+        """ Set the size hints for the applet
+        """
+
+        num_vis = self.get_total_num_visible_apps()
+        app_size = self.get_app_icon_size()
+        if num_vis > self.ns_base_apps:
+            i = num_vis
+            size_hints = []
+            while i > 0:
+                size_hints.append(i * app_size)
+                size_hints.append((i * app_size))  # - 1)
+                i -= 1
+
+            size_hints.append(1)
+            size_hints.append(0)
+
+            self.applet.set_size_hints(size_hints, self.ns_base_apps * app_size)
+
+        else:
+            self.applet.set_size_hints([num_vis * app_size, 0],
+                                       self.ns_base_apps * app_size)
+
+    def fit_to_alloc(self):
+        """ Ensure the dock fits within the space allocated to it on the panel
+
+        Enable/disable scrolling as appropriate
+
+        Scroll newly launched apps into view if necessary
+
+        Remove icons from the dock when apps are closed if necessary
+
+        """
+
+        max_vis = self.get_max_visible_apps()
+        total_vis = self.get_total_num_visible_apps()
+
+        if not self.dds_done:
+            # we haven't been fully setup yet...
+            return
+
+        # TODO: may have do something here to remove scroll arrows when dock is made
+        # larger and is no longer scrolling
+
+        if not self.scrolling and (total_vis > max_vis):
+            self.enable_app_scrolling()
+
+        if self.scrolling and self.ns_new_app:
+            # a new app has been added to the dock, so we need to bring it into view
+            self.scroll_index = self.get_total_num_visible_apps() - self.get_max_visible_apps()
+
+            if self.panel_orient in ["top", "bottom"]:
+                startpos = self.scrolled_win.get_hadjustment().get_value()
+            else:
+                startpos = self.scrolled_win.get_vadjustment().get_value()
+
+            endpos = startpos + (self.scroll_index * self.get_app_icon_size())
+
+            ScrollAnimator(self.scrolled_win, startpos, endpos,
+                           self.panel_orient, 16, 5, self.scroll_anim_finished_cb)
+
+        elif self.ns_app_removed is not None:
+            if self.get_total_num_visible_apps() < max_vis:
+                self.scrolling = False
+                self.set_app_scroll_dirs(False)
+                if self.panel_orient in ["top", "bottom"]:
+                    self.scrolled_win.get_hadjustment().set_value(0)
+                else:
+                    self.scrolled_win.get_vadjustment().set_value(0)
+            else:
+                do_scroll = False
+                if self.ns_app_removed < self.scroll_index:
+                    do_scroll = True
+
+                do_scroll = do_scroll or \
+                            (self.scroll_index + max_vis >= total_vis)
+
+                if do_scroll:
+                    # if the app we deleted is before the current scroll index, or if we are left with an
+                    # empty space at the end of the dock, we need to scroll
+                    self.scroll_index -= 1
+                    new_pos = self.scroll_index * self.get_app_icon_size()
+                    if self.panel_orient in ["top", "bottom"]:
+                        self.scrolled_win.get_hadjustment().set_value(new_pos)
+                    else:
+                        self.scrolled_win.get_vadjustment().set_value(new_pos)
+
+                self.set_app_scroll_dirs(True)
+
+        elif self.scrolling:
+            # because we have a new allocation we need to redo the scroll indicators
+            self.set_app_scroll_dirs(False)
+            self.set_app_scroll_dirs(True)
+
+        self.ns_app_removed = None
+        self.ns_new_app = False
+
     def add_app(self, dock_app, do_scroll=False):
         """
         Add an app's drawing area to the VBox/Hbox/Grid container
@@ -3195,15 +3335,24 @@ class Dock(object):
         if build_gtk2:
             self.box.add(dock_app.drawing_area)
         else:
-            if self.dock_fixed_size == -1:
-                self.set_dock_panel_size()
-            elif not self.scrolling:
-                overflow = self.will_overflow(self.get_app_icon_size())
+            if not self.nice_sizing:
+                # enabling/disabling scolling etc will be handled in fit_to_alloc
+                # when nice_sizing
+                overflow = False
+                if self.dock_fixed_size == -1:
+                    self.set_dock_panel_size()
+                elif not self.scrolling:
+                    overflow = self.will_overflow(self.get_app_icon_size())
 
                 if overflow:
                     self.enable_app_scrolling()
+                else:
+                    self.set_app_scroll_dirs(False)
             else:
-                self.set_app_scroll_dirs(False)
+                # we only indicate new apps after delayed setup is done
+                # so that we don't scroll the dock during startup
+                self.ns_new_app = self.dds_done
+                self.set_size_hints()
 
             pos = len(self.box.get_children())
 
@@ -3214,7 +3363,7 @@ class Dock(object):
             else:
                 self.box.attach(dock_app.drawing_area, pos, 0, 1, 1)
 
-            if self.scrolling and do_scroll:
+            if not self.nice_sizing and (self.scrolling and do_scroll):
                 # scroll to bring the new app into view
                 self.scroll_index = self.get_total_num_visible_apps() - self.dock_fixed_size
 
@@ -3488,7 +3637,6 @@ class Dock(object):
             app = self.get_app_under_mouse()
             app.has_mouse = True
             self.app_with_mouse = app
-            print ("new app with mouse = %s" %app.app_name)
             app.queue_draw()
 
         if not self.scrolling:
@@ -3638,7 +3786,7 @@ class Dock(object):
         pin_action = self.popup_action_group.get_action("pin_action")
         unpin_action = self.popup_action_group.get_action("unpin_action")
 
-        # if we're scrolling we need to pass the current scroll poisition to the
+        # if we're scrolling we need to pass the current scroll position to the
         # action list
         if not self.scrolling or build_gtk2:
             scroll_adj = 0
@@ -3656,9 +3804,6 @@ class Dock(object):
         # get the panel custom background colour (if any) and then set the
         # window list colours
         self.app_act_list.set_colours(self.get_applet_panel_custom_rgb())
-
-        if highlighted_app.icon_name is None:
-            print ("no icon, app name =%s" %highlighted_app.app_name)
 
         self.app_act_list.the_app = highlighted_app
 
@@ -3688,7 +3833,6 @@ class Dock(object):
                                           unpin_action, False)
 
         if self.app_act_list.get_num_rows() == 0:
-            print ("no data, not showing act list")
             self.act_list_timer = None
             return False
 
@@ -4217,23 +4361,30 @@ class Dock(object):
         else:
             return None
 
-    def get_mutiny_fixed_size(self):
+    def get_mutiny_fixed_size(self, icon_size=True):
         """ Temporary fix for sizing the dock in the Mutiny layout
 
-        Called when the mutiny layout is being used and calculates the fixed
-        number of icons that can be diaplayed in the dock before scrolling
-        starts, based on the known size of the Mutiny panels and their
-        applets
+        Called when the mutiny layout is being used and calculates either the fixed
+        number of icons that can be displayed in the dock, or the panel size
+        available to the dock before scrolling starts, based on the known size of
+        the Mutiny panels and their applets
 
-        Only needed until applet.set_size_hints() introspection is fixed
+        Params:
+            icon_size : whether to return the result as the number of icons, or as
+                        a size in pixels
 
-        Returns : int - the maximum number of icons that can be displayed in the dock"""
+        Returns : int - the maximum number of icons that can be displayed in the dock,
+                        or a panel size in pixels"""
 
         brisk_h = 48
         top_panel_h = 28
         ws_trash_h = 176  # combined heights of the workspace switcher and the trash applet
 
-        return (Gdk.Screen.get_default().get_height() - top_panel_h - brisk_h - ws_trash_h) // self.get_app_icon_size()
+        result = (Gdk.Screen.get_default().get_height() - top_panel_h - brisk_h - ws_trash_h)
+        if icon_size:
+            return result // self.get_app_icon_size()
+        else:
+            return result
 
     def set_dock_panel_size(self):
         """ Adjust the size of the dock to prevent it overlapping or expanding over
@@ -4295,11 +4446,17 @@ class Dock(object):
 
         Returns: int """
 
-        if self.avail_panel_space == (1, 1):
-            # can happen during applet startup
-            return 1
+        if not self.nice_sizing:
+            if self.avail_panel_space == (1, 1):
+                # can happen during applet startup
+                return 1
 
-        pw, ph = self.avail_panel_space
+            pw, ph = self.avail_panel_space
+        else:
+            alloc = self.applet.get_allocation()
+            pw = alloc.width
+            ph = alloc.height
+
         app_size = self.get_app_icon_size()
         if self.panel_orient in ["top", "bottom"]:
             return pw // app_size
@@ -4326,11 +4483,19 @@ class Dock(object):
 
         if self.panel_orient in ["top", "bottom"]:
             final_x = x - self.scrolled_win.get_hadjustment().get_value()
-            final_x = min(max(final_x, dx), dx + self.scrolled_win.get_max_content_width())
+            if self.nice_sizing:
+                max_w = self.applet.get_allocation().width
+            else:
+                max_w = self.scrolled_win.get_max_content_width()
+            final_x = min(max(final_x, dx), dx + max_w)
             final_y = y
         else:
             final_y = y - self.scrolled_win.get_vadjustment().get_value()
-            final_y = min(max(final_y, dy), dy + self.scrolled_win.get_max_content_height())
+            if self.nice_sizing:
+                max_h = self.applet.get_allocation().height
+            else:
+                max_h = self.scrolled_win.get_max_content_height()
+            final_y = min(max(final_y, dy), dy + max_h)
             final_x = x
 
         return final_x, final_y
@@ -4386,14 +4551,28 @@ class Dock(object):
 
         da1 = None
         da2 = None
+
+        if self.nice_sizing and (not can_scroll):
+            # check the scroll direction on all apps and set clear where necessary
+            for app in self.app_list:
+                if app.scroll_dir != docked_app.ScrollType.SCROLL_NONE:
+                    app.set_scroll_dir(docked_app.ScrollType.SCROLL_NONE)
+                    app.queue_draw()
+            return
+
         if self.scroll_index != 0:
             da1 = self.get_visible_app(self.scroll_index)
 
-        if self.dock_fixed_size < 2:
+        if not self.nice_sizing and (self.dock_fixed_size < 2):
             return
 
-        if self.scroll_index + self.dock_fixed_size <= self.get_total_num_visible_apps()-1:
-            da2 = self.get_visible_app(self.scroll_index + self.dock_fixed_size-1)
+        if self.nice_sizing:
+            max_vis = self.get_max_visible_apps()
+        else:
+            max_vis = self.dock_fixed_size
+
+        if self.scroll_index + max_vis <= self.get_total_num_visible_apps()-1:
+            da2 = self.get_visible_app(self.scroll_index + max_vis-1)
 
         if not can_scroll:
             if da1 is not None:

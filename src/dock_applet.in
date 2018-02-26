@@ -303,20 +303,19 @@ def applet_change_orient(applet, orient, the_dock):
 
 
 def applet_size_allocate(applet, allocation, the_dock):
-    # TODO - when set_size_hints can be used, something like this will do the trick ...
-    # and would be good if the_dock had a get_size_hints method to work a set
-    # of suitable hints for itself, e.g.
-    # i = 2
-    # size_hints = []
-    # app_size = the_dock.get_app_icon_size()
-    # while i < the_dock.get_total_num_visible_apps():
-    #     size_hints.append (i + 1 * app_size)
-    #     size_hints.append (i * app_size)
-    #     i+= 1
-    #
-    # set the hints with a base size of two dock icons
-    # applet.set_size_hints(size_hints, len(size_hints), app_size*2)
+    """ When the applet can play nicely with panel, ensure that it
+        fits within the allocated space
 
+
+    Args :
+        applet : the applet
+        allocation : a Gtk.Allocation - the space in which the applet must
+                     fit
+        the_dock : the Dock object
+    """
+
+    if the_dock.nice_sizing:
+        the_dock.fit_to_alloc()
     return
 
 
@@ -588,8 +587,10 @@ def applet_fill(applet):
     the_dock = dock.Dock(applet)
     the_dock.setup_dock()
 
-    applet.set_flags(#MatePanelApplet.AppletFlags.EXPAND_MAJOR | MatePanelApplet.AppletFlags.EXPAND_MINOR | \ # TODO : remove this - or is it needed for set_size_hints?
-                     MatePanelApplet.AppletFlags.FLAGS_NONE)
+    if the_dock.nice_sizing:
+        applet.set_flags(MatePanelApplet.AppletFlags.EXPAND_MAJOR | MatePanelApplet.AppletFlags.EXPAND_MINOR | \
+                         MatePanelApplet.AppletFlags.FLAGS_NONE)
+
     if build_gtk2:
         applet.add(the_dock.box)
     else:
