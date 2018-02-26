@@ -1,3 +1,22 @@
+V0.82 With MATE 1.20 app icon scrolling is automatically enabled when it is
+      needed - i.e. when the applet runs out of space on the panel to expand
+      into - and automatically disabled when not needed e.g. when the applet
+      is given more space by being moved, or when another applet it removed
+      from the panel. When the applet is moved around the panel, it will now
+      also resize larger or smaller to fit into the available space (in the
+      same way as the window list applet does) down to a minimum size of
+      4 app icons.
+
+      Because of this, the dock size configuration options introduced in
+      V0.81 are not needed with Mate 1.20 and do not appear in the
+      preferences dialog.
+
+      If this new version of the applet is used with versions of MATE
+      < 1.20 it will behave as V0.81 did, auto configuring scrolling
+      when the Mutiny panel layout is used, and otherwise allowing the user
+      to configure scrolling via the preferences dialog.
+
+
 V0.81 Removed built in app matching code and replaced it with use of the bamf
       library
 
