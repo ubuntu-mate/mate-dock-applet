@@ -1,3 +1,8 @@
+V0.83 Contains a temporary workaround for a mate panel issue
+      (https://github.com/mate-desktop/mate-panel/issues/745)
+
+      This workaround will be removed when the issue is resolved.
+
 V0.82 With MATE 1.20 app icon scrolling is automatically enabled when it is
       needed - i.e. when the applet runs out of space on the panel to expand
       into - and automatically disabled when not needed e.g. when the applet
