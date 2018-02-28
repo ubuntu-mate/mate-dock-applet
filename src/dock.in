@@ -3229,9 +3229,18 @@ class Dock(object):
         """ Set the size hints for the applet
         """
 
-        num_vis = self.get_total_num_visible_apps()
         app_size = self.get_app_icon_size()
-        if num_vis > self.ns_base_apps:
+
+        # Temporary fix https://github.com/mate-desktop/mate-panel/issues/745 to
+        # ensure MUTINY layout works as intended
+        # TODO: delete this
+        if self.panel_layout.upper() == "MUTINY":
+            min_icons = self.get_mutiny_fixed_size()
+        else:
+            min_icons = self.ns_base_apps
+
+        num_vis = self.get_total_num_visible_apps()
+        if num_vis > min_icons:
             i = num_vis
             size_hints = []
             while i > 0:
@@ -3242,11 +3251,11 @@ class Dock(object):
             size_hints.append(1)
             size_hints.append(0)
 
-            self.applet.set_size_hints(size_hints, self.ns_base_apps * app_size)
+            self.applet.set_size_hints(size_hints, min_icons * app_size)
 
         else:
             self.applet.set_size_hints([num_vis * app_size, 0],
-                                       self.ns_base_apps * app_size)
+                                       min_icons * app_size)
 
     def fit_to_alloc(self):
         """ Ensure the dock fits within the space allocated to it on the panel
@@ -3305,7 +3314,10 @@ class Dock(object):
                 if do_scroll:
                     # if the app we deleted is before the current scroll index, or if we are left with an
                     # empty space at the end of the dock, we need to scroll
-                    self.scroll_index -= 1
+                    if self.scroll_index != 0:
+                        self.scroll_index -= 1
+                        
+                    print ("Scroll index = %d" %self.scroll_index)
                     new_pos = self.scroll_index * self.get_app_icon_size()
                     if self.panel_orient in ["top", "bottom"]:
                         self.scrolled_win.get_hadjustment().set_value(new_pos)
