@@ -4390,9 +4390,9 @@ class Dock(object):
 
         brisk_h = 48
         top_panel_h = 28
-        ws_trash_h = 176  # combined heights of the workspace switcher and the trash applet
+        trash_h = 48
 
-        result = (Gdk.Screen.get_default().get_height() - top_panel_h - brisk_h - ws_trash_h)
+        result = (Gdk.Screen.get_default().get_height() - top_panel_h - brisk_h - trash_h)
         if icon_size:
             return result // self.get_app_icon_size()
         else:
