@@ -1,3 +1,7 @@
+V0.84 The workaround introduced in V0.83 has been adjusted following
+      the removal of the workspace swticher applet from the
+      Mutiny panel layout
+
 V0.83 Contains a temporary workaround for a mate panel issue
       (https://github.com/mate-desktop/mate-panel/issues/745)
 
