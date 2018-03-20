@@ -673,6 +673,13 @@ class Dock(object):
 
         self.set_all_apps_minimise_targets()
 
+        # if panel layout is mutiny and there are no saved settings files
+        # then create one. Workaround for launchpad bug #1755835
+        # https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1755835?comments=all
+        if self.panel_layout.upper() == "MUTINY":
+            if not os.path.isfile(self.xml_conf):
+                self.write_settings()
+
         self.dds_done = True
         return False        # cancel the timer
 
@@ -3317,7 +3324,6 @@ class Dock(object):
                     if self.scroll_index != 0:
                         self.scroll_index -= 1
                         
-                    print ("Scroll index = %d" %self.scroll_index)
                     new_pos = self.scroll_index * self.get_app_icon_size()
                     if self.panel_orient in ["top", "bottom"]:
                         self.scrolled_win.get_hadjustment().set_value(new_pos)
