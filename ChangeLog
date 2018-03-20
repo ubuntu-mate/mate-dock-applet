@@ -1,3 +1,7 @@
+V0.85 Contains a workaround for Launchpad bug #1755835 which
+      affected Mutineers who switched panel layouts and found
+      their dock settings had not been carried forward.
+
 V0.84 The workaround introduced in V0.83 has been adjusted following
       the removal of the workspace swticher applet from the
       Mutiny panel layout
