@@ -20,3 +20,4 @@ config.log
 config.status
 install-sh
 src/org.mate.panel.*
+.vscode
