@@ -1959,15 +1959,15 @@ class Dock(object):
             self.prefs_win.set_attention_type(self.attention_type)
             self.prefs_win.set_popup_delay(self.popup_delay)
             self.prefs_win.set_show_pinned_apps_on_all_ws(self.pa_on_all_ws)
-            if not build_gtk2:
-                if self.nice_sizing:
-                    # we don't need the dock size options
-                    self.prefs_win.set_dock_size_visible(False)
-                else:
-                    self.prefs_win.set_fixed_size(self.dock_fixed_size != -1, self.dock_fixed_size,
-                                                  self.panel_layout.upper() == "MUTINY")
+            if not build_gtk2 and not self.nice_sizing:
+                self.prefs_win.set_fixed_size(self.dock_fixed_size != -1, self.dock_fixed_size,
+                                              self.panel_layout.upper() == "MUTINY")
         else:
             self.prefs_win.show_all()
+
+        if self.nice_sizing:
+            # we don't need the dock size options
+            self.prefs_win.set_dock_size_visible(False)
 
     def show_about_win(self, data=None):
         """ Show the About window.

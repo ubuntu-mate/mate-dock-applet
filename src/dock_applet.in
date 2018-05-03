@@ -509,6 +509,7 @@ def applet_drag_motion(widget, context, x, y, time, the_dock):
 
     # if the applet isn't dragging an app icon, we may need to examine
     # the dragged data to see what we are dragging
+    app = the_dock.get_dragee()
     if app is None:
         # examine the dragged data so we can decide what to do...
         tgts = context.list_targets()
