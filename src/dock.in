@@ -2179,7 +2179,7 @@ class Dock(object):
             # state that .desktop filenames should not contain spaces, so....
             dfname = self.ccl_win.name.replace(" ", "-")
 
-            local_apps = os.path.expanduser("~/.local/share/appplications")
+            local_apps = os.path.expanduser("~/.local/share/applications")
             if not os.path.exists(local_apps):
                 # ~/.local/share/applications doesn't exist, so create it
                 os.mkdir(local_apps)

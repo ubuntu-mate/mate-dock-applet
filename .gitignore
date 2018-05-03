@@ -15,4 +15,9 @@ Makefile
 Makefile.in
 missing
 py-compile
-
+aclocal.m4
+config.log
+config.status
+install-sh
+src/org.mate.panel.*
+.vscode
