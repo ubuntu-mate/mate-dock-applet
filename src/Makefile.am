@@ -18,10 +18,12 @@ config.py: config.py.in
 		-e s!\@datadir\@!$(datadir)!		\
 		-e s!\@pkgdatadir\@!$(pkgdatadir)!	\
 		-e s!\@libexecdir\@!$(libexecdir)!	\
+		-e s!\@pythondir\@!$(pythondir)!	\
 		-e s!\@libdir\@!$(libdir)!		\
 		-e s!\@PACKAGE\@!$(PACKAGE)!		\
 		-e s!\@VERSION\@!$(VERSION)!		\
 		-e s!\@GETTEXT_PACKAGE\@!$(GETTEXT_PACKAGE)!	\
+		-e s!\@WITH_GTK3\@!$(WITH_GTK3)!		\
 		< $< > $@
 config.py: Makefile
 
