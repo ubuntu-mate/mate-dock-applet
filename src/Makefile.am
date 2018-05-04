@@ -12,6 +12,19 @@ appletsdir       = $(datadir)/mate-panel/applets
 applets_in_files = org.mate.panel.DockApplet.mate-panel-applet
 applets_DATA     = $(applets_in_files:.mate-panel-applet.in=.mate-panel-applet)
 
+config.py: config.py.in
+	$(AM_V_GEN)sed					\
+		-e s!\@prefix\@!$(prefix)!		\
+		-e s!\@datadir\@!$(datadir)!		\
+		-e s!\@pkgdatadir\@!$(pkgdatadir)!	\
+		-e s!\@libexecdir\@!$(libexecdir)!	\
+		-e s!\@libdir\@!$(libdir)!		\
+		-e s!\@PACKAGE\@!$(PACKAGE)!		\
+		-e s!\@VERSION\@!$(VERSION)!		\
+		-e s!\@GETTEXT_PACKAGE\@!$(GETTEXT_PACKAGE)!	\
+		< $< > $@
+config.py: Makefile
+
 #@echo "This is a test"
 #if WITH_GTK2_SET
 #	$(info **************  Legacy Mode - Building for Gtk2  **************)
@@ -174,7 +187,8 @@ applet_PYTHON = \
 
 CLEANFILES = $(applet_SCRIPTS) \
 	     org.mate.panel.applet.DockAppletFactory.service \
-	     org.mate.panel.DockApplet.mate-panel-applet
+	     org.mate.panel.DockApplet.mate-panel-applet \
+	     config.py
 
 EXTRA_DIST = dock_applet.in \
 	     dock_about.in \
@@ -184,15 +198,18 @@ EXTRA_DIST = dock_applet.in \
 	     dock_custom_launcher.in \
 	     log_it.in \
 	     dock_win_list.in \
-		 dock_action_list.in \
+	     dock_action_list.in \
 	     dock_xml.in \
 	     dock_color_changer.in \
 	     dom_color.in \
 	     dock_info.in \
-		 dock_popup.in \
-		 docked_app_helpers.in \
-		 window_control.in \
+	     dock_popup.in \
+	     docked_app_helpers.in \
+	     window_control.in \
 	     $(gsettings_SCHEMAS) \
 	     $(applets_in_files) \
 	     $(service_in_files) \
-	     $(xml_DATA)
+	     $(xml_DATA) \
+	     config.py.in
+
+all-local: config.py
