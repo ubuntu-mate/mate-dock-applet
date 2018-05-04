@@ -24,33 +24,6 @@ config.py: config.py.in
 		-e s!\@GETTEXT_PACKAGE\@!$(GETTEXT_PACKAGE)!	\
 		-e s!\@WITH_GTK3\@!$(WITH_GTK3)!		\
 		< $< > $@
-config.py: Makefile
-
-#@echo "This is a test"
-#if WITH_GTK2_SET
-#	$(info **************  Legacy Mode - Building for Gtk2  **************)
-#else
-#	$(info **************  Building for Gtk3 **************)
-#endif
-
-#$(applets_in_files): $(applets_in_files).in Makefile
-#	$(AM_V_GEN)sed \
-#		-e "s|\@LOCATION\@|$(appletdir)|" \
-#		-e "s|\@pythondir\@|$(pythondir)|" \
-#	  	-e "s|\@PACKAGE\@|$(PACKAGE)|" \
-#	  	-e "s|\@VERSION\@|$(VERSION)|" \
-#		$< > $@
-
-#%.mate-panel-applet.in: %.mate-panel-applet.in.in Makefile
-#	$(AM_V_GEN)sed \
-#		-e "s|\@LOCATION\@|$(appletdir)|" \
-#		-e "s|\@pythondir\@|$(pythondir)|" \
-#	  	-e "s|\@PACKAGE\@|$(PACKAGE)|" \
-#	  	-e "s|\@VERSION\@|$(VERSION)|" \
-#		-e "s|\@localdir\@|$(datadir)//locale|" \
-#		$< > $@
-
-#@PANEL_INTLTOOL_MATE_PANEL_APPLET_RULE@
 
 servicedir       = $(datadir)/dbus-1/services
 service_in_files = org.mate.panel.applet.DockAppletFactory.service.in
@@ -59,50 +32,15 @@ service_DATA     = $(service_in_files:.service.in=.service)
 xmldir		 =$(appletdir)
 xml_DATA 	 = app_match.xml
 
-#imagedir	 = $(libexecdir)
-#image_DATA	 = sahsl.png \
-#		   sahsd.png \
-#		   boinc.png
-
-#%.gschema.xml.in: %.gschema.xml.in.in Makefile
-#	$(AM_V_GEN)sed -e 's^\@GETTEXT_PACKAGE\@^$(GETTEXT_PACKAGE)^g' < $< > $@
-#
 gsettings_SCHEMAS = org.mate.panel.applet.dock.gschema.xml
-
-#
-#@INTLTOOL_XML_NOMERGE_RULE@
-#@GSETTINGS_RULES@
-
-#$(gsettings_SCHEMAS).in: $(gsettings_SCHEMAS).in.in Makefile
-#	$(AM_V_GEN)sed -e 's^\@GETTEXT_PACKAGE\@^$(GETTEXT_PACKAGE)^g' \
-# 		       -e "s|\@LOCATION\@|$(libexecdir)|" \
-#		       < $< > $@
 
 org.mate.panel.applet.DockAppletFactory.service: $(service_in_files)
 	$(AM_V_GEN)sed \
-		-e "s|\@LOCATION\@|$(APPLET_LOCATION)|" $< > $@
+		-e "s|\@LOCATION\@|$(appletdir)dock_applet.py|" $< > $@
 
 org.mate.panel.DockApplet.mate-panel-applet: $(applets_in_files)
 	$(AM_V_GEN)sed \
 		-e "s|\@LOCATION\@|$(appletdir)|" $< > $@
-
-applet_PYTHON = \
-		     dock_applet.py \
-		     dock_about.py \
-		     dock_prefs.py \
-		     dock.py \
-		     docked_app.py \
-		     dock_custom_launcher.py \
-		     log_it.py \
-		     dock_win_list.py \
-		     dock_action_list.py \
-		     dock_xml.py \
-		     dock_color_changer.py \
-		     dom_color.py \
-		     dock_popup.py \
-		     dock_info.py \
-		     docked_app_helpers.py \
-		     window_control.py
 
 CLEANFILES = $(applet_SCRIPTS) \
 	     org.mate.panel.applet.DockAppletFactory.service \
