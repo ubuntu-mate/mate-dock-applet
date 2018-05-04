@@ -1,17 +1,29 @@
-
-SUBDIRS =
-
 appletdir = $(libdir)/mate-applets/mate-dock-applet/
-applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.py log_it.py dock_custom_launcher.py dock_win_list.py \
-		 dock_action_list.py dock_xml.py dock_color_changer.py dom_color.py dock_info.py dock_popup.py docked_app_helpers.py window_control.py
-
-APPLET_LOCATION = $(appletdir)dock_applet.py
+applet_PYTHON = \
+		     dock_applet.py \
+		     dock_about.py \
+		     dock_prefs.py \
+		     dock.py \
+		     docked_app.py \
+		     dock_custom_launcher.py \
+		     log_it.py \
+		     dock_win_list.py \
+		     dock_action_list.py \
+		     dock_xml.py \
+		     dock_color_changer.py \
+		     dom_color.py \
+		     dock_popup.py \
+		     dock_info.py \
+		     docked_app_helpers.py \
+		     window_control.py
 
 appletsdir       = $(datadir)/mate-panel/applets
 applets_in_files = org.mate.panel.DockApplet.mate-panel-applet.in
 applets_DATA     = $(applets_in_files:.mate-panel-applet.in=.mate-panel-applet)
 
-config.py: config.py.in
+nodist_applet_PYTHON = config.py
+
+config.py: config.py.in Makefile
 	$(AM_V_GEN)sed					\
 		-e s!\@prefix\@!$(prefix)!		\
 		-e s!\@datadir\@!$(datadir)!		\

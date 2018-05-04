@@ -776,19 +776,7 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
         for shortcut in self.shortcuts:
             self.window.ungrab_key(shortcut[0], X.AnyModifier, self.window)
 
-
-MatePanelApplet.Applet.factory_main("DockAppletFactory", True,
-                                    MatePanelApplet.Applet.__gtype__,
-                                    applet_factory, None)
-
-
-def main():
-    """Main function.
-
-    Debugging code can go here
-    """
-    pass
-
-
 if __name__ == "__main__":
-    main()
+    MatePanelApplet.Applet.factory_main("DockAppletFactory", True,
+                                        MatePanelApplet.Applet.__gtype__,
+                                        applet_factory, None)
