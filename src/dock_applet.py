@@ -34,7 +34,7 @@ Note: Functionality for docked apps is provided in docked_app.py
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
 import gi
-from . import config
+import config
 
 if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")

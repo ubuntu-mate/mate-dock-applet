@@ -35,7 +35,7 @@ The dialog displays the following:
 build_gtk2 = False
 
 import gi
-from . import config
+import config
 
 if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
