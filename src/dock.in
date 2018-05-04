@@ -463,6 +463,10 @@ class Dock(object):
             dds_done       : when True, indicates that delayed setup has been completed and
                              the applet is now fully setup
 
+            drag_x : x coordinate of mouse where dragging began
+            drag_y : y coordinate of mouse where dragging began
+            dragging : are we dragging dock icons about
+
 
     """
 
@@ -611,6 +615,9 @@ class Dock(object):
         except TypeError:
             self.nice_sizing = False
             self.ns_base_apps = 0
+
+        self.drag_x = self.drag_y = -1
+        self.dragging = False
 
         # instantiate a timer to perform further setup once the applet has been
         # fully created
@@ -4665,6 +4672,17 @@ class Dock(object):
                 if "progress" in args:
                     app.set_progress_value(args["progress"])
                 break
+
+    # TODO: could do with being a propert
+    def get_drag_coords(self):
+        return self.drag_x, self.drag_y
+
+    def set_drag_coords (self, x, y):
+        self.drag_x = x
+        self.drag_y = y
+
+    def clear_drag_coords (self):
+        self.drag_x = self.drag_y = -1
 
 
 def win_activation_timer(args):

@@ -110,6 +110,10 @@ def applet_button_press(widget, event, the_dock):
         # the window list
         the_dock.hide_win_list()
         the_dock.hide_act_list()
+    elif event.button == 1:
+        dx, dy = the_dock.get_drag_coords()
+        if (dx == -1) and (dy == -1):
+            the_dock.set_drag_coords (event.x, event.y)
 
 
 def applet_button_release(widget, event, the_dock):
@@ -127,6 +131,9 @@ def applet_button_release(widget, event, the_dock):
         If window list is showing, hide it
         If the window list is not visible, show it
 
+    Since the button has been released, make sure that
+    icon dragging doesn't occur
+
     Args:
         widget : the widget that registered the release event
         event : the event args
@@ -135,6 +142,8 @@ def applet_button_release(widget, event, the_dock):
     """
 
     if event.button == 1:
+
+        the_dock.clear_drag_coords()
 
         # hide popups
         the_dock.hide_act_list()
@@ -258,12 +267,6 @@ def applet_motion_notify(widget, event, the_dock):
         the_dock.reset_act_list_timer()
         the_dock.hide_act_list()
 
-        if not build_gtk2:
-            # set the drag and drop cursor - needs to be done here as well
-            # as in begin-drag to ensure that the first time we do a drag the
-            # app icon is set correctly
-            widget.drag_source_set_icon_pixbuf(the_dock.app_with_mouse.app_pb)
-
     if app is not None:
 
         the_dock.app_with_mouse = app
@@ -285,6 +288,17 @@ def applet_motion_notify(widget, event, the_dock):
 
         the_dock.set_actions_for_app(None)
 
+    dx, dy = the_dock.get_drag_coords()
+    if (dx != -1) and (dy != -1) and not the_dock.dragging:
+        # we may need to begin a drag operation
+
+        if widget.drag_check_threshold (dx, dy, event.x, event.y):
+            target_list = widget.drag_dest_get_target_list()
+            context = widget.drag_begin_with_coordinates(target_list,
+                                                     Gdk.DragAction.MOVE, 1,
+                                                     event, -1, -1)
+
+            applet_drag_begin(widget, context, the_dock)
 
 def applet_change_orient(applet, orient, the_dock):
     """Handler for applet change orientation event
@@ -355,8 +369,6 @@ def applet_scroll_event(applet, event, the_dock):
 
 def applet_drag_begin(applet, context, the_dock):
     """
-        Handler for the drag-begin event
-
         Let the dock know we're dragging an icon.
         Redraw the icon of the app that's being dragged so that the user has
         visual feedback that the drag has started
@@ -376,9 +388,12 @@ def applet_drag_begin(applet, context, the_dock):
     if the_dock.app_with_mouse is not None:
         the_dock.app_with_mouse.set_dragee(True)
         the_dock.app_with_mouse.queue_draw()
-        applet.drag_source_set_icon_pixbuf(the_dock.app_with_mouse.app_pb)
+
+        Gtk.drag_set_icon_pixbuf(context, the_dock.app_with_mouse.app_pb,
+                                 0, 0)
 
         the_dock.start_drag_motion_timer(the_dock.app_with_mouse)
+        the_dock.dragging = True
 
         # finally, hide the window list if it was being shown
         the_dock.hide_win_list()
@@ -494,6 +509,8 @@ def applet_drag_end(widget, context, the_dock):
         app.set_dragee(False)
         app.queue_draw()
 
+    the_dock.dragging = False
+    the_dock.clear_drag_coords()
 
 def applet_drag_motion(widget, context, x, y, time, the_dock):
     """ Handler for the drag-motion event
@@ -619,7 +636,7 @@ def applet_fill(applet):
         # dock, making it difficult to tell where the mouse pointer is.....
         # To get around this, dock.py now contains a timer to monitor the
         # mouse x.y during these sorts of drag and drops.
-        # drag-motion events do fire when dropping from other apps (e.g. caja, the
+        # drag-motion events do fire when dropping from other apps (e.g. caja)
         # and the drag-motion event is used in these cases
 
         # we allow .desktop files to be dropped on the applet, so....
@@ -627,13 +644,13 @@ def applet_fill(applet):
         applet.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, drag_tgts,
                                Gdk.DragAction.MOVE)
 
+
         drag_tgts = [Gtk.TargetEntry.new("text/uri-list", 0, 0)]
         applet.drag_dest_set(Gtk.DestDefaults.MOTION, None, Gdk.DragAction.COPY)
         applet.drag_dest_add_image_targets()
         applet.drag_dest_add_text_targets()
         applet.drag_dest_add_uri_targets()
 
-        applet.connect_after("drag-begin", applet_drag_begin, the_dock)
         applet.connect("drag-data-get", applet_drag_data_get)
         applet.connect("drag-drop", applet_drag_drop, the_dock)
         applet.connect("drag-end", applet_drag_end, the_dock)
