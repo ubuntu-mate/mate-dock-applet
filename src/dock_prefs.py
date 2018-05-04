@@ -26,11 +26,10 @@
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
+from . import config
 
-if build_gtk2:
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
 else:
     gi.require_version("Gtk", "3.0")
@@ -116,14 +115,14 @@ class DockPrefsWindow(Gtk.Window):
                                                 GdkPixbuf.InterpType.BILINEAR)
         # setup the window contents
         self.set_border_width(5)
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbox = Gtk.HBox()
         else:
             self.__hbox = Gtk.Box()
             self.__hbox.set_orientation(Gtk.Orientation.HORIZONTAL)
         self.__hbox.set_spacing(2)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbox1 = Gtk.HBox()
         else:
             self.__hbox1 = Gtk.Box()
@@ -140,7 +139,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__ok_btn = Gtk.Button(label="Ok", stock=Gtk.STOCK_OK)
         self.__ok_btn.connect("button-press-event", ok_callback)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbbx = Gtk.HButtonBox()
         else:
             self.__hbbx = Gtk.ButtonBox()
@@ -152,7 +151,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__hbbx.pack_start(self.__cancel_btn, False, False, 4)
         self.__notebook = Gtk.Notebook()
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__appearance_tbl = Gtk.Table(rows=4, columns=1,
                                               homogeneous=False)
         else:
@@ -211,7 +210,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_preview.add(self.__vbox_preview)
 
         # connect an event handler to draw the dark indicator
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__da_preview.connect("expose-event", self.draw_preview)
         else:
             self.__da_preview.connect("draw", self.draw_preview)
@@ -221,7 +220,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__cb_multi_ind.set_tooltip_text("Display an indicator (max 4) for each open window")
         self.__cb_multi_ind.connect("toggled", self.setting_toggled)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__tbl_ind_type = Gtk.Table(rows=5, columns=2,
                                             homogeneous=False)
             self.__tbl_ind_type.attach(self.__rb_light_ind,
@@ -305,7 +304,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_bg_align.add(self.__vbox_bg_type)
         self.__frame_bg.add(self.__frame_bg_align)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__appearance_tbl.attach(self.__frame_preview, 0, 1, 0, 1,
                                          Gtk.AttachOptions.FILL,
                                          Gtk.AttachOptions.SHRINK,
@@ -334,7 +333,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__rb_pinned_pin_ws = Gtk.RadioButton(label="Display only on the workspace the app was pinned",
                                                   group=self.__rb_pinned_all_ws)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__table_pinned_apps = Gtk.Table(rows=2, columns=1,
                                                  homogeneous=False)
             self.__table_pinned_apps.attach(self.__rb_pinned_all_ws,
@@ -367,7 +366,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__rb_unpinned_cur_ws = Gtk.RadioButton(group=self.__rb_unpinned_all_ws,
                                     label="Display unpinned apps only from current workspace")
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__table_unpinned_apps = Gtk.Table(rows=2, columns=1,
                                                    homogeneous=False)
             self.__table_unpinned_apps.attach(self.__rb_unpinned_all_ws,
@@ -449,7 +448,7 @@ class DockPrefsWindow(Gtk.Window):
                                        False, 4)
 
         self.__frame_spc = create_frame("App spacing")
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__sb_spc = Gtk.SpinButton()
             self.__sb_spc.set_adjustment(Gtk.Adjustment(0, 0, 7, 1, 4))
         else:
@@ -471,7 +470,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__cb_panel_color_change.connect("toggled", self.color_change_toggled)
         self.__cb_dock_panel_only = Gtk.CheckButton(label="Change colour of dock's panel only")
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__table_color_change = Gtk.Table(rows=3, columns=1,
                                                   homogeneous=False)
             self.__table_color_change.attach(self.__cb_panel_color_change,
@@ -501,7 +500,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_color_change_align.add(self.__table_color_change)
         self.__frame_color_change.add(self.__frame_color_change_align)
 
-        if not build_gtk2:
+        if config.WITH_GTK3:
             self.__frame_dock_size = create_frame("Dock size")
             self.__rb_variable_ds = Gtk.RadioButton(label="Variable - expand or contract as necessary")
             self.__rb_fixed_ds = Gtk.RadioButton(group=self.__rb_variable_ds,
@@ -548,7 +547,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__panel_vbox.pack_start(self.__frame_spc, False, False, 4)
         self.__panel_vbox.pack_start(self.__frame_color_change,
                                      False, False, 4)
-        if not build_gtk2:
+        if config.WITH_GTK3:
             self.__panel_vbox.pack_start(self.__frame_dock_size,
                                          False, False, 4)
 
@@ -575,7 +574,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__rb_attention_badge = Gtk.RadioButton(label="Show a badge on the app icon",
                                                     group=self.__rb_attention_blink)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__table_attention_type = Gtk.Table(rows=2, columns=1,
                                                     homogeneous=False)
             self.__table_attention_type.attach(self.__rb_attention_blink,
@@ -606,7 +605,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_attention_type.add(self.__frame_attention_type_align)
 
         self.__frame_pdel = create_frame("Popup Delay(s)")
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__sb_pdel = Gtk.SpinButton()
             self.__sb_pdel.set_adjustment(Gtk.Adjustment(1.0, 0.1, 5.0, 0.1, 1))
         else:
@@ -656,7 +655,7 @@ class DockPrefsWindow(Gtk.Window):
             the vbox/box we created
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             vbox = Gtk.VBox()
         else:
             vbox = Gtk.Box()
@@ -674,7 +673,7 @@ class DockPrefsWindow(Gtk.Window):
             the hbox/box we created
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             hbox = Gtk.HBox()
         else:
             hbox = Gtk.Box()
@@ -715,7 +714,7 @@ class DockPrefsWindow(Gtk.Window):
             event        : the event parameters
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             tgt_ctx = self.__da_preview.window.cairo_create()
         else:
             tgt_ctx = event
@@ -792,7 +791,7 @@ class DockPrefsWindow(Gtk.Window):
                 ind.draw()
 
             # now draw to the screen
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 tgt_ctx = drawing_area.window.cairo_create()
                 tgt_ctx.rectangle(event.area.x, event.area.y,
                                   event.area.width, event.area.height)
@@ -1140,7 +1139,7 @@ class DockPrefsWindow(Gtk.Window):
 
         colstr = "#%0.2X%0.2X%0.2X" % (int(colrgb[0]), int(colrgb[1]), int(colrgb[2]))
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             cbrgba = Gdk.color_parse(colstr)
             self.__cbtn_fb_bar_col.set_color(color=cbrgba)
         else:
@@ -1158,7 +1157,7 @@ class DockPrefsWindow(Gtk.Window):
             a list containing the r, g, and b colour components(0-255)
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             cbrgba = self.__cbtn_fb_bar_col.get_color()
         else:
             cbrgba = self.__cbtn_fb_bar_col.get_rgba().to_color()

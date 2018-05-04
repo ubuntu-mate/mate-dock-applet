@@ -41,11 +41,10 @@ respond to selections made in the applet right click menu, specifically
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
+from . import config
 
-if build_gtk2:
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
     gi.require_version("Wnck", "1.0")
 else:
@@ -484,7 +483,7 @@ class Dock(object):
 
         self.app_list = []
         self.box = None
-        if not build_gtk2:
+        if config.WITH_GTK3:
             self.scrolled_win = Gtk.ScrolledWindow()
             self.scrolled_win.set_policy(Gtk.PolicyType.EXTERNAL, Gtk.PolicyType.EXTERNAL)
             self.scrolled_win.connect("scroll-event", self.window_scroll)
@@ -663,7 +662,7 @@ class Dock(object):
         self.get_panel_layout()
 
         # constrain the dock's size so that it does not overlap any other applets
-        if not build_gtk2:
+        if config.WITH_GTK3:
             if self.nice_sizing:
                 # set the applet's size hints
                 self.set_size_hints()
@@ -843,7 +842,7 @@ class Dock(object):
             self.get_applet_panel_info()
             self.set_all_apps_minimise_targets()
 
-            if not build_gtk2:
+            if config.WITH_GTK3:
                 if not self.nice_sizing:
                     self.avail_panel_space = self.get_avail_panel_space()
                     self.set_dock_panel_size()
@@ -860,7 +859,7 @@ class Dock(object):
                 self.get_applet_panel_info()
                 self.set_all_apps_minimise_targets()
 
-                if not build_gtk2:
+                if config.WITH_GTK3:
                     if not self.nice_sizing:
                         self.avail_panel_space = self.get_avail_panel_space()
                         self.set_dock_panel_size()
@@ -877,7 +876,7 @@ class Dock(object):
 
         if (key == "orientation") or (key == "size"):
             self.get_applet_panel_info()
-            if not build_gtk2:
+            if config.WITH_GTK3:
                 self.set_dock_panel_size()
             self.set_all_apps_minimise_targets()
             for app in self.app_list:
@@ -1417,7 +1416,7 @@ class Dock(object):
 
         # we only need menu items for moving app icons for Gtk2
         # (Gtk3 does it with drag and drop)
-        if build_gtk2:
+        if not config.WITH_GTK3:
             menu_xml += '<separator/><menuitem name="move_up" action="move_up_action"/>'
             menu_xml += '<menuitem name="move_down" action="move_down_action"/>'
             menu_xml += '<menuitem name="move_left" action="move_left_action"/>'
@@ -1700,7 +1699,7 @@ class Dock(object):
         for app_da in self.box.get_children():
 
             if app_da == app.drawing_area:
-                if build_gtk2:
+                if not config.WITH_GTK3:
                     return index
                 else:
                     if self.box.orientation == Gtk.Orientation.HORIZONTAL:
@@ -1732,7 +1731,7 @@ class Dock(object):
 
                 app = self.app_list[index-1]
                 # we need to move the app both in self.applist and self.box
-                if build_gtk2:
+                if not config.WITH_GTK3:
                     self.box.reorder_child(self.right_clicked_app.drawing_area, index-1)
                 else:
                     if self.box.orientation == Gtk.Orientation.HORIZONTAL:
@@ -1776,7 +1775,7 @@ class Dock(object):
             self.set_app_scroll_dirs(False)
 
         # first move the app's drawing area
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.box.reorder_child(the_app.drawing_area, new_pos)
         else:
             if self.box.orientation == Gtk.Orientation.HORIZONTAL:
@@ -1854,7 +1853,7 @@ class Dock(object):
         if win is None:
             return 0, 0
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             # win.get_origin doesn't work on gtk2, so...
             dock_x, dock_y = win.get_root_coords(0, 0)
         else:
@@ -1911,7 +1910,7 @@ class Dock(object):
                 app = self.app_list[index+1]
 
                 # we need to move the app both in self.applist and self.box
-                if build_gtk2:
+                if not config.WITH_GTK3:
                     self.box.reorder_child(self.right_clicked_app.drawing_area,
                                            index+1)
                 else:
@@ -1998,7 +1997,7 @@ class Dock(object):
             widget - the button the caused the event
             event - the event args
         """
-        if not build_gtk2:
+        if config.WITH_GTK3:
             if self.panel_layout.upper() == "MUTINY":
                 fixed_size_changes = False
             else:
@@ -2072,7 +2071,7 @@ class Dock(object):
 
             # redraw everything here
 
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 self.box.set_spacing(self.app_spacing + 2)
             else:
                 self.box.set_row_spacing(self.app_spacing + 2)
@@ -2217,7 +2216,7 @@ class Dock(object):
             dock_app.read_info_from_desktop_file()
             dock_app.is_pinned = True
 
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 dock_app.applet_win = self.applet.window
             else:
                 dock_app.applet_win = self.applet.window.get_window()
@@ -2255,7 +2254,7 @@ class Dock(object):
         dock_app.desktop_file = desktop_file
         dock_app.read_info_from_desktop_file()
         if dock_app.read_info_from_desktop_file():
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 dock_app.applet_win = self.applet.window
             else:
                 dock_app.applet_win = self.applet.get_window()
@@ -2285,7 +2284,7 @@ class Dock(object):
             self.write_settings()
             return
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             dock_app.applet_win = self.applet.window
         else:
             dock_app.applet_win = self.applet.get_window()
@@ -2649,7 +2648,7 @@ class Dock(object):
                 dock_app.setup_from_bamf(self.app_match)
 
             if add_to_dock:
-                if build_gtk2:
+                if not config.WITH_GTK3:
                     dock_app.applet_win = self.applet.window
                 else:
                     dock_app.applet_win = self.applet.get_window()
@@ -3034,7 +3033,7 @@ class Dock(object):
         """
 
         app_pos = None
-        if not build_gtk2:
+        if config.WITH_GTK3:
             if self.scrolling:
                 # clear the scroll indicators
                 self.set_app_scroll_dirs(False)
@@ -3042,13 +3041,13 @@ class Dock(object):
 
         self.app_list.remove(app)
 
-        if not build_gtk2:
+        if config.WITH_GTK3:
             if self.dock_fixed_size == -1:
                 self.set_dock_panel_size()
 
         num_apps = len(self.box.get_children())
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.box.remove(app.drawing_area)
         else:
             # the row/column which contains the app needs to be
@@ -3377,7 +3376,7 @@ class Dock(object):
                                   app into view
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.box.add(dock_app.drawing_area)
         else:
             if not self.nice_sizing:
@@ -3449,21 +3448,21 @@ class Dock(object):
 
         if orientation == MatePanelApplet.AppletOrient.LEFT or \
            orientation == MatePanelApplet.AppletOrient.RIGHT:
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 self.box = Gtk.VBox()
             else:
                 self.box = Gtk.Grid()
                 self.box.orientation = Gtk.Orientation.VERTICAL
 
         else:
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 self.box = Gtk.HBox()
             else:
                 self.box = Gtk.Grid()
                 self.box.orientation = Gtk.Orientation.HORIZONTAL
                 self.box.set_hexpand(False)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.box.set_spacing(self.app_spacing + 2)
         else:
             self.box.set_row_spacing(self.app_spacing + 2)
@@ -3485,7 +3484,7 @@ class Dock(object):
         # make sure the applet is correctly oriented
         orientation = self.applet.get_orient()
         self.create_box(orientation)
-        if not build_gtk2:
+        if config.WITH_GTK3:
             self.scrolled_win.add(self.box)
 
         # setup up pinned and non-pinned running apps
@@ -3510,7 +3509,7 @@ class Dock(object):
 
          Request the 'natural' size of the dock, according to the applet orientation"""
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             return
 
         if self.panel_orient in ["top", "bottom"]:
@@ -3530,7 +3529,7 @@ class Dock(object):
 
             dock_app.applet = self.applet
 
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 dock_app.applet_win = self.applet.window
             else:
                 dock_app.applet_win = self.applet.get_window()
@@ -3572,7 +3571,7 @@ class Dock(object):
         self.get_panel_id()
         self.get_applet_panel_info()
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             for dock_app in self.app_list:
                 self.box.remove(dock_app.drawing_area)
 
@@ -3913,7 +3912,7 @@ class Dock(object):
         else:
 
             # get root window id
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 # get_xid is non introspectable on gtk2, so use xwininfo
                 # instead...
                 rw_inf = subprocess.check_output(["xwininfo", "-root"])
@@ -3958,7 +3957,7 @@ class Dock(object):
         screen areas where the mouse must remain or the window list will hide
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             highlighted_app = self.app_with_mouse
         else:
             highlighted_app = self.get_app_under_mouse()
@@ -3982,7 +3981,7 @@ class Dock(object):
 
         self.set_actions_for_app(highlighted_app)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             scroll_adj = 0
         else:
             if self.panel_orient in ["top", "bottom"]:

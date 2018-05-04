@@ -31,11 +31,10 @@ The applet displays the following:
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
+from . import config
 
-if build_gtk2:
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
 else:
     gi.require_version("Gtk", "3.0")
@@ -71,14 +70,14 @@ class InfoWindow(Gtk.Window):
         self.__button.connect("button-press-event", self.win_button_press)
         self.set_border_width(5)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__vbox = Gtk.VBox()
         else:
             self.__vbox = Gtk.Box()
             self.__vbox.set_orientation(Gtk.Orientation.VERTICAL)
         self.__vbox.set_spacing(2)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbx = Gtk.HButtonBox()
         else:
             self.__hbx = Gtk.ButtonBox()

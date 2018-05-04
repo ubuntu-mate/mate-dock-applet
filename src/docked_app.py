@@ -45,11 +45,10 @@
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
+from . import config
 
-if build_gtk2:
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
     gi.require_version("Wnck", "1.0")
 else:
@@ -421,7 +420,7 @@ class DockedApp(object):
         self.last_active_win = None
 
         # set up event handler for the draw/expose event
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.drawing_area.connect("expose-event", self.do_expose_event)
         else:
             self.drawing_area.connect("draw", self.do_expose_event)
@@ -1051,7 +1050,7 @@ class DockedApp(object):
         if self.needs_attention and self.attention_type == dock_prefs.AttentionType.SHOW_BADGE:
             self.draw_attention_badge(ctx)
 
-        if not build_gtk2:
+        if config.WITH_GTK3:
             # scrolling only available in GTK3
             if self.has_mouse and (self.scroll_dir != ScrollType.SCROLL_NONE):
                 if self.scroll_dir == ScrollType.SCROLL_UP:
@@ -1060,7 +1059,7 @@ class DockedApp(object):
                     self.draw_scroll_down(ctx)
 
         # now draw to the screen
-        if build_gtk2:
+        if not config.WITH_GTK3:
             screen_ctx = self.drawing_area.window.cairo_create()
             screen_ctx.rectangle(event.area.x, event.area.y,
                                  event.area.width, event.area.height)
@@ -1440,7 +1439,7 @@ class DockedApp(object):
 
         gdai = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
         disp = Gdk.Display.get_default()
-        if build_gtk2:
+        if not config.WITH_GTK3:
             alc = Gdk.AppLaunchContext()
         else:
             alc = disp.get_app_launch_context()
@@ -1469,7 +1468,7 @@ class DockedApp(object):
             Cancel any startup notification
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             Gdk.notify_startup_complete_with_id(self.startup_id)
         else:
             display = Gdk.Display.get_default()
@@ -1563,7 +1562,7 @@ class DockedApp(object):
         """
 
         if len(self.rc_actions) >= act_no:
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 alc = Gdk.AppLaunchContext()
             else:
                 disp = Gdk.Display.get_default()

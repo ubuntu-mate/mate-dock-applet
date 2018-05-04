@@ -35,8 +35,9 @@ The dialog displays the following:
 build_gtk2 = False
 
 import gi
+from . import config
 
-if build_gtk2:
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
 else:
     gi.require_version("Gtk", "3.0")
@@ -76,7 +77,7 @@ class AboutWindow(Gtk.Window):
         self.__nb.set_show_border(False)
 
         # create a container for the dialog and others for the pages of the notebook
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__vbox = Gtk.VBox()
             self.__vbox.set_spacing(2)
             self.__vbox_dflt = Gtk.VBox()
@@ -96,7 +97,7 @@ class AboutWindow(Gtk.Window):
             self.__vbox_license.set_orientation(Gtk.Orientation.VERTICAL)
             self.__vbox_license.set_spacing(8)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbx = Gtk.HButtonBox()
         else:
             self.__hbx = Gtk.ButtonBox()
@@ -113,13 +114,13 @@ class AboutWindow(Gtk.Window):
         self.__image.set_from_stock(Gtk.STOCK_ABOUT, Gtk.IconSize.DIALOG)
         self.__lbl_title = Gtk.Label()
         self.__lbl_title.set_use_markup(True)
-        if build_gtk2:
+        if not config.WITH_GTK3:
             gtk_ver = "GTK2"
         else:
             gtk_ver = "GTK3"
 
         self.__lbl_title.set_markup("<b>MATE Dock Applet</b>")
-        self.__lbl_ver = Gtk.Label("V" + "@VERSION@ (" + gtk_ver+ ")")
+        self.__lbl_ver = Gtk.Label("V" + config.VERSION +" (" + gtk_ver+ ")")
         self.__lbl_blank2 = Gtk.Label()
 
         self.__tb_gpl = Gtk.TextBuffer()
@@ -154,7 +155,7 @@ class AboutWindow(Gtk.Window):
         self.__lbl_blurb3 = Gtk.Label("and is distributed under the GNU General")
         self.__lbl_blurb4 = Gtk.Label("Public License, version 3 or later")
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbx_gpl = Gtk.HBox()
         else:
             self.__hbx_gpl = Gtk.Box()
@@ -169,7 +170,7 @@ class AboutWindow(Gtk.Window):
         self.__hbx_gpl.pack_start(self.__lbl_gpl1, False, False, 0)
         self.__hbx_gpl.pack_start(self.__lb_gpl, False, False, 0)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__vbox_hints = Gtk.VBox()
         else:
             self.__vbox_hints = Gtk.Box()
@@ -220,7 +221,7 @@ class AboutWindow(Gtk.Window):
 
         the_iter = self.__hints_text_buf.get_end_iter()
 
-        if not build_gtk2:
+        if config.WITH_GTK3:
             self.__hints_text_buf.insert_with_tags(the_iter,
                                                "Drag and drop data between applications\n",
                                                self.__tag_hint_bold)

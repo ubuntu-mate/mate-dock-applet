@@ -33,11 +33,10 @@ Note: Functionality for docked apps is provided in docked_app.py
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
+from . import config
 
-if build_gtk2:
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
     gi.require_version("Wnck", "1.0")
 else:
@@ -49,7 +48,7 @@ gi.require_version("MatePanelApplet", "4.0")
 import os
 import sys
 import threading
-sys.path.insert(1, '@pythondir@')
+sys.path.insert(1, config.pythondir)
 
 from Xlib.display import Display
 from Xlib import X, error
@@ -609,7 +608,7 @@ def applet_fill(applet):
         applet.set_flags(MatePanelApplet.AppletFlags.EXPAND_MAJOR | MatePanelApplet.AppletFlags.EXPAND_MINOR | \
                          MatePanelApplet.AppletFlags.FLAGS_NONE)
 
-    if build_gtk2:
+    if not config.WITH_GTK3:
         applet.add(the_dock.box)
     else:
         applet.add(the_dock.scrolled_win)
@@ -630,7 +629,7 @@ def applet_fill(applet):
     applet.connect("scroll-event", applet_scroll_event, the_dock)
     applet.connect("size-allocate", applet_size_allocate, the_dock)
 
-    if not build_gtk2:
+    if config.WITH_GTK3:
         # set up drag and drop - gtk3 only
         # NOTE: we don't get drag-motion events when dragging app icons within the
         # dock, making it difficult to tell where the mouse pointer is.....

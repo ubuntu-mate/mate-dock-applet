@@ -9,15 +9,11 @@ AC_ARG_WITH([gtk3],
     [AS_HELP_STRING([--with-gtk3], [Build for Gtk3 instead of Gtk2])],
     [],
     [with_gtk3=no])
-
-AS_IF([test "x$with_gtk3" != xno],
-    [
-     WITH_GTK3=True
-    AM_CONDITIONAL(WITH_GTK3_SET, true)],
-    [
-     WITH_GTK3=False
-    AM_CONDITIONAL(WITH_GTK3_SET, false)
-    ])
+if test "x$with_gtk3" != "xno"; then
+	WITH_GTK3=True
+else
+	WITH_GTK3=False
+fi
 AC_SUBST(WITH_GTK3)
 
 #IT_PROG_INTLTOOL([0.40.0])

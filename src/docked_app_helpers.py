@@ -34,11 +34,10 @@
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
+from . import config
 
-if build_gtk2:
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
     gi.require_version("Wnck", "1.0")
 else:
@@ -88,7 +87,7 @@ def get_theme_highlight_col(applet):
          
     """
 
-    if build_gtk2:
+    if not config.WITH_GTK3:
         return fallback_ind_col
     else:
 

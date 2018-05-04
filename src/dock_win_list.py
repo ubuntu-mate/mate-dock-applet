@@ -37,11 +37,10 @@
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
+from . import config
 
-if build_gtk2:
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
     gi.require_version("Wnck", "1.0")
 else:
@@ -104,7 +103,7 @@ class DockWinList(DockPopup):
         # liststore
         self.__tree_view = Gtk.TreeView()
 
-        if not build_gtk2:
+        if config.WITH_GTK3:
             self.__tree_view.set_valign(Gtk.Align.START)
             self.__tree_view.set_halign(Gtk.Align.START)
             self.__tree_view.hexpand = True
@@ -469,7 +468,7 @@ class DockWinList(DockPopup):
         self.create_active_pixbuf()
 
         # reduce the size of the window - it will autosize to fit the contents
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
             self.__col_title.set_fixed_width(150)
             self.resize(100, 10)

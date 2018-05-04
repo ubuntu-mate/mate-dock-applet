@@ -41,11 +41,10 @@
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
+from . import config
 
-if build_gtk2:
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
 else:
     gi.require_version("Gtk", "3.0")
@@ -86,7 +85,7 @@ class DockCLWindow(Gtk.Window):
         # setup the window contents
         self.set_border_width(5)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbox = Gtk.HBox()
             self.__vbox = Gtk.VBox()
         else:
@@ -107,7 +106,7 @@ class DockCLWindow(Gtk.Window):
         self.__btn_ok = Gtk.Button(label="Ok", stock=Gtk.STOCK_OK)
         self.__btn_ok.connect("button-press-event", ok_callback)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbox_btns = Gtk.HBox()
             self.__hbbx = Gtk.HButtonBox()
         else:
@@ -122,7 +121,7 @@ class DockCLWindow(Gtk.Window):
         self.__hbbx.pack_start(self.__btn_cancel, False, False, 4)
         self.__hbbx.pack_end(self.__btn_ok, False, False, 4)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbbx1 = Gtk.HButtonBox()
         else:
             self.__hbbx1 = Gtk.ButtonBox()
@@ -141,7 +140,7 @@ class DockCLWindow(Gtk.Window):
         self.__btn_icon.set_tooltip_text("Click to select an icon")
         self.__btn_icon.add(self.__img_icon)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__vbox1 = Gtk.VBox()
         else:
             self.__vbox1 = Gtk.Box()
@@ -150,7 +149,7 @@ class DockCLWindow(Gtk.Window):
         self.__vbox1.set_spacing(4)
         self.__vbox1.pack_start(self.__btn_icon, False, False, 4)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__table_layout = Gtk.Table(rows=4, columns=2,
                                             homogeneous=False)
         else:
@@ -165,7 +164,7 @@ class DockCLWindow(Gtk.Window):
 
         self.__entry_name = Gtk.Entry()
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__hbox_cmd = Gtk.HBox()
         else:
             self.__hbox_cmd = Gtk.Box()
@@ -205,7 +204,7 @@ class DockCLWindow(Gtk.Window):
         self.__entry_wm_class = Gtk.Entry()
         self.__entry_wm_class.set_sensitive(False)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__table_layout.attach(self.__lbl_name, 0, 1, 0, 1,
                                        Gtk.AttachOptions.SHRINK,
                                        Gtk.AttachOptions.SHRINK,
