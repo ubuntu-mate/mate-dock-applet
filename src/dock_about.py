@@ -32,8 +32,6 @@ The dialog displays the following:
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
 import config
 

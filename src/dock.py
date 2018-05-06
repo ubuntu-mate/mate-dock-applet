@@ -1964,7 +1964,7 @@ class Dock(object):
             self.prefs_win.set_attention_type(self.attention_type)
             self.prefs_win.set_popup_delay(self.popup_delay)
             self.prefs_win.set_show_pinned_apps_on_all_ws(self.pa_on_all_ws)
-            if not build_gtk2 and not self.nice_sizing:
+            if config.WITH_GTK3 and not self.nice_sizing:
                 self.prefs_win.set_fixed_size(self.dock_fixed_size != -1, self.dock_fixed_size,
                                               self.panel_layout.upper() == "MUTINY")
         else:
@@ -3832,7 +3832,7 @@ class Dock(object):
 
         # if we're scrolling we need to pass the current scroll position to the
         # action list
-        if not self.scrolling or build_gtk2:
+        if not self.scrolling or not config.WITH_GTK3:
             scroll_adj = 0
         else:
             if self.panel_orient in ["top", "bottom"]:

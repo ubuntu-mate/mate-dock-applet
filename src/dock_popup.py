@@ -39,11 +39,10 @@
 
 # do not change the value of this variable - it will be set during build
 # according to the value of the --with-gtk3 option used with .configure
-
-build_gtk2 = False
-
 import gi
-if build_gtk2:
+import config
+
+if not config.WITH_GTK3:
     gi.require_version("Gtk", "2.0")
     gi.require_version("Wnck", "1.0")
 else:
@@ -127,7 +126,7 @@ class DockPopup(Gtk.Window):
             # width, height and draw event
             da = Gtk.DrawingArea()
             da.set_size_request(width, height)
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 da.connect("expose-event", draw_event)
             else:
                 da.connect("draw", draw_event)
@@ -174,7 +173,7 @@ class DockPopup(Gtk.Window):
         self.__applet_h = 0
 
         # create ui
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__grid = Gtk.VBox()
             self.__grid.set_spacing(0)
             self.__grid = Gtk.Table(rows=3, columns=3)
@@ -200,7 +199,7 @@ class DockPopup(Gtk.Window):
         # needs to be expanded so that that portion of the window it can be shaped
         #  into a pointer to the app icon
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__do_window_shaping = False
         else:
             gi_ver = GObject.pygobject_version
@@ -235,7 +234,7 @@ class DockPopup(Gtk.Window):
                                                da_height,
                                                self.draw_bottom_border)
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__grid.attach(self.__da_top, 0, 3, 0, 1, xpadding=0,
                                ypadding=0)
             self.__grid.attach(self.__da_left, 0, 1, 1, 2)
@@ -266,7 +265,7 @@ class DockPopup(Gtk.Window):
             widget : the widget or container to add
 
         """
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.__grid.attach(widget, 1, 2, 1, 2)
         else:
             self.__grid.attach(widget, 1, 1, 1, 1)
@@ -299,7 +298,7 @@ class DockPopup(Gtk.Window):
         """
 
         if panel_colour is None:
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 self.__bgr = self.__bgg = self.__bgb = 0
                 self.__fgr = self.__fgg = self.__fgb = 255
                 self.__hlr = self.__hlg = self.__hlb = 64
@@ -398,7 +397,7 @@ class DockPopup(Gtk.Window):
             areas created
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             self.set_win_position()
         else:
             if (self.__win_w == 0) or (self.__win_h == 0):
@@ -423,7 +422,7 @@ class DockPopup(Gtk.Window):
                 (needed with Gtk3)
             """
 
-            if build_gtk2:
+            if not config.WITH_GTK3:
                 rect = Gdk.Rectangle(0, 0, 0, 0)
             else:
                 rect = Gdk.Rectangle()
@@ -451,7 +450,7 @@ class DockPopup(Gtk.Window):
         # Note: we can't rely on the panel's dconf settings for this
         # as the monitor setting there doesn't seem to work reliably
         monitor = screen.get_monitor_at_point(self.__applet_x, self.__applet_y)
-        if build_gtk2:
+        if not config.WITH_GTK3:
             mon_geom = create_rect(0, 0, 0, 0)
             screen.get_monitor_geometry(monitor, mon_geom)
         else:
@@ -680,7 +679,7 @@ class DockPopup(Gtk.Window):
         """
         # in gtk3 the last param is a cairo context, in gtk2 we need to
         # create one
-        if build_gtk2:
+        if not config.WITH_GTK3:
             ctx = drawing_area.window.cairo_create()
             ctx.rectangle(event.area.x, event.area.y,
                           event.area.width, event.area.height)
@@ -747,7 +746,7 @@ class DockPopup(Gtk.Window):
             Draw the left hand side of the window border
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             ctx = drawing_area.window.cairo_create()
             ctx.rectangle(event.area.x, event.area.y,
                           event.area.width, event.area.height)
@@ -792,7 +791,7 @@ class DockPopup(Gtk.Window):
             Draw the right hand side of the window border
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             ctx = drawing_area.window.cairo_create()
             ctx.rectangle(event.area.x, event.area.y,
                           event.area.width, event.area.height)
@@ -833,7 +832,7 @@ class DockPopup(Gtk.Window):
         
         """
 
-        if build_gtk2:
+        if not config.WITH_GTK3:
             ctx = drawing_area.window.cairo_create()
             ctx.rectangle(event.area.x, event.area.y,
                           event.area.width, event.area.height)
