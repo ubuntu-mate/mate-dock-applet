@@ -757,15 +757,16 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
         self.running = True
         while self.running:
             event = self.display.next_event()
-            modifiers = event.state & self.known_modifiers_mask
-            self.current_shortcut = None
-            if event.type == X.KeyPress and [event.detail, modifiers] in self.shortcuts:
-                # Track this shortcut to know which app to activate
-                self.current_shortcut = [event.detail, modifiers]
-                GLib.idle_add(self.idle)
-                self.display.allow_events(X.AsyncKeyboard, event.time)
-            else:
-                self.display.allow_events(X.ReplayKeyboard, event.time)
+            if (hasattr(event, 'state')):
+                modifiers = event.state & self.known_modifiers_mask
+                self.current_shortcut = None
+                if event.type == X.KeyPress and [event.detail, modifiers] in self.shortcuts:
+                    # Track this shortcut to know which app to activate
+                    self.current_shortcut = [event.detail, modifiers]
+                    GLib.idle_add(self.idle)
+                    self.display.allow_events(X.AsyncKeyboard, event.time)
+                else:
+                    self.display.allow_events(X.ReplayKeyboard, event.time)
 
     def stop(self):
         self.running = False
