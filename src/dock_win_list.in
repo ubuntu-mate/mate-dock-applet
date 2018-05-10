@@ -364,7 +364,6 @@ class DockWinList(DockPopup):
             if (event.x >= cell_area.x + cell_area.width - CONST_CLOSE_ICON_SIZE) and \
                (event.y <= cell_area.y + CONST_CLOSE_ICON_SIZE):
                 window_control.close_win(win, event.time)
-                win.close(event.time)
                 self.hide()
                 return True
 
