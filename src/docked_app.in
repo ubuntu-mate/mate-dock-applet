@@ -240,7 +240,7 @@ class PulseTimer(object):
     def remove_timer(self):
         """
             Cancel the timer and stop the app icon pulsing...
-            
+
         """
 
         self.app.is_pulsing = False
@@ -253,8 +253,8 @@ CONST_BLINK_DELAY = 330
 class AttentionTimer(object):
     """Class to help provide visual feedback when an app requries user attention.
 
-    Instantiates a timer which periodically checks whether or not the app 
-    still needs attention. If the app is blinking, it toggles the 
+    Instantiates a timer which periodically checks whether or not the app
+    still needs attention. If the app is blinking, it toggles the
     blink state
     on and off until the app no longer needs attention
 
@@ -474,9 +474,9 @@ class DockedApp(object):
 
     def get_first_normal_win(self):
         """ Returns the app's first 'normal' window i.e. a window or dialog
-            
+
             Returns:
-                a Bamf.Window, or None 
+                a Bamf.Window, or None
         """
 
         if (self.bamf_app is not None) and (self.bamf_app.is_running()):
@@ -1250,7 +1250,7 @@ class DockedApp(object):
     def draw_attention_badge(self, ctx):
         """ Draw a badge on the app icon to indicate the app requires
             attention
-            
+
         Basically a copy and paste of draw_count...
 
         Args: ctx - the cairo context where the counter is to be drawn
@@ -1444,7 +1444,7 @@ class DockedApp(object):
             alc = Gdk.AppLaunchContext()
         else:
             alc = disp.get_app_launch_context()
-    
+
         alc.set_desktop(-1)  # use default screen & desktop
         alc.set_timestamp(Gtk.get_current_event_time())
         alc.connect("launch-failed", self.launch_failed)
@@ -1474,7 +1474,7 @@ class DockedApp(object):
         else:
             display = Gdk.Display.get_default()
             display.notify_startup_complete(self.startup_id)
-           
+
         self.startup_id = None
 
     def launch_failed(self, app_launch_context, startup_id):
