@@ -2849,7 +2849,9 @@ class Dock(object):
                     dock_app.cancel_startup_notification()
 
                 if dock_app.is_pinned:
+                    dock_app.is_active = False
                     dock_app.queue_draw()
+
                 elif dock_app.is_running():
                     if self.show_all_apps:
                         dock_app.queue_redraw()
