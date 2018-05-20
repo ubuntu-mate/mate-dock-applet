@@ -3927,8 +3927,9 @@ class Dock(object):
                                  '/org/freedesktop/compiz/scale/screen0/initiate_key')
                 activate = compiz_service.get_dbus_method('activate',
                                                           'org.freedesktop.compiz')
+                cn = window_control.get_wm_class_group_name(app.get_first_normal_win())
                 activate("root", rwin, "match",
-                         "class=%s" % app.wm_class_name)
+                         "class=%s" % cn)
             except dbus.exceptions.DBusException:
                 # e.g. Compiz is not installed, or dbus or scale plugin not
                 # enabled...

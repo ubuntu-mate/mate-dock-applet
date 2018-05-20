@@ -120,3 +120,20 @@ def set_minimise_target(win, x, y, width, height):
         (win_type == Wnck.WindowType.DIALOG)) and \
             (wnck_win.is_skip_tasklist() is False):
         wnck_win.set_icon_geometry(final_x, final_y, width, height)
+
+def get_wm_class_group_name(win):
+    """
+    Use wnck to get the wm_class name of a specified bamf.window
+
+    Params:
+        win     : the Bamf.Window
+
+    returns:
+        string : the wm_class_name, or None
+
+    """
+    wnck_win = Wnck.Window.get(win.get_xid())
+    if wnck_win is None:
+        return
+    else:
+        return wnck_win.get_class_group_name()
