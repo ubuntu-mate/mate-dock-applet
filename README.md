@@ -6,7 +6,7 @@
 The applet works with both GTK2 and GTK3 versions of MATE and allows you to:
 
 * Place a dock on any MATE panel, of any size, on any side of the desktop you desire.
-* Pin and unpin apps to the dock. Pinned apps can be shown in the dock on all workspaces or only the workspace where they were pinned (allowing the dock to be customised for each particular workspace). 
+* Pin and unpin apps to the dock. Pinned apps can be shown in the dock on all workspaces or only the workspace where they were pinned (allowing the dock to be customised for each particular workspace).
 * Rearrange application icons on the dock
 * Launch apps by clicking on their icons in the dock
 * Minimize/unminimize running app windows by clicking the app's dock icon
@@ -24,13 +24,17 @@ The applet is available in Debian testing (currently GTK2 only):
 
 `apt-get install mate-dock-applet`
 
-### Ubuntu MATE 16.04 and 16.10
+### Ubuntu MATE 16.04 and later
 
 The applet is included by default in Ubuntu MATE 16.04. It can be used by selecting the 'Mutiny' desktop layout in the MATE Tweak application, or by simply adding it to any panel.
 
 Note: when upgrading from Ubuntu Mate 15.10 to 16.04 any previously installed version of the applet will be replaced with the one from the distribution's respositories.
 
-### Ubuntu MATE 15.10 and Linux Mint
+### Linux Mint 18.2 and 18.3
+
+The applet is included in the repositories but is compiled for Gtk2, rather than Gtk3. Therefore it will not work with the version of MATE desktop supplied with Linux Mint. Currently, the only solution is to manually compile and install the applet from source - instructions are further below. Note: the latest version of the applet which will work with the version of Gtk3 used in Linux Mint is V0.80 - souce code available [here](https://github.com/robint99/mate-dock-applet/archive/V0.81.tar.gz).
+
+### Ubuntu MATE 15.10 and Linux Mint 18.1
 
 Users of Ubuntu MATE 15.10 and earlier, or of Linux Mint 18.1 or earlier, can install the applet from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
 
@@ -50,8 +54,8 @@ Users of other distros will need to install from source, so first install the re
 
 * Python3
 * Python wnck bindings (gir1.2-wnck-1.0 for Gtk2 versions of the applet, gir1.2-wnck-3.0 for Gtk3)
-* Python implementation of Xlib (python-xlib)
-* GLib development files (libglib2.0-dev) 
+* Python implementation of Xlib - python-xlib (python3-xlib in Ubuntu based distributions)
+* GLib development files (libglib2.0-dev)
 * Python Imaging Library (python3-pil)
 * Python 3 Cairo bindings (python3-cairo)
 * Bamf (bamfdaemon, libbamf and gir1.2-bamf)
@@ -96,8 +100,8 @@ In order for window minimizing and maximizing to work correctly under Compiz, th
 
 ### Obligatory screen shots
 
-V0.76 of the applet running on Ubuntu MATE 16.10, showing the new indicator style and active icon background. Note: the Gtk3 theme is Arc Darker (hence the blue indicators), and the icon theme is [La Capitaine](https://www.gnome-look.org/p/1148695/) 
- 
+V0.76 of the applet running on Ubuntu MATE 16.10, showing the new indicator style and active icon background. Note: the Gtk3 theme is Arc Darker (hence the blue indicators), and the icon theme is [La Capitaine](https://www.gnome-look.org/p/1148695/)
+
 ![New indicators and icon backgrounds](https://github.com/robint99/screenshots/raw/master/new%20indicators%20and%20icon%20background.png)
 
 GTK3 version of the applet running on Ubuntu MATE 16.10 Alpha 1
