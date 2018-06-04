@@ -15,4 +15,8 @@ Makefile
 Makefile.in
 missing
 py-compile
+.idea
+.tags
+.tags1
+.vscode
 
