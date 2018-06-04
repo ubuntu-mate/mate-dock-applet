@@ -3151,7 +3151,9 @@ class Dock(object):
 
         dock_app.icon_filename = None
 
-        print ("icon name = %s df = %s" %(dock_app.icon_name, dock_app.desktop_file))
+        # TODO : this needs to be tested 
+        # Potential, but untested  fix for issue #144 - blurry app icons on HiDpi Monitors
+        icon_size = icon_size * self.box.get_scale_factor()
 
         if dock_app.icon_name is None:
             # can happen e.g. with dock prefs window...
@@ -3161,7 +3163,6 @@ class Dock(object):
 
         elif dock_app.has_desktop_file():
             # look up the icon filename using Gtk
-            print ("df = %s" %dock_app.desktop_file)
             dai = Gio.DesktopAppInfo.new_from_filename(dock_app.desktop_file)
             the_icon = dai.get_icon()
             if the_icon is Gio.ThemedIcon:
@@ -3169,13 +3170,9 @@ class Dock(object):
             else:
                 icon_info = self.icontheme.choose_icon([dock_app.icon_name, None],
                                                        icon_size, 0)
-#            self.icontheme.has_icon(dock_app.icon_name):
-
 #
             if icon_info is not None:
                 dock_app.icon_filename = icon_info.get_filename()
-                print ("icon filename = %s "%dock_app.icon_filename)
-
                 try:
                     pixbuf = icon_info.load_icon()
                 except GLib.GError:
@@ -3184,6 +3181,9 @@ class Dock(object):
                                                 None)
                     dock_app.icon_filename = "STOCK_EXECUTE"
 
+        #TODO: can be removed when issue #144 is fixed
+        print ("da icon fn = %s %s" %(dock_app.icon_filename, self.box.get_scale_factor()))
+       
         if dock_app.icon_filename is None:
             # the default theme has no icon for the app, so there are a few
             # things we can do...
@@ -3238,6 +3238,8 @@ class Dock(object):
                     if os.path.isfile(os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)):
                         icon_file = os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)
 
+                #TODO: can be removed when issue #144 is fixed
+                print ("icon file = %s" %icon_file )
                 # if we've found an icon, load it
                 if icon_file != "":
                         pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_file)
@@ -3924,7 +3926,7 @@ class Dock(object):
 
             try:
                 compiz_service = self.session_bus.get_object('org.freedesktop.compiz',
-                                 '/org/freedesktop/compiz/scale/screen0/initiate_key')
+                              '/org/freedesktop/compiz/scale/screen0/initiate_key')
                 activate = compiz_service.get_dbus_method('activate',
                                                           'org.freedesktop.compiz')
                 cn = window_control.get_wm_class_group_name(app.get_first_normal_win())
@@ -4694,7 +4696,7 @@ class Dock(object):
                     app.set_progress_value(args["progress"])
                 break
 
-    # TODO: could do with being a propert
+    # TODO: could do with being a property
     def get_drag_coords(self):
         return self.drag_x, self.drag_y
 
