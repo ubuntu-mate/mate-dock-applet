@@ -42,7 +42,7 @@ Note: this is currently GTK2 only
 
 ### Arch Linux
 
-For Arch users there are two packages available in the AUR, a [Gtk2](http://aur.archlinux.org/packages/mate-applet-dock-git) version of the applet, and a [Gtk3](http://aur.archlinux.org/packages/mate-applet-dock-gtk3-git) version.
+For Arch users the GTK 3 version is available as a [package in the repositories](https://archlinux.org/packages/community/any/mate-applet-dock/).
 
 ### Gentoo based distributions
 
