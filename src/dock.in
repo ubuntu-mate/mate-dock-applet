@@ -3150,10 +3150,7 @@ class Dock(object):
             stock_size = Gtk.IconSize.BUTTON
 
         dock_app.icon_filename = None
-
-        # TODO : this needs to be tested 
-        # Potential, but untested  fix for issue #144 - blurry app icons on HiDpi Monitors
-        icon_size = icon_size * self.box.get_scale_factor()
+        scale_factor = self.box.get_scale_factor()
 
         if dock_app.icon_name is None:
             # can happen e.g. with dock prefs window...
@@ -3166,11 +3163,12 @@ class Dock(object):
             dai = Gio.DesktopAppInfo.new_from_filename(dock_app.desktop_file)
             the_icon = dai.get_icon()
             if the_icon is Gio.ThemedIcon:
-                icon_info = self.icontheme.choose_icon(the_icon.get_names(), icon_size, 0)
+                icon_info = self.icontheme.choose_icon_for_scale(the_icon.get_names(),
+                                                                 icon_size, scale_factor, 0)
             else:
-                icon_info = self.icontheme.choose_icon([dock_app.icon_name, None],
-                                                       icon_size, 0)
-#
+                icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
+                                                                 icon_size, scale_factor, 0)
+
             if icon_info is not None:
                 dock_app.icon_filename = icon_info.get_filename()
                 try:
@@ -3181,9 +3179,6 @@ class Dock(object):
                                                 None)
                     dock_app.icon_filename = "STOCK_EXECUTE"
 
-        #TODO: can be removed when issue #144 is fixed
-        print ("da icon fn = %s %s" %(dock_app.icon_filename, self.box.get_scale_factor()))
-       
         if dock_app.icon_filename is None:
             # the default theme has no icon for the app, so there are a few
             # things we can do...
@@ -3208,17 +3203,19 @@ class Dock(object):
 
             icon_file = ""
             if os.path.isfile(dock_app.icon_name):
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file(dock_app.icon_name)
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(dock_app.icon_name,
+                                                                icon_size * scale_factor,
+                                                                icon_size * scale_factor)
             else:
                 icon_name = dock_app.icon_name
 
                 # look in the 'hicolor' icon directories for the icon file
-                icon_path = "/usr/share/icons/hicolor/%dx%d/apps/" % (icon_size, icon_size)
+                icon_path = "/usr/share/icons/hicolor/%dx%d/apps/" % (icon_size * scale_factor, icon_size * scale_factor)
                 if os.path.isfile("%s%s" % (icon_path, icon_name)):
                     icon_file = "%s%s" % (icon_path, icon_name)
                 else:
                     icon_path = os.path.expanduser("~/.local/share/icons/hicolor/%dx%d/apps/"
-                                                   % (icon_size, icon_size))
+                                                   % (icon_size * scale_factor, icon_size * scale_factor))
                     if os.path.isfile("%s%s" % (icon_path, icon_name)):
                         icon_file = "%s%s" % (icon_path, icon_name)
 
@@ -3238,11 +3235,11 @@ class Dock(object):
                     if os.path.isfile(os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)):
                         icon_file = os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)
 
-                #TODO: can be removed when issue #144 is fixed
-                print ("icon file = %s" %icon_file )
                 # if we've found an icon, load it
                 if icon_file != "":
-                        pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_file)
+                        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon_file,
+                                                                        icon_size * scale_factor,
+                                                                        icon_size * scale_factor)
                 else:
                     # if not, use a stock icon to represent the app
                     pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE,
@@ -3255,11 +3252,15 @@ class Dock(object):
         # scale the icon to the size that is available
         # Note - we're allowing for a 3 pixel border all around the icon,
         # hence using size-6
-        pixbuf = pixbuf.scale_simple(size - 6, size - 6,
+        pixbuf = pixbuf.scale_simple(scale_factor * (size - 6),
+                                     scale_factor * (size - 6),
                                      GdkPixbuf.InterpType.BILINEAR)
 
         dock_app.set_drawing_area_size(size)
         dock_app.set_pixbuf(pixbuf)
+
+        surface = Gdk.cairo_surface_create_from_pixbuf(pixbuf, scale_factor, None)
+        dock_app.set_surface(surface)
 
     def set_size_hints(self):
         """ Set the size hints for the applet

@@ -329,6 +329,7 @@ class DockedApp(object):
         is_pulsing  : boolean - True if the app is pulsing
         pulse_step  : a count of how far we are through the pulse animation
         app_pb      : a pixbuf of the app's icon
+        app_surface : a surface of the app's icon
         highlight_colour : ColorTup of the colours used to highlight the app
                            when it is foreground
         is_active   : boolean - True = the app is the foreground app
@@ -403,6 +404,7 @@ class DockedApp(object):
         self.attention_blink_on = False
 
         self.app_pb = None
+        self.app_surface = None
 
         self.highlight_color = ColorTup(r=0.0, g=0.0, b=0.0)
 
@@ -946,7 +948,10 @@ class DockedApp(object):
             oss_w = self.drawing_area_size
             oss_h = self.drawing_area_size + ind_extra_s(self.indicator)
 
-        offscreen_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, oss_w, oss_h)
+        offscreen_surface = cairo.Surface.create_similar(self.app_surface,
+                                                         cairo.CONTENT_COLOR_ALPHA,
+                                                         oss_w, oss_h)
+
         ctx = cairo.Context(offscreen_surface)
 
         if self.is_active and (self.is_dragee is False):
@@ -966,7 +971,7 @@ class DockedApp(object):
             dbgd.draw()
 
         # draw the app icon
-        Gdk.cairo_set_source_pixbuf(ctx, self.app_pb, 3, 3)
+        ctx.set_source_surface(self.app_surface, 3, 3)
 
         if self.is_pulsing:
             # draw the icon semi-transparently according to how far through the
@@ -1410,6 +1415,12 @@ class DockedApp(object):
 
         rht, ght, bht = self.highlight_color = get_avg_color(pixbuf)
         self.highlight_color = ColorTup(r=rht, g=ght, b=bht)
+
+    def set_surface(self, surface):
+        """Set the app surface
+        """
+
+        self.app_surface = surface
 
     def start_app(self):
         """Start the app or open a new window if it's already running
