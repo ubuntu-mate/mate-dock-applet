@@ -2824,16 +2824,14 @@ class Dock(object):
 
     def view_closed(self, matcher, object):
         """
-            If the object being closed is an app which is not pinned to the dock,
-            it needs to be removed from the dock
-
-            If the object is a window then get the associated app and:
-                if the app in pinned redraw the dock icom
-                if the app is not pinned and is no longer running, remove the app
-                from the dock
-                if the is not pinned and is still running but has no normal or
-                dialog windows open, remove it from the dock, otherwise
-                redraw the dock icon
+            If the object being closed is an app then:
+              if is not pinned to the dock it needs to be removed from the dock
+              if the app in pinned redraw the dock icon
+              if the app is not pinned and is no longer running, remove the app
+              from the dock
+              if the is not pinned and is still running but has no normal or
+              dialog windows open, remove it from the dock, otherwise redraw
+              the dock icon
 
         Params: matcher - a Bamf.Matcher
         object -  the Bamf.Application or Bamf.Window that was closed
@@ -4079,11 +4077,13 @@ class Dock(object):
         last_active_win = None
         if restore_win:
             last_active_win = app.last_active_win
+  
+            # the last active window may have been closed - if so set
+            # last_active_window to None
+            if not last_active_win in app.get_windows():
+                last_active_win = app.last_active_win = None
 
-            # the last active window may be set to None (e.g. if the app's
-            # active window has been closed and no other window has been made
-            # active afterwards). Therefore, if there is no active last window
-            # activate the app's first normal window
+            # if there is no last active window then activate the app's first normal window
             # (related to https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392)
             if last_active_win is None:
                 last_active_win = app.get_first_normal_win()
@@ -4102,6 +4102,7 @@ class Dock(object):
 
             if last_active_win is not None:
                 wnck_win = Wnck.Window.get(last_active_win.get_xid())
+
                 if wnck_win is not None:
                     wnck_aws = self.wnck_screen.get_active_workspace()
                     wnck_ws = wnck_win.get_workspace()
