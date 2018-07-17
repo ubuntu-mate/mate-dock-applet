@@ -3091,17 +3091,21 @@ class Dock(object):
                                              stock_size, None)
             dock_app.icon_filename = "STOCK_EXECUTE"
 
-        elif dock_app.has_desktop_file():
-            # look up the icon filename using Gtk
-            dai = Gio.DesktopAppInfo.new_from_filename(dock_app.desktop_file)
-            the_icon = dai.get_icon()
-            if the_icon is Gio.ThemedIcon:
-                icon_info = self.icontheme.choose_icon_for_scale(the_icon.get_names(),
-                                                                 icon_size, scale_factor, 0)
+        else:
+            if dock_app.has_desktop_file():
+                # look up the icon filename using Gtk
+                dai = Gio.DesktopAppInfo.new_from_filename(dock_app.desktop_file)
+                the_icon = dai.get_icon()
+                if the_icon is Gio.ThemedIcon:
+                    icon_info = self.icontheme.choose_icon_for_scale(the_icon.get_names(),
+                                                                    icon_size, scale_factor, 0)
+                else:
+                    icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
+                                                                    icon_size, scale_factor, 0)
+
             else:
                 icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
                                                                  icon_size, scale_factor, 0)
-
             if icon_info is not None:
                 dock_app.icon_filename = icon_info.get_filename()
                 try:
@@ -3110,7 +3114,7 @@ class Dock(object):
                     # default to a stock icon if we couldn't load the app icon
                     pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size,
                                                 None)
-                    dock_app.icon_filename = "STOCK_EXECUTE"
+                dock_app.icon_filename = "STOCK_EXECUTE"
 
         if dock_app.icon_filename is None:
             # the default theme has no icon for the app, so there are a few
