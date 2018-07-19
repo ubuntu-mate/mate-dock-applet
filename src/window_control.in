@@ -137,3 +137,23 @@ def get_wm_class_group_name(win):
         return
     else:
         return wnck_win.get_class_group_name()
+
+def get_icon_pb(win):
+    """ Use Wnck to try and get a pixbuf of a specified window's icon
+
+    Params: win : the Bamf.Window
+
+    Returns:
+        a Pixbuf of the app icon, or None if the window doesn't specify an icon
+
+    """
+
+    wnck_win = Wnck.Window.get(win.get_xid())
+    if wnck_win is None:
+        return None
+    elif wnck_win.get_icon_is_fallback():
+        return None
+    
+    return wnck_win.get_icon()
+    
+    
