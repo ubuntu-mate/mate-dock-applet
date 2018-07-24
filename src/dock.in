@@ -3086,9 +3086,7 @@ class Dock(object):
         scale_factor = self.box.get_scale_factor()
         pixbuf = None
 
-        print ("icon name = %s" %dock_app.icon_name)
         if dock_app.icon_name == "wnck":
-
             # we need to get the icon from wnck
             if dock_app.icon_name == "wnck":
                 win = dock_app.get_first_normal_win()
@@ -4162,10 +4160,8 @@ class Dock(object):
             # we've been called in response to a mouse scroll event, so we need to get
             # the app under the mouse
             app = self.get_app_under_mouse()
-#            if self.app_with_mouse is not None:
-#                app = self.app_with_mouse
-#            else:
-#                return
+            if app is None:
+                return
         else:
             app = the_app
 
