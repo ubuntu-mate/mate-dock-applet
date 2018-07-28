@@ -54,6 +54,14 @@ class AttentionType:
     SHOW_BADGE = 1
 
 
+class ClickActionType:
+    """ Class to define the ways in which running apps may perorm window selection"""
+
+    WIN_LIST = 0  # show the applet's window list
+    COMPIZ = 1    # display compiz window spread
+    MINMAX = 2    # minimize/maximize the app's open windows
+
+
 def create_frame(caption):
     """ Convenience function to create a Gtk.Frame with a desired caption
         in bold text
@@ -420,33 +428,52 @@ class DockPrefsWindow(Gtk.Window):
         self.__ws_vbox.pack_start(self.__cb_win_cur_ws, False, False, 4)
         self.__ws_vbox.pack_end(self.__tv_notes, False, False, 4)
 
-        self.__frame_win_sel = create_frame("Window selection")
-        self.__rb_win_list = Gtk.RadioButton(label="From applet's window list")
+        self.__frame_behaviour = create_frame("Left clicking a running app's icon will:")
+        self.__rb_win_list = Gtk.RadioButton(label="Display a list of the app's windows")
         self.__rb_win_thumb = Gtk.RadioButton(group=self.__rb_win_list,
-                                              label="From window thumbnail previews (requires Compiz)")
-        self.__table_win_sel = Gtk.Table(rows=2, columns=1,
+                                              label="Show thumbnail previews of the app's windows")
+        self.__rb_win_minmax = Gtk.RadioButton(group=self.__rb_win_list,
+                                              label="Minimize/restore all of the app's windows")
+        self.__table_behaviour = Gtk.Table(rows=3, columns=1,
                                          homogeneous=False)
-        self.__table_win_sel.attach(self.__rb_win_list,
+        self.__table_behaviour.attach(self.__rb_win_list,
                                     0, 1, 0, 1,
                                     Gtk.AttachOptions.FILL,
                                     Gtk.AttachOptions.SHRINK,
                                     2, 2)
-        self.__table_win_sel.attach(self.__rb_win_thumb,
+        self.__table_behaviour.attach(self.__rb_win_thumb,
                                     0, 1, 1, 2,
                                     Gtk.AttachOptions.FILL,
                                     Gtk.AttachOptions.SHRINK,
                                     2, 2)
+        self.__table_behaviour.attach(self.__rb_win_minmax,
+                                    0, 1, 2, 3,
+                                    Gtk.AttachOptions.FILL,
+                                    Gtk.AttachOptions.SHRINK,
+                                    2, 2)
 
-        self.__frame_win_sel_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+        self.__notes_behaviour_tv = Gtk.TextView()
+        self.__notes_behaviour_tv.set_wrap_mode(Gtk.WrapMode.WORD)
+        self.__notes_behaviour_tv.set_editable(False)
+        self.__notes_behaviour_tb = Gtk.TextBuffer()
+
+        self.__notes_behaviour_tv.set_buffer(self.__notes_behaviour_tb)
+        iter = self.__notes_behaviour_tb.get_start_iter()
+        self.__notes_behaviour_tb.insert(iter,
+                                     "\nNotes:\nIf an app has only a single window open, a window list will not be " +
+                                     "displayed. Instead the window will be minimized/restored.\n" +
+                                     "Window thumbnail previews require Compiz")
+        self.__frame_behaviour_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                                    xscale=1.0, yscale=1.0)
-        self.__frame_win_sel_align.set_padding(0, 0, 12, 0)
-        self.__frame_win_sel_align.add(self.__table_win_sel)
-        self.__frame_win_sel.add(self.__frame_win_sel_align)
+        self.__frame_behaviour_align.set_padding(0, 0, 12, 0)
+        self.__frame_behaviour_align.add(self.__table_behaviour)
+        self.__frame_behaviour.add(self.__frame_behaviour_align)
 
-        self.__win_sel_vbox = self.create_vbox
-        self.__win_sel_vbox.set_spacing(2)
-        self.__win_sel_vbox.pack_start(self.__frame_win_sel, False,
-                                       False, 4)
+        self.__behaviour_vbox = self.create_vbox
+        self.__behaviour_vbox.set_spacing(2)
+        self.__behaviour_vbox.pack_start(self.__frame_behaviour, False,
+                                         False, 4)
+        self.__behaviour_vbox.pack_start(self.__notes_behaviour_tv, False, False, 4)
 
         self.__frame_spc = create_frame("App spacing")
         if build_gtk2:
@@ -634,7 +661,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__vbox.pack_start(self.__notebook, True, True, 4)
         self.__notebook.append_page(self.__appearance_tbl, Gtk.Label("Appearance"))
         self.__notebook.append_page(self.__ws_vbox, Gtk.Label("Workspaces"))
-        self.__notebook.append_page(self.__win_sel_vbox, Gtk.Label("Windows"))
+        self.__notebook.append_page(self.__behaviour_vbox, Gtk.Label("Behaviour"))
         self.__notebook.append_page(self.__panel_vbox,
                                     Gtk.Label("Panel Options"))
         self.__notebook.append_page(self.__misc_vbox, Gtk.Label("Misc"))
@@ -1018,6 +1045,37 @@ class DockPrefsWindow(Gtk.Window):
         else:
             self.__rb_win_thumb.set_active(True)
 
+    def get_click_action(self):
+        """ Gets the action specified for when a running app's dock icon
+            is clicked
+
+        Returns : a ClickActionType value
+
+        """
+
+        if self.__rb_win_list.get_active():
+            return ClickActionType.WIN_LIST
+        elif self.__rb_win_thumb.get_active():
+            return ClickActionType.COMPIZ
+        else:
+            return ClickActionType.MINMAX
+
+    def set_click_action(self, click_action):
+        """ Sets the action specified for when a running app's dock icon
+            is clicked
+
+        Args:
+            click_action: A ClickActionType value
+        """
+
+        if click_action == ClickActionType.WIN_LIST:
+            self.__rb_win_list.set_active(True)
+        elif click_action == ClickActionType.COMPIZ:
+            self.__rb_win_thumb.set_active(True)
+        else:
+            self.__rb_win_minmax.set_active(True)
+
+
     def get_change_panel_color(self):
         """ Get whether the panel colour is to be changed according to the
             current wallpaper
@@ -1170,13 +1228,13 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         self.__sb_spc.set_value(spacing)
-    
+
     def get_app_spacing(self):
         """
             Get the amount of space between icons in the dock
-            
+
         :return: int
-         
+
         """
 
         self.__sb_spc.update()
@@ -1184,7 +1242,7 @@ class DockPrefsWindow(Gtk.Window):
 
     def set_attention_type(self, attention_type):
         """ Set the attention type
-        
+
         Args : attention_type: An AttentionType e.g. AttentionType.BLINK
         """
         if attention_type == AttentionType.BLINK:
@@ -1195,9 +1253,9 @@ class DockPrefsWindow(Gtk.Window):
     def get_attention_type(self):
         """
             Get the attention type
-            
+
         Returns: An AttentionType
-                    
+
         """
 
         if self.__rb_attention_blink.get_active():

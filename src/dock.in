@@ -355,6 +355,7 @@ class ScrollAnimator(object):
             return True
 
 
+
 class Dock(object):
     """The main application dock class
 
@@ -466,7 +467,7 @@ class Dock(object):
             drag_y : y coordinate of mouse where dragging began
             dragging : are we dragging dock icons about
 
-            max_num_actions : defines the maximum number of app actions that can appear in 
+            max_num_actions : defines the maximum number of app actions that can appear in
                               the panel right click menu or the action list popup
 
 
@@ -529,6 +530,7 @@ class Dock(object):
         self.show_all_apps = True
         self.win_from_cur_ws_only = False
         self.use_win_list = True
+        self.click_action = dock_prefs.ClickActionType.MINMAX
         self.panel_act_list = False
         self.change_panel_color = False
         self.change_dock_color_only = False
@@ -544,7 +546,7 @@ class Dock(object):
         self.ns_app_removed = None
         self.read_settings()
         self.set_fallback_bar_colour()
-        self.max_num_actions = 16   
+        self.max_num_actions = 16
 
         # read the list of apps which are difficult to match with their
         # .desktop files
@@ -934,6 +936,7 @@ class Dock(object):
                 self.pa_configs = xml_settings[15]
                 self.pa_on_all_ws = xml_settings[16]
                 self.dock_fixed_size = xml_settings[17]
+                self.click_action = xml_settings[18]
 
                 # now, immediately write the settings to dconf and back to the
                 # config file so the dock can access them
@@ -967,6 +970,7 @@ class Dock(object):
                 self.settings.set_boolean("pinned-apps-on-all-workspaces", self.pa_on_all_ws)
                 self.settings.set_value("saved-configs", GLib.Variant('as', configs))
                 self.settings.set_int("dock-fixed-size", self.dock_fixed_size)
+                self.settings.set_int("click-action", self.click_action)
 
                 dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                                    self.show_all_apps, self.multi_ind,
@@ -981,7 +985,8 @@ class Dock(object):
                                    self.popup_delay,
                                    self.pa_configs,
                                    self.pa_on_all_ws,
-                                   self.dock_fixed_size)
+                                   self.dock_fixed_size,
+                                   self.click_action)
 
                 return
 
@@ -1006,6 +1011,7 @@ class Dock(object):
         self.popup_delay = self.settings.get_int("popup-delay")
         self.pa_on_all_ws = self.settings.get_boolean("pinned-apps-on-all-workspaces")
         self.dock_fixed_size = self.settings.get_int("dock-fixed-size")
+        self.click_action = self.settings.get_int("click-action")
 
     def configs_to_settings(self):
         """ Convenience function to convert the current set of saved configs
@@ -1076,6 +1082,7 @@ class Dock(object):
             self.settings.set_boolean("pinned-apps-on-all-workspaces", self.pa_on_all_ws)
             self.settings.set_value("saved-configs", GLib.Variant('as', pa_configs))
             self.settings.set_int("dock-fixed-size", self.dock_fixed_size)
+            self.settings.set_int("click-action", self.click_action)
 
         dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                            self.show_all_apps, self.multi_ind,
@@ -1091,7 +1098,8 @@ class Dock(object):
                            self.popup_delay,
                            self.pa_configs,
                            self.pa_on_all_ws,
-                           self.dock_fixed_size)
+                           self.dock_fixed_size,
+                           self.click_action)
 
     def read_app_match(self):
         """ Read an xml file which contains a list of apps which are difficult
@@ -1231,7 +1239,7 @@ class Dock(object):
             act = self.dock_action_group.get_action("df_shortcut_%d_action" %act_no)
             set_vis(act, panel_act_visible)
             act_no += 1
-        
+
         # now do pin and unpin actions
         act = self.dock_action_group.get_action("pin_action")
         set_vis(act, panel_act_visible)
@@ -1359,7 +1367,7 @@ class Dock(object):
             shortcut_action_no += 1
             the_action.connect ("activate", self.df_shortcut_handler, shortcut_action_no)
 
-        # add the rest of the actions to the dock        
+        # add the rest of the actions to the dock
         self.dock_action_group.add_actions([
                              ("pin_action", Gtk.STOCK_ADD,
                              "_Pin app to the dock", None, "Pin app to the dock",
@@ -1391,7 +1399,7 @@ class Dock(object):
                              "_Close", None, "Close", self.close_win)
                              ])
 
-        
+
         shortcut_action_no = 1
         menu_xml = ""
         while shortcut_action_no <= self.max_num_actions:
@@ -1427,7 +1435,7 @@ class Dock(object):
             the_action = self.popup_action_group.get_action("df_shortcut_%d_action" %shortcut_action_no)
             shortcut_action_no += 1
             the_action.connect ("activate", self.df_shortcut_handler, shortcut_action_no)
-        
+
         self.popup_action_group.add_actions([
             ("pin_action", Gtk.STOCK_ADD,
              "Pin app to the dock", None, "Pin app to the dock",
@@ -1889,7 +1897,7 @@ class Dock(object):
             self.prefs_win.set_indicator(self.indicator)
             self.prefs_win.set_multi_ind(self.multi_ind)
             self.prefs_win.set_show_unpinned_apps_on_all_ws(self.show_all_apps)
-            self.prefs_win.set_use_win_list(self.use_win_list)
+            self.prefs_win.set_click_action(self.click_action)
             self.prefs_win.set_change_panel_color(self.change_panel_color)
             self.prefs_win.set_change_dock_color_only(self.change_dock_color_only)
             self.prefs_win.set_pan_act(self.panel_act_list)
@@ -1948,7 +1956,7 @@ class Dock(object):
            (self.multi_ind != self.prefs_win.get_multi_ind()) or \
            (self.show_all_apps != self.prefs_win.get_show_unpinned_apps_on_all_ws()) or \
            (self.win_from_cur_ws_only != self.prefs_win.get_win_cur_ws_only()) or \
-           (self.use_win_list != self.prefs_win.get_use_win_list()) or \
+           (self.click_action != self.prefs_win.get_click_action()) or \
            (self.change_panel_color != self.prefs_win.get_change_panel_color()) or \
            (self.change_dock_color_only != self.prefs_win.get_change_dock_color_only()) or \
            (self.panel_act_list != self.prefs_win.get_pan_act()) or \
@@ -1965,7 +1973,7 @@ class Dock(object):
             self.multi_ind = self.prefs_win.get_multi_ind()
             self.show_all_apps = self.prefs_win.get_show_unpinned_apps_on_all_ws()
             self.win_from_cur_ws_only = self.prefs_win.get_win_cur_ws_only()
-            self.use_win_list = self.prefs_win.get_use_win_list()
+            self.click_action = self.prefs_win.get_click_action()
             self.app_spacing = self.prefs_win.get_app_spacing()
             self.attention_type = self.prefs_win.get_attention_type()
             self.popup_delay = self.prefs_win.get_popup_delay()
@@ -3102,7 +3110,7 @@ class Dock(object):
         else:
             if dock_app.has_desktop_file():
                 # look up the icon filename using Gtk
- 
+
                 dai = Gio.DesktopAppInfo.new_from_filename(dock_app.desktop_file)
                 the_icon = dai.get_icon()
                 if the_icon is Gio.ThemedIcon:
@@ -3112,7 +3120,7 @@ class Dock(object):
                     icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
                                                                     icon_size, scale_factor, 0)
 
-                if icon_info is not None:    
+                if icon_info is not None:
                     dock_app.icon_filename = icon_info.get_filename()
 
                     try:
@@ -3123,7 +3131,7 @@ class Dock(object):
                                                 None)
                         dock_app.icon_filename = "STOCK_EXECUTE"
 
-        if pixbuf is None: 
+        if pixbuf is None:
             # we couldn't get the icon from the .desktop or wnck but there a still a few
             # things we can do...
             #
@@ -3807,10 +3815,10 @@ class Dock(object):
                                               df_shortcut_action,
                                               True)
 
-            
+
             shortcut_action_no += 1
 
-        if add_sep: 
+        if add_sep:
             self.app_act_list.add_separator()
 
         if pin_action.is_visible():
@@ -3851,9 +3859,9 @@ class Dock(object):
 
         """
 
-        if self.use_win_list:
+        if self.click_action == dock_prefs.ClickActionType.WIN_LIST:
             self.show_or_hide_win_list()
-        else:
+        elif self.click_action == dock_prefs.ClickActionType.COMPIZ:
 
             # get root window id
             if build_gtk2:
@@ -3879,6 +3887,8 @@ class Dock(object):
                 #
                 # fallback to built in window list
                 self.show_or_hide_win_list()
+        else:
+            self.minimize_or_restore_windows(app)
 
     def show_or_hide_win_list(self):
         """
@@ -3977,7 +3987,7 @@ class Dock(object):
         if self.app_act_list is not None:
             self.app_act_list.hide()
 
-    def minimize_or_restore_windows(self, app, event):
+    def minimize_or_restore_windows(self, app):
         """ Minimize or restore an app's windows
 
         the action to perform (minimizing, moving workspace, activating)
@@ -4005,7 +4015,6 @@ class Dock(object):
 
         Args:
             app: the docked app whose windows are to be minimized or restored
-            event : the mouse click event
 
         """
 
@@ -4019,7 +4028,7 @@ class Dock(object):
         last_active_win = None
         if restore_win:
             last_active_win = app.last_active_win
-  
+
             # the last active window may have been closed - if so set
             # last_active_window to None
             if not last_active_win in app.get_windows():
@@ -4032,13 +4041,12 @@ class Dock(object):
 
             # if we're restoring all windows, do this now before we finally
             # activate the last active window
-            if self.click_restore_last_active is False:
-                for win in app.get_windows():
-                    win_type = win.get_window_type()
-                    if (win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or
-                        win.is_user_visible()) and (win != last_active_win):
-                        window_control.activate_win(win)
-                        sleep(0.01)
+            for win in app.get_windows():
+                win_type = win.get_window_type()
+                if (win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or
+                    win.is_user_visible()) and (win != last_active_win):
+                    window_control.activate_win(win)
+                    sleep(0.01)
 
                 app.last_active_win = last_active_win
 
@@ -4062,14 +4070,8 @@ class Dock(object):
             # rarely, the last active win does not end up as the active window
             # if we activate here, so instead a workaround which seems to do
             # the trick is use a timer as below
-            if event is None:
-                # use the current time if we have no event
-                event_time = Gtk.get_current_event_time()
-            else:
-                event_time = event.time
-
             GObject.timeout_add(20, win_activation_timer,
-                                [last_active_win, event_time])
+                                [last_active_win, Gtk.get_current_event_time()])
 
         else:
             # minimize all windows and do the last active window last of all
