@@ -573,7 +573,7 @@ def applet_shortcut_handler(keybinder, the_dock):
             # if the app only has a single window minimize or restore it
             # otherwise scroll through all available windows
             if app.get_num_windows() == 1:
-                the_dock.minimize_or_restore_windows(app, None)
+                the_dock.minimize_or_restore_windows(app)
             else:
                 the_dock.do_window_scroll(Gdk.ScrollDirection.DOWN, 0, app)
 
