@@ -276,7 +276,7 @@ class DragActivateTimer(object):
 
         if (self.the_app is not None) and (self.the_app.is_running()):
                 if not self.the_app.is_active:
-                    self.the_dock.minimize_or_restore_windows(self.the_app, None)
+                    self.the_dock.minimize_or_restore_windows(self.the_app)
 
         self.timer_id = 0
         return False  # we only run once...
