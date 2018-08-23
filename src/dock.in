@@ -3394,6 +3394,16 @@ class Dock(object):
         else:
             return None
 
+    def update_colours(self, box):
+        context = box.get_style_context()
+
+        # If the theme defines a dark variant, use it to ensure same color as the panel
+        bg_color = context.lookup_color("bg_dark_color")
+        if bg_color[0]:
+            self.box.override_background_color(Gtk.StateFlags.NORMAL, bg_color[1])
+        else:
+            self.box.override_background_color(Gtk.StateFlags.NORMAL, None)
+
     def create_box(self, orientation):
         """Create a vertical or horizontal (depending on the applet orientation)
            box to contain the docked apps areas.
@@ -3456,6 +3466,7 @@ class Dock(object):
                              self.active_app_changed)
         self.matcher.connect("view-opened", self.view_opened)
         self.matcher.connect("view-closed", self.view_closed)
+        self.box.connect("style-updated", self.update_colours)
 
         self.wnck_screen.connect("active-workspace-changed",
                                  self.active_workspace_changed)
