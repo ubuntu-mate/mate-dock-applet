@@ -470,6 +470,8 @@ class Dock(object):
             max_num_actions : defines the maximum number of app actions that can appear in
                               the panel right click menu or the action list popup
 
+            hidden_views    : a list of Bamf.View objects which have been opened
+                              but have not yet been made visible
 
     """
 
@@ -623,6 +625,8 @@ class Dock(object):
 
         self.drag_x = self.drag_y = -1
         self.dragging = False
+
+        self.hidden_views = []
 
         # instantiate a timer to perform further setup once the applet has been
         # fully created
@@ -2491,8 +2495,6 @@ class Dock(object):
         """
 
         if b_app is not None:
-            b_app.connect("window-added", self.window_added)
-            b_app.connect("window-removed", self.window_removed)
             b_app.connect("running-changed", self.do_running_changed)
             b_app.connect("starting-changed", self.do_starting_changed)
             b_app.connect("urgent-changed", self.do_urgent_changed)
@@ -2506,8 +2508,6 @@ class Dock(object):
 
         if b_app is not None:
             try:
-                b_app.disconnect_by_func(self.window_added)
-                b_app.disconnect_by_func(self.window_removed)
                 b_app.disconnect_by_func(self.do_running_changed)
                 b_app.disconnect_by_func(self.do_starting_changed)
                 b_app.disconnect_by_func(self.do_urgent_changed)
@@ -2644,11 +2644,33 @@ class Dock(object):
 
         self.wnck_screen.force_update()
 
-        if (type(object) is Bamf.Application) and (object.is_user_visible()):
-            dock_app = self.match_bamf_app_to_dock_app(object)
-            if dock_app is not None:
-                if dock_app.startup_id is None:
-                    dock_app.pulse_once()
+        if (type(object) is Bamf.Application):
+            if object.is_user_visible():
+                dock_app = self.match_bamf_app_to_dock_app(object)
+                if dock_app is not None:
+                    if dock_app.startup_id is None:
+                        dock_app.pulse_once()
+            else:
+                self.hidden_views.append(object)
+                object.connect_after("user-visible-changed", self.view_vis_changed)
+
+        elif (type(object) is Bamf.Window) and (object.is_user_visible()):
+            the_app = matcher.get_application_for_window(object)
+            self.window_added(the_app, object)
+
+    def view_vis_changed(self, view, object):
+        """ Handler for the Bamf.View user visibilty changed signal
+
+            Add the application specifed by the view to the the dock,
+            remove the view from the list of hidden views and
+            disconnect this handler
+
+        """
+
+        if view.is_user_visible():
+            self.view_opened(self.matcher, view)
+            self.hidden_views.remove(view)
+            view.disconnect_by_func(self.view_vis_changed)
 
     def window_added(self, application, object):
         """
@@ -2724,11 +2746,12 @@ class Dock(object):
         dock_app = self.get_docked_app_by_bamf_app(application)
         if dock_app is None:
             dock_app = self.get_docked_app_by_bamf_window(object)
-            if dock_app is None:
-                df = application.get_desktop_file()
 
-                if df is not None:
-                    dock_app = self.get_docked_app_by_desktop_file(df)
+        if dock_app is None:
+
+            the_app = self.matcher.get_application_for_window(object)
+            if the_app is not None:
+                dock_app = self.get_docked_app_by_bamf_app(the_app)
 
         if dock_app is not None:
 
@@ -2806,6 +2829,10 @@ class Dock(object):
                     self.remove_bamf_app_handlers(object)
 
                     self.set_all_apps_minimise_targets()
+        elif type(object is Bamf.Window):
+            the_app = matcher.get_application_for_window(object)
+            self.window_removed(the_app, object)
+
 
     def do_urgent_changed(self, view, object):
         """ Handler for the Bamf.Application urgent changed signal
@@ -3464,8 +3491,8 @@ class Dock(object):
                              self.active_win_changed)
         self.matcher.connect("active_application_changed",
                              self.active_app_changed)
-        self.matcher.connect("view-opened", self.view_opened)
-        self.matcher.connect("view-closed", self.view_closed)
+        self.matcher.connect_after("view-opened", self.view_opened)
+        self.matcher.connect_after("view-closed", self.view_closed)
         self.box.connect("style-updated", self.update_colours)
 
         self.wnck_screen.connect("active-workspace-changed",
