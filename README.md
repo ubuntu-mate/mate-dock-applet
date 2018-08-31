@@ -30,6 +30,10 @@ The applet is included by default in Ubuntu MATE 16.04. It can be used by select
 
 Note: when upgrading from Ubuntu Mate 15.10 to 16.04 any previously installed version of the applet will be replaced with the one from the distribution's respositories.
 
+### Linux Mint 19
+
+The applet is not installed by default - `apt-get install mate-dock-applet` will do the trick...
+
 ### Linux Mint 18.2 and 18.3
 
 The applet is included in the repositories but is compiled for Gtk2, rather than Gtk3. Therefore it will not work with the version of MATE desktop supplied with Linux Mint. Currently, the only solution is to manually compile and install the applet from source - instructions are further below. Note: the latest version of the applet which will work with the version of Gtk3 used in Linux Mint is V0.80 - souce code available [here](https://github.com/robint99/mate-dock-applet/archive/V0.81.tar.gz).
