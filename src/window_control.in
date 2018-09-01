@@ -42,14 +42,17 @@ else:
 from gi.repository import Gtk, Wnck
 
 
-def activate_win(win):
+def activate_win(win, event_time=None):
     """
     Activate the specified window
 
     Params:
         win : the Bamf.Window
+        event_time : the time of the event which triggered this activation
     """
-    event_time = Gtk.get_current_event_time()
+    if event_time is None:
+        event_time = Gtk.get_current_event_time()
+
     wnck_win = Wnck.Window.get(win.get_xid())
     if wnck_win is not None:
         wnck_win.activate(event_time)
@@ -153,7 +156,5 @@ def get_icon_pb(win):
         return None
     elif wnck_win.get_icon_is_fallback():
         return None
-    
+
     return wnck_win.get_icon()
-    
-    

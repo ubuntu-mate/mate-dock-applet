@@ -4705,6 +4705,6 @@ def win_activation_timer(args):
 
     # as of MATE 1.12 it seems we need to use an event time of 0 (i.e. now)
     # to the window to activate properly
-    window_control.activate_win(args[0])
+    window_control.activate_win(args[0], args[1])
     sleep(0.01)
     return False
