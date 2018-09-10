@@ -611,8 +611,21 @@ class Dock(object):
                                              dbus_interface="com.canonical.Unity.LauncherEntry",
                                              signal_name="Update")
 
-        # create a Bamf.Matcher for matching windows to running apps
-        self.matcher = Bamf.Matcher.get_default()
+        # we need a Bamf.Matcher for matching windows to running apps
+        self.matcher = None
+        # wait for max 10s to ensure bamf is available
+        # (bamf is not always immediately available after login on Linux Mint
+        # 19 - e.g. https://forums.linuxmint.com/viewtopic.php?t=272747 and
+        # issue #158)
+        i = 0
+        while i < 10:
+            if (not self.session_bus.name_has_owner("org.ayatana.bamf")):
+                i += 1
+                sleep(1)
+            else:
+                break
+
+        self.matcher = Bamf.Matcher()
 
         # can we resize nicely on the panel?
         try:
@@ -4043,14 +4056,6 @@ class Dock(object):
         but first, hide any app window list that is being shown and stop the
         window list timer
 
-        Note: As of MATE 1.12 wnck_window.activate does not seem to work
-              if we specify our own event time. However, if an event time of
-              0 (i.e. now) is specfied all works as expected. However, when the
-              applet is run from the command line, lots of these messages
-              'Wnck-WARNING **: Received a timestamp of 0; window activation
-               may not function properly' appear, so another solution may need
-              to be found in the future
-
         Args:
             app: the docked app whose windows are to be minimized or restored
 
@@ -4703,8 +4708,6 @@ def win_activation_timer(args):
         False - to cancel the timer
     """
 
-    # as of MATE 1.12 it seems we need to use an event time of 0 (i.e. now)
-    # to the window to activate properly
     window_control.activate_win(args[0], args[1])
     sleep(0.01)
     return False
