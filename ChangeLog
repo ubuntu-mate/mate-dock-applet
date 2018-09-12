@@ -1,17 +1,33 @@
+V0.87 Fix for issue #158 - Odd Icon Behavior when Minimizing and then unminimizing.
+      Fix for issue #139 - LibreOffice Writer not showing in dock
+      Fix for issue #160 - Unused event parameter removed
+      Fix for issue #159 - Use dark variant when defined by theme
+      Fix for issue #154 - Added a 'bring all windows forward' option
+      Fix for issue #156 - AttributeError in do_window_scroll()
+	    Fix for issue #152 - Icons of wine applications aren't displayed
+	    Fix for issue #153 - All actions defined in a .desktop file are now
+      displayed in the right click or popup menus rather. Previously a maximum
+      of 4 only would be displayed.
+	    Fix for issue #146 - unable to restore some minimized windows
+	    Fix for issue #144 - blurry icons on hidpi displays
+
+      Note : Many thanks go to github user @vkareh for the fixes to issues
+      #144, #159 and #160
+
 V0.86 Fix for issue #130, Icon stays highlighted with all windows closed
       Fix for issue #131 - dock sizing options appearing in the
       preferences dialog when not needed
       Fix for issue #132 - Program activation by dragging doesn't work
-	  Fix for issues #136 and #140 - icons for windows which the applet should
+	    Fix for issues #136 and #140 - icons for windows which the applet should
       have been ignoring were appearing in the dock.
-	  Fix for issue #137 - Telegram icon not found; shows as generic cogs
-	  Fix for issue #138 - dragging app icons not always working
+	    Fix for issue #137 - Telegram icon not found; shows as generic cogs
+	    Fix for issue #138 - dragging app icons not always working
       Fix for issue #142 - Certain function keys cause the keyboard listener to
       stop working (thanks to @nschulzke on github for this)
-	  Potential fix for issue #144 - Blurry app icons. Untested due to lack of
-	  hidpi monitor.
-	  Fixed window previews with Compiz which were broken in V0.81
-	  When an app's window is closed from the window list, the window list
+	    Potential fix for issue #144 - Blurry app icons. Untested due to lack of
+	    hidpi monitor.
+	    Fixed window previews with Compiz which were broken in V0.81
+	    When an app's window is closed from the window list, the window list
       is now hidden
 
 V0.85 Contains a workaround for Launchpad bug #1755835 which
