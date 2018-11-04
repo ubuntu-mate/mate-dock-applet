@@ -373,7 +373,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_unpinned_apps = create_frame("Unpinned application dock icons")
         self.__rb_unpinned_all_ws = Gtk.RadioButton(label="Display unpinned apps from all workspaces")
         self.__rb_unpinned_cur_ws = Gtk.RadioButton(group=self.__rb_unpinned_all_ws,
-                                    label="Display unpinned apps only from current workspace")
+                                                    label="Display unpinned apps only from current workspace")
 
         if build_gtk2:
             self.__table_unpinned_apps = Gtk.Table(rows=2, columns=1,
@@ -433,24 +433,24 @@ class DockPrefsWindow(Gtk.Window):
         self.__rb_win_thumb = Gtk.RadioButton(group=self.__rb_win_list,
                                               label="Show thumbnail previews of the app's windows")
         self.__rb_win_minmax = Gtk.RadioButton(group=self.__rb_win_list,
-                                              label="Minimize/restore all of the app's windows")
+                                               label="Minimize/restore all of the app's windows")
         self.__table_behaviour = Gtk.Table(rows=3, columns=1,
-                                         homogeneous=False)
+                                           homogeneous=False)
         self.__table_behaviour.attach(self.__rb_win_list,
-                                    0, 1, 0, 1,
-                                    Gtk.AttachOptions.FILL,
-                                    Gtk.AttachOptions.SHRINK,
-                                    2, 2)
+                                      0, 1, 0, 1,
+                                      Gtk.AttachOptions.FILL,
+                                      Gtk.AttachOptions.SHRINK,
+                                      2, 2)
         self.__table_behaviour.attach(self.__rb_win_thumb,
-                                    0, 1, 1, 2,
-                                    Gtk.AttachOptions.FILL,
-                                    Gtk.AttachOptions.SHRINK,
-                                    2, 2)
+                                      0, 1, 1, 2,
+                                      Gtk.AttachOptions.FILL,
+                                      Gtk.AttachOptions.SHRINK,
+                                      2, 2)
         self.__table_behaviour.attach(self.__rb_win_minmax,
-                                    0, 1, 2, 3,
-                                    Gtk.AttachOptions.FILL,
-                                    Gtk.AttachOptions.SHRINK,
-                                    2, 2)
+                                      0, 1, 2, 3,
+                                      Gtk.AttachOptions.FILL,
+                                      Gtk.AttachOptions.SHRINK,
+                                      2, 2)
 
         self.__notes_behaviour_tv = Gtk.TextView()
         self.__notes_behaviour_tv.set_wrap_mode(Gtk.WrapMode.WORD)
@@ -460,11 +460,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__notes_behaviour_tv.set_buffer(self.__notes_behaviour_tb)
         iter = self.__notes_behaviour_tb.get_start_iter()
         self.__notes_behaviour_tb.insert(iter,
-                                     "\nNotes:\nIf an app has only a single window open, a window list will not be " +
-                                     "displayed. Instead the window will be minimized/restored.\n" +
-                                     "Window thumbnail previews require Compiz")
+                                         "\nNotes:\nIf an app has only a single window open, a window list will not be " +
+                                         "displayed. Instead the window will be minimized/restored.\n" +
+                                         "Window thumbnail previews require Compiz")
         self.__frame_behaviour_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                   xscale=1.0, yscale=1.0)
+                                                     xscale=1.0, yscale=1.0)
         self.__frame_behaviour_align.set_padding(0, 0, 12, 0)
         self.__frame_behaviour_align.add(self.__table_behaviour)
         self.__frame_behaviour.add(self.__frame_behaviour_align)
@@ -555,13 +555,13 @@ class DockPrefsWindow(Gtk.Window):
             self.__table_dock_size.set_column_spacing(2)
 
             self.__table_dock_size.attach(self.__rb_variable_ds,
-                                             0, 0, 1, 1)
+                                          0, 0, 1, 1)
             self.__table_dock_size.attach(self.__rb_fixed_ds,
-                                             0, 1, 1, 1)
+                                          0, 1, 1, 1)
             self.__table_dock_size.attach(self.__hbox_fixed_size, 0, 2, 1, 1)
 
             self.__frame_dock_size_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                      xscale=1.0, yscale=1.0)
+                                                         xscale=1.0, yscale=1.0)
             self.__frame_dock_size_align.set_padding(0, 0, 12, 0)
             self.__frame_dock_size_align.add(self.__table_dock_size)
             self.__frame_dock_size.add(self.__frame_dock_size_align)
@@ -1075,7 +1075,6 @@ class DockPrefsWindow(Gtk.Window):
         else:
             self.__rb_win_minmax.set_active(True)
 
-
     def get_change_panel_color(self):
         """ Get whether the panel colour is to be changed according to the
             current wallpaper
@@ -1136,7 +1135,7 @@ class DockPrefsWindow(Gtk.Window):
             self.__rb_fixed_ds.set_sensitive(True)
             self.__rb_variable_ds.set_sensitive(True)
             self.__rb_fixed_ds.set_active(fixed_size)
-            self.rb_variable_ds_toggled(self.__rb_variable_ds) # ensure ui is updated
+            self.rb_variable_ds_toggled(self.__rb_variable_ds)  # ensure ui is updated
             self.__sb_fixed_size.set_value(num_icons)
 
         else:
@@ -1271,7 +1270,7 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         # convert delay to seconds
-        self.__sb_pdel.set_value(delay/1000)
+        self.__sb_pdel.set_value(delay / 1000)
 
     def get_popup_delay(self):
         """
@@ -1282,13 +1281,13 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         self.__sb_pdel.update()
-        return int(self.__sb_pdel.get_value()*1000)
+        return int(self.__sb_pdel.get_value() * 1000)
 
 
 def main():
     """main function - debug code can go here"""
-   # dpw = DockPrefsWindow(Gtk.main_quit)
-   # Gtk.main()
+    # dpw = DockPrefsWindow(Gtk.main_quit)
+    # Gtk.main()
 
 
 if __name__ == "__main__":

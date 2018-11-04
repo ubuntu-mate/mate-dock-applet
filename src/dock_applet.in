@@ -69,8 +69,7 @@ import dock
 
 from log_it import log_it as log_it
 
-drag_dropped = False   # nasty global var used to keep track of whether or not a drag-drop event has
-                       # occurred
+drag_dropped = False   # nasty global var used to keep track of whether or not a drag-drop event has occurred
 
 # define a list of keyboard shortcuts to be used to activate specific apps in the dock
 # '<Super>1' to '<Super>0' will correspond to apps 1 to 10
@@ -113,7 +112,7 @@ def applet_button_press(widget, event, the_dock):
     elif event.button == 1:
         dx, dy = the_dock.get_drag_coords()
         if (dx == -1) and (dy == -1):
-            the_dock.set_drag_coords (event.x, event.y)
+            the_dock.set_drag_coords(event.x, event.y)
 
 
 def applet_button_release(widget, event, the_dock):
@@ -292,13 +291,14 @@ def applet_motion_notify(widget, event, the_dock):
     if (dx != -1) and (dy != -1) and not the_dock.dragging:
         # we may need to begin a drag operation
 
-        if widget.drag_check_threshold (dx, dy, event.x, event.y):
+        if widget.drag_check_threshold(dx, dy, event.x, event.y):
             target_list = widget.drag_dest_get_target_list()
             context = widget.drag_begin_with_coordinates(target_list,
-                                                     Gdk.DragAction.MOVE, 1,
-                                                     event, -1, -1)
+                                                         Gdk.DragAction.MOVE, 1,
+                                                         event, -1, -1)
 
             applet_drag_begin(widget, context, the_dock)
+
 
 def applet_change_orient(applet, orient, the_dock):
     """Handler for applet change orientation event
@@ -512,6 +512,7 @@ def applet_drag_end(widget, context, the_dock):
     the_dock.dragging = False
     the_dock.clear_drag_coords()
 
+
 def applet_drag_motion(widget, context, x, y, time, the_dock):
     """ Handler for the drag-motion event
 
@@ -594,19 +595,21 @@ def applet_fill(applet):
 
     os.chdir(os.path.expanduser("~"))
 
-    applet.set_events(applet.get_events() | Gdk.EventMask.BUTTON_PRESS_MASK
-                                          | Gdk.EventMask.BUTTON_RELEASE_MASK
-                                          | Gdk.EventMask.POINTER_MOTION_MASK
-                                          | Gdk.EventMask.KEY_PRESS_MASK
-                                          | Gdk.EventMask.KEY_RELEASE_MASK
-                                          | Gdk.EventMask.SCROLL_MASK
-                                          | Gdk.EventMask.STRUCTURE_MASK)
+    applet.set_events(applet.get_events() |
+                      Gdk.EventMask.BUTTON_PRESS_MASK |
+                      Gdk.EventMask.BUTTON_RELEASE_MASK |
+                      Gdk.EventMask.POINTER_MOTION_MASK |
+                      Gdk.EventMask.KEY_PRESS_MASK |
+                      Gdk.EventMask.KEY_RELEASE_MASK |
+                      Gdk.EventMask.SCROLL_MASK |
+                      Gdk.EventMask.STRUCTURE_MASK)
 
     the_dock = dock.Dock(applet)
     the_dock.setup_dock()
 
     if the_dock.nice_sizing:
-        applet.set_flags(MatePanelApplet.AppletFlags.EXPAND_MAJOR | MatePanelApplet.AppletFlags.EXPAND_MINOR | \
+        applet.set_flags(MatePanelApplet.AppletFlags.EXPAND_MAJOR |
+                         MatePanelApplet.AppletFlags.EXPAND_MINOR |
                          MatePanelApplet.AppletFlags.FLAGS_NONE)
 
     if build_gtk2:
@@ -643,7 +646,6 @@ def applet_fill(applet):
         drag_tgts = [Gtk.TargetEntry.new("text/uri-list", 0, 0)]
         applet.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, drag_tgts,
                                Gdk.DragAction.MOVE)
-
 
         drag_tgts = [Gtk.TargetEntry.new("text/uri-list", 0, 0)]
         applet.drag_dest_set(Gtk.DestDefaults.MOTION, None, Gdk.DragAction.COPY)
@@ -707,7 +709,7 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
         self.shortcuts = []
 
     def get_mask_combinations(self, mask):
-        return [x for x in range(mask+1) if not (x & ~mask)]
+        return [x for x in range(mask + 1) if not (x & ~mask)]
 
     def map_modifiers(self):
         gdk_modifiers = (Gdk.ModifierType.CONTROL_MASK, Gdk.ModifierType.SHIFT_MASK, Gdk.ModifierType.MOD1_MASK,
@@ -740,7 +742,7 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
 
         # Request to receive key press/release reports from other windows that may not be using modifiers
         catch = error.CatchError(error.BadWindow)
-        self.window.change_attributes(onerror=catch, event_mask = X.KeyPressMask)
+        self.window.change_attributes(onerror=catch, event_mask=X.KeyPressMask)
         if catch.get_error():
             return False
 

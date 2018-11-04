@@ -119,7 +119,7 @@ class AboutWindow(Gtk.Window):
             gtk_ver = "GTK3"
 
         self.__lbl_title.set_markup("<b>MATE Dock Applet</b>")
-        self.__lbl_ver = Gtk.Label("V" + "@VERSION@ (" + gtk_ver+ ")")
+        self.__lbl_ver = Gtk.Label("V" + "@VERSION@ (" + gtk_ver + ")")
         self.__lbl_blank2 = Gtk.Label()
 
         self.__tb_gpl = Gtk.TextBuffer()
@@ -132,7 +132,7 @@ class AboutWindow(Gtk.Window):
                                        "under the terms of the GNU General Public Licence as published by the Free " +
                                        "Software Foundation; either version 3 of the Licence, or (at your option) " +
                                        "any later version. \n\nMATE Dock Applet is distributed in the hope that it " +
-                                       "will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty "+
+                                       "will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty " +
                                        "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General " +
                                        "Public Licence for more details.\n\nYou should have received a copy of the " +
                                        "GNU General Public Licence along with the applet; if not, write to the Free " +
@@ -213,7 +213,7 @@ class AboutWindow(Gtk.Window):
         self.add(self.__vbox)
 
         self.set_size_request(-1, 300)
-  
+
     def set_hints_text(self):
         """ Sets the text which is to be displayed
         """
@@ -222,61 +222,61 @@ class AboutWindow(Gtk.Window):
 
         if not build_gtk2:
             self.__hints_text_buf.insert_with_tags(the_iter,
-                                               "Drag and drop data between applications\n",
-                                               self.__tag_hint_bold)
+                                                   "Drag and drop data between applications\n",
+                                                   self.__tag_hint_bold)
             self.__hints_text_buf.insert_with_tags(the_iter, "\n""To easily drag and drop data from one application " +
-                                               "to another, drag the data from the first application onto the dock " +
-                                               "icon of the second application. The dock will activate the second " +
-                                               "application's window, allowing the data to be dragged onto it. " +
-                                               "Note: the second application must already be running.\n\n",
-                                               self.__tag_hint_normal)
+                                                   "to another, drag the data from the first application onto the dock " +
+                                                   "icon of the second application. The dock will activate the second " +
+                                                   "application's window, allowing the data to be dragged onto it. " +
+                                                   "Note: the second application must already be running.\n\n",
+                                                   self.__tag_hint_normal)
             self.__hints_text_buf.insert_with_tags(the_iter,
-                                               "Adding new applications to the dock\n",
-                                               self.__tag_hint_bold)
+                                                   "Adding new applications to the dock\n",
+                                                   self.__tag_hint_bold)
             self.__hints_text_buf.insert_with_tags(the_iter, "\n""Applications can be dragged and dropped from any menu " +
-                                               "applet (i.e. the Main Menu, Menu Bar, Advanced Menu, or Brisk Menu) " +
-                                               "directly onto the dock.\n\n",
-                                               self.__tag_hint_normal)
+                                                   "applet (i.e. the Main Menu, Menu Bar, Advanced Menu, or Brisk Menu) " +
+                                                   "directly onto the dock.\n\n",
+                                                   self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
                                                "Activating apps with keyboard shortcuts\n",
                                                self.__tag_hint_bold)
         self.__hints_text_buf.insert_with_tags(the_iter, "\n""Holding down the <Super> (i.e. Windows) and pressing " +
-                                               "a number key will activate an app in the dock. For example, "+
-                                               "pressing ""1"" will activate the first app, ""2"" the second etc. "+
-                                               "Pressing ""0"" will activate the tenth app. To activate apps 11 to 20, "+
+                                               "a number key will activate an app in the dock. For example, " +
+                                               "pressing ""1"" will activate the first app, ""2"" the second etc. " +
+                                               "Pressing ""0"" will activate the tenth app. To activate apps 11 to 20, " +
                                                "hold down the <Alt> key as well as <Super>.\n\n",
                                                self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
-                                              "Opening a new instance of a running application\n",
-                                              self.__tag_hint_bold)
+                                               "Opening a new instance of a running application\n",
+                                               self.__tag_hint_bold)
         self.__hints_text_buf.insert_with_tags(the_iter, "\nTo quickly open a new instance of a running " +
-                        "application either hold down the <shift> key while clicking the " +
-                        "application's dock icon, or middle click on the icon." +
-                         "\n\nNote: this works for most, but not all, apps.\n\n",
+                                               "application either hold down the <shift> key while clicking the " +
+                                               "application's dock icon, or middle click on the icon." +
+                                               "\n\nNote: this works for most, but not all, apps.\n\n",
                                                self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
-                                              "\nWindow switching using the mouse wheel\n",
-                                              self.__tag_hint_bold)
+                                               "\nWindow switching using the mouse wheel\n",
+                                               self.__tag_hint_bold)
         self.__hints_text_buf.insert_with_tags(the_iter,
-                        "\nTo quickly switch between an application's open windows, move " +
-                        "the mouse cursor over the apps's dock icon and use the mouse " +
-                        "scroll wheel. This will activate and display each window in " +
-                        "turn, changing workspaces as necessary.\n\n",
-                                                self.__tag_hint_normal)
+                                               "\nTo quickly switch between an application's open windows, move " +
+                                               "the mouse cursor over the apps's dock icon and use the mouse " +
+                                               "scroll wheel. This will activate and display each window in " +
+                                               "turn, changing workspaces as necessary.\n\n",
+                                               self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
-                                              "\nPanel colour changing\n",
-                                              self.__tag_hint_bold)
+                                               "\nPanel colour changing\n",
+                                               self.__tag_hint_bold)
         self.__hints_text_buf.insert_with_tags(the_iter, "\nWhen the applet sets the panel colour for the " +
-                        "first time, the result may not look exactly as expected. This is " +
-                        "because the default opacity of custom coloured MATE panels is set " +
-                        "extremely low, so that the panel appears almost transparent.\n\nTo remedy " +
-                        "this, simply right click the panel, select Properties and adjust the " +
-                        "panel opacity as required.",
-                                                self.__tag_hint_normal)
+                                               "first time, the result may not look exactly as expected. This is " +
+                                               "because the default opacity of custom coloured MATE panels is set " +
+                                               "extremely low, so that the panel appears almost transparent.\n\nTo remedy " +
+                                               "this, simply right click the panel, select Properties and adjust the " +
+                                               "panel opacity as required.",
+                                               self.__tag_hint_normal)
 
     def win_delete_event(self, widget, event, data=None):
         """Callback for the about window delete event
@@ -349,6 +349,7 @@ def main():
     Gtk.main()
 
     return
+
 
 if __name__ == "__main__":
     main()

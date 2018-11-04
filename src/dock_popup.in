@@ -107,7 +107,7 @@ class DockPopup(Gtk.Window):
             __panel_orient : the orienation of the MATE panel the applet is on
 
             __do_window_shaping : whether or not the window can be shaped,
-                                  e.g. have rounded corners. Depends on 
+                                  e.g. have rounded corners. Depends on
                                   Gtk3 and gi module >= 3.26.0
     """
 
@@ -204,8 +204,7 @@ class DockPopup(Gtk.Window):
             self.__do_window_shaping = False
         else:
             gi_ver = GObject.pygobject_version
-            self.__do_window_shaping = gi_ver[0] > 3 or \
-                                       ((gi_ver[0] == 3) and (gi_ver[1] >= 26))
+            self.__do_window_shaping = gi_ver[0] > 3 or ((gi_ver[0] == 3) and (gi_ver[1] >= 26))
 
         da_height = self.__border_width
         if self.__do_window_shaping and self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
@@ -441,9 +440,10 @@ class DockPopup(Gtk.Window):
         else:
             panel_space = 10
 
-        win_border = 15     # size of the border (in pixels) around the window
-                            # list where the mouse must remain, outside of which
-                            # the window list will hide
+        # size of the border (in pixels) around the window
+        # list where the mouse must remain, outside of which
+        # the window list will hide
+        win_border = 15
 
         screen = self.get_screen()
 
@@ -472,7 +472,7 @@ class DockPopup(Gtk.Window):
         if self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
             centre_pos = self.__app_y + (app_alloc.height / 2) - self.__scroll_adj
             win_x = self.__applet_x + self.__applet_w + panel_space
-            win_y = centre_pos - (self.__win_h/2)
+            win_y = centre_pos - (self.__win_h / 2)
 
             # adjust win_y in case we're off the top the screen, or the
             # monitor ...
@@ -489,12 +489,12 @@ class DockPopup(Gtk.Window):
             self.add_mouse_area(create_rect(self.__applet_x,
                                             win_y - win_border,
                                             win_x + self.__win_w + win_border,
-                                            self.__win_h + (2*win_border)))
+                                            self.__win_h + (2 * win_border)))
 
         elif self.__panel_orient == MatePanelApplet.AppletOrient.LEFT:
             centre_pos = self.__app_y + (app_alloc.height / 2) - self.__scroll_adj
             win_x = self.__applet_x - panel_space - self.__win_w
-            win_y = centre_pos - (self.__win_h/2)
+            win_y = centre_pos - (self.__win_h / 2)
 
             # adjust win_y in case we're off the top the screen...
             if win_y < mon_geom.y + panel_space:
@@ -531,7 +531,7 @@ class DockPopup(Gtk.Window):
             # extending to the panel
             self.add_mouse_area(create_rect(win_x - win_border,
                                             self.__applet_y,
-                                            self.__win_w + (2*win_border),
+                                            self.__win_w + (2 * win_border),
                                             win_y + self.__win_h + win_border))
         else:
             centre_pos = (self.__app_x + app_alloc.width / 2) - self.__scroll_adj
@@ -551,7 +551,7 @@ class DockPopup(Gtk.Window):
             # extendingto the panel
             self.add_mouse_area(create_rect(win_x - win_border,
                                             win_y - win_border,
-                                            self.__win_w + (2*win_border),
+                                            self.__win_w + (2 * win_border),
                                             self.__win_h + win_border +
                                             panel_space + app_alloc.height))
 
@@ -830,7 +830,7 @@ class DockPopup(Gtk.Window):
     def draw_bottom_border(self, drawing_area, event):
         """
             Draw the bottom of the window border with rounded corners
-        
+
         """
 
         if build_gtk2:
@@ -880,7 +880,7 @@ class DockPopup(Gtk.Window):
             ctx.line_to(alloc.width / 2 - self.__pointer_size + 1,
                         lower_extent)
             ctx.line_to(alloc.width / 2, lower_extent + self.__pointer_size - 1)
-            ctx.line_to(alloc.width/2 + self.__pointer_size - 1,
+            ctx.line_to(alloc.width / 2 + self.__pointer_size - 1,
                         lower_extent)
 
         ctx.line_to(right_extent - self.__line_curve, lower_extent)

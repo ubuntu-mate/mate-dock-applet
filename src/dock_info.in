@@ -121,34 +121,34 @@ class InfoWindow(Gtk.Window):
                                               "Opening a new instance of a running application\n",
                                               self.__tag_bold)
         self.__info_text_buf.insert(the_iter, "\nTo quickly open a new instance of a running " +
-                        "application either hold down the <shift> key while clicking the " +
-                        "application's dock icon, or middle click on the icon." +
-                         "\n\nNote: this works for most, but not all, apps.\n\n")
+                                              "application either hold down the <shift> key while clicking the " +
+                                              "application's dock icon, or middle click on the icon." +
+                                              "\n\nNote: this works for most, but not all, apps.\n\n")
 
         self.__info_text_buf.insert_with_tags(the_iter,
                                               "\nWindow switching using the mouse wheel\n",
                                               self.__tag_bold)
         self.__info_text_buf.insert(the_iter,
-                        "\nTo quickly switch between an application's open windows, move " +
-                        "the mouse cursor over the apps's dock icon and use the mouse " +
-                        "scroll wheel. This will activate and display each window in " +
-                        "turn, changing workspaces as necessary.\n\n")
+                                    "\nTo quickly switch between an application's open windows, move " +
+                                    "the mouse cursor over the apps's dock icon and use the mouse " +
+                                    "scroll wheel. This will activate and display each window in " +
+                                    "turn, changing workspaces as necessary.\n\n")
 
         self.__info_text_buf.insert_with_tags(the_iter,
                                               "\nPanel colour changing\n",
                                               self.__tag_bold)
         self.__info_text_buf.insert(the_iter, "\nWhen the applet sets the panel colour for the " +
-                        "first time, the result may not look exactly as expected. This is " +
-                        "because the default opacity of custom coloured MATE panels is set " +
-                        "extremely low, so that the panel appears almost transparent.\n\nTo remedy " +
-                        "this, simply right click the panel, select Properties and adjust the " +
-                        "panel opacity as required.")
+                                    "first time, the result may not look exactly as expected. This is " +
+                                    "because the default opacity of custom coloured MATE panels is set " +
+                                    "extremely low, so that the panel appears almost transparent.\n\nTo remedy " +
+                                    "this, simply right click the panel, select Properties and adjust the " +
+                                    "panel opacity as required.")
 
         if not self.__rfa:
             self.__info_text_buf.insert_with_tags(the_iter,
-                        "\nClick the 'Hints & Tips' button on the applet 'About' dialog box "
-                        "to see this information again.",
-                        self.__tag_bold)
+                                                  "\nClick the 'Hints & Tips' button on the applet 'About' dialog box "
+                                                  "to see this information again.",
+                                                  self.__tag_bold)
 
     def win_button_press(self, widget, event):
         """
@@ -170,6 +170,7 @@ def main():
     Gtk.main()
 
     return
+
 
 if __name__ == "__main__":
     main()

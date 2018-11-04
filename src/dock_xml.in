@@ -176,9 +176,9 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
 
     paoaws_el = ET.Element("pinned_apps_all_workspaces", paoaws="%s" % pa_on_all_ws)
 
-    dfs_el = ET.Element("dock_fixed_size", dfs="%d" %dock_fixed_size)
+    dfs_el = ET.Element("dock_fixed_size", dfs="%d" % dock_fixed_size)
 
-    ct_el = ET.Element("click_action", ca="%d" %click_action)
+    ct_el = ET.Element("click_action", ca="%d" % click_action)
 
     root.append(pa_el)
     root.append(ind_el)

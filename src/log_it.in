@@ -3,7 +3,8 @@
 import os.path
 import time
 
-def log_it(thing, newfile = False):
+
+def log_it(thing, newfile=False):
 
     """Provide a quick and dirty logging facility
 
@@ -19,7 +20,5 @@ def log_it(thing, newfile = False):
         else:
             thefile = open(filename, 'a')
 
-        thefile.write(time.strftime("%d %b %X: "+ thing + "\n"))
+        thefile.write(time.strftime("%d %b %X: " + thing + "\n"))
         thefile.close()
-
-

@@ -525,5 +525,6 @@ def main():
     dclw.is_terminal_app = False
     Gtk.main()
 
+
 if __name__ == "__main__":
     main()

@@ -8,9 +8,11 @@ import binascii
 import struct
 
 try:
-    import Image, ImageDraw
+    import Image
+    import ImageDraw
 except ImportError:
     from PIL import Image, ImageDraw
+
 
 def get_dom_color(filename):
     image = Image.open(filename)

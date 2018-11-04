@@ -111,14 +111,14 @@ def get_avg_color(pixbuf):
     nchannels = pixbuf.get_n_channels()
     # convert the pixels into an rgb array with alpha channel
     data = []
-    for y_count in range(height-1):
+    for y_count in range(height - 1):
         x_count = 0
         while x_count < (width * nchannels):
-            pix_red = pixels[x_count+(rowstride*y_count)]
-            pix_green = pixels[x_count+1+(rowstride*y_count)]
-            pix_blue = pixels[x_count+2+(rowstride*y_count)]
+            pix_red = pixels[x_count + (rowstride * y_count)]
+            pix_green = pixels[x_count + 1 + (rowstride * y_count)]
+            pix_blue = pixels[x_count + 2 + (rowstride * y_count)]
             if has_alpha:
-                pix_alpha = pixels[x_count+3+(rowstride*y_count)]
+                pix_alpha = pixels[x_count + 3 + (rowstride * y_count)]
             else:
                 pix_alpha = 255
 
@@ -140,9 +140,9 @@ def get_avg_color(pixbuf):
             num_counted += 1
 
     if num_counted > 0:
-        ravg = int(red/num_counted)
-        gavg = int(green/num_counted)
-        bavg = int(blue/num_counted)
+        ravg = int(red / num_counted)
+        gavg = int(green / num_counted)
+        bavg = int(blue / num_counted)
     else:
         # in case of a bad icon assume a grey average colour
         # this should fix a division by zero error that occurred at this point
@@ -213,7 +213,7 @@ class PulseTimer(object):
             return False
 
         self.timer_count += 1
-        if self.timer_count / int(1000/CONST_PULSE_DELAY) == 45:
+        if self.timer_count / int(1000 / CONST_PULSE_DELAY) == 45:
             # we've been pulsing for long enough, the user will be getting a headache
             self.remove_timer()
             self.app.queue_draw()
@@ -484,8 +484,7 @@ class DockedApp(object):
         if (self.bamf_app is not None) and (self.bamf_app.is_running()):
             for win in self.get_windows():
                 win_type = win.get_window_type()
-                if win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or \
-                    win.is_user_visible():
+                if win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or win.is_user_visible():
                     return win
 
         return None
@@ -547,7 +546,7 @@ class DockedApp(object):
 
         # no match, so just get basic info
         self.app_name = self.bamf_app.get_name()
-        self.icon_name = "wnck" # indicate we want to get the app icon from wnck
+        self.icon_name = "wnck"  # indicate we want to get the app icon from wnck
 
     def set_app_name(self, app_name):
         """sets the app name.
@@ -687,13 +686,13 @@ class DockedApp(object):
         for the_file in os.listdir(srch_dir):
             if (the_file.startswith("mda_")) and \
                (the_file.endswith(".desktop")):
-                the_de = DesktopEntry.DesktopEntry(srch_dir+the_file)
+                the_de = DesktopEntry.DesktopEntry(srch_dir + the_file)
 
                 # remove command line args from the Exec field of the .desktop
                 de_exec = the_de.getExec().split(None, 1)[0]
 
                 if self.cmd_line.find(de_exec) != -1:
-                    self.desktop_file = srch_dir+the_file
+                    self.desktop_file = srch_dir + the_file
                     return True
 
     def set_all_windows_icon_geometry(self, x, y, width, height):
@@ -977,7 +976,7 @@ class DockedApp(object):
             # draw the icon semi-transparently according to how far through the
             # animation we are
 
-            half_way = int(CONST_PULSE_STEPS/2)
+            half_way = int(CONST_PULSE_STEPS / 2)
             if self.pulse_step <= half_way:
                 alpha = 1.0 - (self.pulse_step / half_way)
             else:
@@ -1118,8 +1117,8 @@ class DockedApp(object):
                 break
 
         # work out an appropriate width for the counter
-        inset = height/2
-        radius = inset-1
+        inset = height / 2
+        radius = inset - 1
         if int(extents[2] + extents[0]) > int(radius):
             width = extents[2] + extents[0] + radius
         else:
@@ -1148,12 +1147,12 @@ class DockedApp(object):
 
         # do the drawing - attribution for the drawing code:
         # https://bazaar.launchpad.net/~unity-team/unity/trunk/view/head:/launcher/LauncherIcon.cpp
-        ctx.scale(self.drawing_area_size/draw_size,
-                  self.drawing_area_size/draw_size)
+        ctx.scale(self.drawing_area_size / draw_size,
+                  self.drawing_area_size / draw_size)
 
         ctx.move_to(left, height - 1 + adj)
-        ctx.arc(left, inset + adj, radius, 0.5 * math.pi, 1.5*math.pi)
-        ctx.arc(draw_size-inset-adj, inset + adj, radius, 1.5*math.pi, 0.5*math.pi)
+        ctx.arc(left, inset + adj, radius, 0.5 * math.pi, 1.5 * math.pi)
+        ctx.arc(draw_size - inset - adj, inset + adj, radius, 1.5 * math.pi, 0.5 * math.pi)
         ctx.line_to(left, height - 1 + adj)
         ctx.set_source_rgb(bred, bgreen, bblue)
         ctx.fill_preserve()
@@ -1162,8 +1161,8 @@ class DockedApp(object):
         ctx.stroke()
 
         # draw the text
-        ctx.move_to(left - inset + width/2 - (extents[0]+extents[2]/2),
-                    (height/2) + adj + extents[3]/2)
+        ctx.move_to(left - inset + width / 2 - (extents[0] + extents[2] / 2),
+                    (height / 2) + adj + extents[3] / 2)
         ctx.set_source_rgb(tred, tgreen, tblue)
         ctx.show_text(ctext)
 
@@ -1196,8 +1195,8 @@ class DockedApp(object):
             cr.curve_to(x + w, y + h, x + w, y + h, x + w - r, y + h)  # Curve to E
             cr.line_to(x + r, y + h)                    # Line to F
             cr.curve_to(x, y + h, x, y + h, x, y + h - r)  # Curve to G
-            cr.line_to(x, y+r)                      # Line to H
-            cr.curve_to(x, y, x, y, x+r, y)             # Curve to A
+            cr.line_to(x, y + r)                      # Line to H
+            cr.curve_to(x, y, x, y, x + r, y)             # Curve to A
 
         # drawing is done on a to scale of 64x64 pixels and then scaled
         # down to the fit the app's drawing area
@@ -1224,10 +1223,10 @@ class DockedApp(object):
         left = 8.5
         width = draw_size - left * 2   # width of the progress bar
 
-        top = (draw_size/8) * 5 + 0.5
+        top = (draw_size / 8) * 5 + 0.5
 
         ctx.save()
-        ctx.scale(self.drawing_area_size/draw_size, self.drawing_area_size/draw_size)
+        ctx.scale(self.drawing_area_size / draw_size, self.drawing_area_size / draw_size)
 
         # fill the interior with the background colour
         ctx.set_line_width(1)
@@ -1239,8 +1238,8 @@ class DockedApp(object):
         # fill part of the interior with a different colour, depending on
         # the progress value
         ctx.set_source_rgb(fred, fgreen, fblue)
-        rounded_rectangle(ctx, left + line_width-1, top,
-                         (width - (line_width-1)*2) * self.progress_val,
+        rounded_rectangle(ctx, left + line_width - 1, top,
+                          (width - (line_width - 1) * 2) * self.progress_val,
                           height, 7)
         ctx.fill()
 
@@ -1360,7 +1359,7 @@ class DockedApp(object):
             arrow_pb = arrow_pb.scale_simple(self.drawing_area_size / 2, self.drawing_area_size / 2,
                                              GdkPixbuf.InterpType.BILINEAR)
 
-            Gdk.cairo_set_source_pixbuf(ctx, arrow_pb, 0, self.drawing_area_size/4)
+            Gdk.cairo_set_source_pixbuf(ctx, arrow_pb, 0, self.drawing_area_size / 4)
 
         else:
             arrow_pb = self.drawing_area.render_icon(Gtk.STOCK_GO_UP, icon_size, None)
@@ -1403,7 +1402,7 @@ class DockedApp(object):
             arrow_pb = arrow_pb.scale_simple(self.drawing_area_size / 2, self.drawing_area_size / 2,
                                              GdkPixbuf.InterpType.BILINEAR)
 
-            Gdk.cairo_set_source_pixbuf(ctx, arrow_pb, self.drawing_area_size / 4, self.drawing_area_size/2)
+            Gdk.cairo_set_source_pixbuf(ctx, arrow_pb, self.drawing_area_size / 4, self.drawing_area_size / 2)
 
         ctx.paint()
 
@@ -1546,7 +1545,7 @@ class DockedApp(object):
         # escaped
         head, tail = os.path.split(cmd_line)
         if " " in head:
-            head = head.replace(" ", "\ ")
+            head = head.replace(" ", "\\ ")
             cmd_line = head + "/" + tail
         app_info = Gio.AppInfo.create_from_commandline(cmd_line,
                                                        None,
@@ -1587,7 +1586,7 @@ class DockedApp(object):
             # indicate we want startup notification
             self.startup_id = alc.get_startup_notify_id(self.desktop_ai, [])
 
-            self.desktop_ai.launch_action(self.rc_actions[act_no-1], alc)
+            self.desktop_ai.launch_action(self.rc_actions[act_no - 1], alc)
             self.start_pulsing()
 
     def get_rc_action(self, act_no):
@@ -1603,7 +1602,7 @@ class DockedApp(object):
         """
 
         if len(self.rc_actions) >= act_no:
-            return True, self.desktop_ai.get_action_name(self.rc_actions[act_no-1])
+            return True, self.desktop_ai.get_action_name(self.rc_actions[act_no - 1])
         else:
             return False, ""
 

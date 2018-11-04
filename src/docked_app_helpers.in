@@ -70,6 +70,7 @@ class ActiveBgType:
     GRADIENT = 0
     ALPHAFILL = 1
 
+
 # static list to hold the rgb colour elements to use when drawing
 # and indicator and we can't get the theme highlight colour i.e. when
 # using gtk2
@@ -78,14 +79,14 @@ fallback_ind_col = [0.9, 0.9, 0.9]
 
 def get_theme_highlight_col(applet):
     """
-        get the current theme's highlight colour (Gtk3) or the fallback colour 
+        get the current theme's highlight colour (Gtk3) or the fallback colour
         (Gtk2)
-        
+
     Args:
-        applet : the dock applet 
+        applet : the dock applet
     :return:
         a tuple containing the r,g,b values (0-1.0) of the colors
-         
+
     """
 
     if build_gtk2:
@@ -135,8 +136,7 @@ class IndicatorDrawer(object):
 
     """
 
-    extra_s = 0  # default value for most indicators - those which require more
-                 # must override this
+    extra_s = 0  # default value for most indicators - those which require more must override this
 
     def __init__(self, context, size, orient, num_ind=0):
         """ Constructor
@@ -300,8 +300,8 @@ class BarInd(IndicatorDrawer):
                     [self._size - 0.5, self._size - 0.5], [self._size - 2.5, self._size - 0.5]]
 
         elif self._orient == MatePanelApplet.AppletOrient.DOWN:
-            rect = [[0.5, 0.5], [self._size-0.5, 0.5],
-                    [self._size-0.5, 2.5], [0.5, 2.5]]
+            rect = [[0.5, 0.5], [self._size - 0.5, 0.5],
+                    [self._size - 0.5, 2.5], [0.5, 2.5]]
 
         else:
             rect = [[0.5, self._size - 2.5], [self._size - 0.5, self._size - 2.5],
@@ -626,7 +626,7 @@ class ThemeTriInd(IndicatorDrawer):
 class SubwayInd(IndicatorDrawer):
     """
         Indicator which mimics the Metro look
-                   
+
     """
 
     extra_s = 4  # this type of indicator requires extra space
@@ -636,7 +636,7 @@ class SubwayInd(IndicatorDrawer):
         Args (additional):
             surface : the cairo surface the indicators are being drawn on
             active  : bool - whether or not the app is active
-            
+
         """
         super().__init__(context, size, orient, num_ind)
 
@@ -648,13 +648,13 @@ class SubwayInd(IndicatorDrawer):
     def draw(self):
         """
         The first open window of an app is drawn as for ThemeBarInd.
-        
+
         If more than one indicator is required, the way it is drawn depends
         on whether or not the app active. If so, the last three columns (or
         rows, depending on the applet orientation) of the cairo surface
         are copied and drawn to the right (or below) the app icon. If not
         active, the rightmost part of the bar is drawn in a darker colour
-        
+
         """
 
         b_o = 0.5  # orgin of the bar in cairo units
@@ -682,7 +682,7 @@ class SubwayInd(IndicatorDrawer):
                     [self._size - b_o, b_w], [b_o, b_w]]
 
         else:
-            rect = [[b_o, self._size - b_w], [self._size-b_o, self._size - b_w],
+            rect = [[b_o, self._size - b_w], [self._size - b_o, self._size - b_w],
                     [self._size - b_o, self._size - b_o], [b_o, self._size - b_o]]
 
         self._context.move_to(rect[0][0], rect[0][1])
@@ -739,11 +739,11 @@ class SubwayInd(IndicatorDrawer):
                 self._context.set_source_rgba(0, 0, 0, 1)
                 if self._orient == MatePanelApplet.AppletOrient.DOWN or \
                    self._orient == MatePanelApplet.AppletOrient.UP:
-                    self._context.move_to(rect[1][0]-darken_size, rect[1][1])
-                    self._context.line_to(rect[1][0]-darken_size, rect[2][1])
+                    self._context.move_to(rect[1][0] - darken_size, rect[1][1])
+                    self._context.line_to(rect[1][0] - darken_size, rect[2][1])
                 else:
-                    self._context.move_to(rect[2][0], rect[2][1]-darken_size)
-                    self._context.line_to(rect[3][0], rect[2][1]-darken_size)
+                    self._context.move_to(rect[2][0], rect[2][1] - darken_size)
+                    self._context.line_to(rect[3][0], rect[2][1] - darken_size)
 
                 self._context.stroke()
                 self._context.set_operator(cairo.OPERATOR_OVER)
@@ -769,12 +769,12 @@ class SubwayInd(IndicatorDrawer):
 
 
 def ind_extra_s(indtype):
-    """ Convenience function for returning the extra space required by an indicator 
-    
+    """ Convenience function for returning the extra space required by an indicator
+
     Args: IndicatorType : The type of indicator e.g. ThemeTriInd
-    
+
     Returns : int
-    
+
     """
 
     if indtype == IndicatorType.LIGHT:
