@@ -48,8 +48,11 @@ gi.require_version("MatePanelApplet", "4.0")
 
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
+from gi.repository import GdkPixbuf
+from gi.repository import Gdk
 import cairo
 import math
+import os
 
 
 class IndicatorType:
@@ -65,10 +68,12 @@ class IndicatorType:
     SUBWAY = 8   # Metro type
 
 
-class ActiveBgType:
-    """Class to define the active icon background types"""
+class IconBgType:
+    """Class to define the icon background types"""
     GRADIENT = 0
     ALPHAFILL = 1
+    UNITY = 2
+    UNITY_FLAT = 3
 
 
 # static list to hold the rgb colour elements to use when drawing
@@ -800,8 +805,8 @@ def ind_extra_s(indtype):
 ###########################################################################################
 
 
-class ActiveBackgroundDrawer(object):
-    """ Base class for drawing the background of active dock apps
+class BackgroundDrawer(object):
+    """ Base class for drawing the background of dock apps
 
      Provide a base class which can be used for drawing various type of
      backgrounds onto Cairo surfaces
@@ -843,7 +848,7 @@ class ActiveBackgroundDrawer(object):
         raise NotImplementedError("Must be implemented by ActiveBackgroundDrawer descendents")
 
 
-class DefaultBackgroundDrawer(ActiveBackgroundDrawer):
+class DefaultBackgroundDrawer(BackgroundDrawer):
     """
         Class to draw the default active background, a colour gradient based on the
         the average colour of the app's icon
@@ -891,7 +896,7 @@ class DefaultBackgroundDrawer(ActiveBackgroundDrawer):
         self._context.fill()
 
 
-class AlphaFillBackgroundDrawer(ActiveBackgroundDrawer):
+class AlphaFillBackgroundDrawer(BackgroundDrawer):
     """
         Fills the background with a specified colour and opacity
     """
@@ -921,3 +926,158 @@ class AlphaFillBackgroundDrawer(ActiveBackgroundDrawer):
         self._context.rectangle(0, 0, self._size, self._size)
         self._context.set_source_rgba(self._red, self._green, self._blue, self.alpha)
         self._context.fill()
+
+
+class UnityFlatBackgroundDrawer(BackgroundDrawer):
+    """
+        A Unity type flat backgroud (i.e. without the 'button' look)
+
+        Running apps have their background filled with a specified colour
+        (which will be based on the icon)
+
+        Contains an extra method to be called after the app's icon
+        has been drawn which will add a highlight
+    """
+
+    bg_surf = None
+    shine_surf = None
+    surf_size = 0
+
+    def __init__(self, context, size, orient, r, g, b, running, scale_factor):
+        """ Constructor ...
+
+        Args (in addition to those of the base class):
+            r : the red component of the average colour
+            g : the green component of the average colour
+            b : the blue component of the average colour
+            running : whether or not the app is running
+            scale_factor : 1 = standard def, higher values means HiDpi
+        """
+
+        super().__init__(context, size, orient)
+
+        self._red = r
+        self._green = g
+        self._blue = b
+
+        self._running = running
+        self._scale_factor = scale_factor
+
+        # load the .svgs used to draw the background and the shine_surf if
+        # they haven't already been loaded, or they need to be reloaded
+        # at a different size
+        if (UnityFlatBackgroundDrawer.bg_surf is None) or (UnityFlatBackgroundDrawer.surf_size != size):
+            self.load_bg()
+            self.load_shine()
+            UnityFlatBackgroundDrawer.surf_size = size
+
+    def load_shine(self):
+        """
+            Load the background shine and convert to a cairo surface
+        """
+
+        d, f = os.path.split(os.path.abspath(__file__))
+
+        if self._scale_factor == 1:
+            fn = "assets/unity_dock_shine_56.svg"
+        else:
+            fn = "assets/unity_dock_shine_168.svg"  # load hipi version
+        pb = GdkPixbuf.Pixbuf.new_from_file_at_size("%s/%s" % (d, fn),
+                                                    self._size * 0.875, self._size * 0.875)
+
+        UnityFlatBackgroundDrawer.shine_surf = Gdk.cairo_surface_create_from_pixbuf(pb, 1, None)
+
+    def load_bg(self):
+        """
+            Load the background and convert to a cairo surface
+        """
+
+        d, f = os.path.split(os.path.abspath(__file__))
+        if self._scale_factor == 1:
+            fn = "assets/unity_dock_bg_56.svg"
+        else:
+            fn = "assets/unity_dock_bg_168.svg"  # load hipi version
+        pb = GdkPixbuf.Pixbuf.new_from_file_at_size("%s/%s" % (d, fn),
+                                                    self._size * 0.875, self._size * 0.875)
+
+        UnityFlatBackgroundDrawer.bg_surf = Gdk.cairo_surface_create_from_pixbuf(pb, 1, None)
+
+    def draw(self):
+        """
+            Draw the background
+        """
+
+        offset = self._size / 16
+
+        if self._running:
+            self._context.set_source_rgb(self._red, self._green, self._blue)
+            self._context.mask_surface(UnityFlatBackgroundDrawer.bg_surf, offset, offset)
+            self._context.fill()
+
+    def draw_shine(self):
+        """
+            Draw the shine
+        """
+        offset = self._size / 16
+        self._context.set_source_surface(UnityFlatBackgroundDrawer.shine_surf, 4, 4)
+        self._context.paint()
+
+
+class UnityBackgroundDrawer(UnityFlatBackgroundDrawer):
+    """
+        A Unity type backgroud (i.e. Unity Flat bur with the 'button' look)
+
+        Running apps have their background filled with a specified colour
+        (which will be based on the icon)
+
+    """
+
+    edge_surf = None
+    edge_size = 0
+
+    def __init__(self, context, size, orient, r, g, b, running, scale_factor):
+        """ Constructor ...
+
+        Args (in addition to those of the base class):
+            r : the red component of the average colour
+            g : the green component of the average colour
+            b : the blue component of the average colour
+            running : whether or not the app is running
+        """
+
+        super().__init__(context, size, orient, r, g, b, running, scale_factor)
+
+        if (UnityBackgroundDrawer.edge_surf is None) or (UnityBackgroundDrawer.edge_size != size):
+            self.load_edge()
+            UnityBackgroundDrawer.edge_size = size
+
+    def load_edge(self):
+        """
+            Load the background shine and convert to a cairo surface
+        """
+
+        d, f = os.path.split(os.path.abspath(__file__))
+        if self._scale_factor == 1:
+            fn = "assets/unity_dock_edge_56.svg"
+        else:
+            fn = "assets/unity_dock_edge_168.svg"  # load hipi version
+
+        pb = GdkPixbuf.Pixbuf.new_from_file_at_size("%s/%s" % (d, fn),
+                                                    self._size * 0.875, self._size * 0.875)
+
+        UnityBackgroundDrawer.edge_surf = Gdk.cairo_surface_create_from_pixbuf(pb, 1, None)
+
+    def draw(self):
+        """
+            Draw the background
+        """
+
+        offset = self._size / 16
+
+        if self._running:
+            self._context.set_source_rgb(self._red, self._green, self._blue)
+            self._context.mask_surface(UnityFlatBackgroundDrawer.bg_surf, offset, offset)
+            self._context.fill()
+        else:
+            self._context.set_source_surface(UnityBackgroundDrawer.edge_surf, 4, 4)
+            self._context.paint()

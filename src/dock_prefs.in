@@ -106,6 +106,8 @@ class DockPrefsWindow(Gtk.Window):
                           is pressed
             app         : a docked_app from which we can generate previews of the
                           various indicator and background settings
+            preview_size : the size of preview of indicator and background
+                           settings
 
         """
 
@@ -114,14 +116,16 @@ class DockPrefsWindow(Gtk.Window):
         self.set_skip_taskbar_hint(True)  # we don't want to be in the taskbar
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
 
-        self.PREVIEW_SIZE = 48    # the size of the preview of indicator and background settings
+        # define the size of the preview window drawing area. It should match_bamf_app_to_dock_app
+        # the size of the dock apps drawing areas
+        self.PREVIEW_SIZE = app.drawing_area_size
 
         self.connect("delete-event", self.win_delete_event)
 
         self.__app = app
 
-        self.__app_pb = app.app_pb.scale_simple(self.PREVIEW_SIZE - 6, self.PREVIEW_SIZE - 6,
-                                                GdkPixbuf.InterpType.BILINEAR)
+        self.__app_pb = app.app_pb
+
         # setup the window contents
         self.set_border_width(5)
         if build_gtk2:
@@ -297,16 +301,24 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_ind_type_align.add(self.__tbl_ind_type)
         self.__frame_ind_type.add(self.__frame_ind_type_align)
 
-        self.__frame_bg = create_frame("Active icon background")
+        self.__frame_bg = create_frame("Icon background")
         self.__rb_grad_bg = Gtk.RadioButton(label="Gradient fill")
         self.__rb_fill_bg = Gtk.RadioButton(group=self.__rb_grad_bg,
                                             label="Solid fill")
+        self.__rb_unity_bg = Gtk.RadioButton(group=self.__rb_grad_bg,
+                                             label="Unity")
+        self.__rb_unityflat_bg = Gtk.RadioButton(group=self.__rb_grad_bg,
+                                                 label="Unity flat")
         self.__rb_grad_bg.connect("toggled", self.setting_toggled)
         self.__rb_fill_bg.connect("toggled", self.setting_toggled)
+        self.__rb_unity_bg.connect("toggled", self.setting_toggled)
+        self.__rb_unityflat_bg.connect("toggled", self.setting_toggled)
 
         self.__vbox_bg_type = self.create_vbox
         self.__vbox_bg_type.add(self.__rb_grad_bg)
         self.__vbox_bg_type.add(self.__rb_fill_bg)
+        self.__vbox_bg_type.add(self.__rb_unity_bg)
+        self.__vbox_bg_type.add(self.__rb_unityflat_bg)
         self.__frame_bg_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                               xscale=1.0, yscale=1.0)
         self.__frame_bg_align.set_padding(0, 0, 12, 0)
@@ -760,10 +772,6 @@ class DockPrefsWindow(Gtk.Window):
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, app_size, self.PREVIEW_SIZE)
         ctx = cairo.Context(surface)
 
-        # draw the app icon
-        Gdk.cairo_set_source_pixbuf(ctx, self.__app_pb, 3, 3)
-        ctx.paint()
-
         # draw the active background - first we need the colour of the background in cairo
         # values
         red = self.__app.highlight_color.r / 255
@@ -773,11 +781,35 @@ class DockPrefsWindow(Gtk.Window):
         if self.__rb_grad_bg.get_active():
             bgd = DefaultBackgroundDrawer(ctx, self.PREVIEW_SIZE,
                                           MatePanelApplet.AppletOrient.UP, red, green, blue)
-        else:
+        elif self.__rb_fill_bg.get_active():
             bgd = AlphaFillBackgroundDrawer(ctx, self.PREVIEW_SIZE,
                                             MatePanelApplet.AppletOrient.UP, red, green, blue, 0.5)
+        elif self.__rb_unity_bg.get_active():
+            bgd = UnityBackgroundDrawer(ctx, self.PREVIEW_SIZE,
+                                        MatePanelApplet.AppletOrient.UP, red, green, blue, False, 1)
+        else:
+            bgd = UnityFlatBackgroundDrawer(ctx, self.PREVIEW_SIZE,
+                                            MatePanelApplet.AppletOrient.UP, red, green, blue, True, 1)
 
         bgd.draw()
+
+        # draw the app icon
+        if (self.__rb_unity_bg.get_active()) or (self.__rb_unityflat_bg.get_active()):
+            pb_size = self.PREVIEW_SIZE
+            pb_size = self.PREVIEW_SIZE * 3 / 4
+            # create scale down pixbuf and use that
+            pb_small = self.__app_pb.scale_simple(pb_size, pb_size, GdkPixbuf.InterpType.BILINEAR)
+
+            offset = self.PREVIEW_SIZE / 2 - pb_size / 2
+            Gdk.cairo_set_source_pixbuf(ctx, pb_small, offset, offset)
+        else:
+            offset = self.PREVIEW_SIZE / 2 - self.__app_pb.props.width / 2
+            Gdk.cairo_set_source_pixbuf(ctx, self.__app_pb, offset, offset)
+
+        ctx.paint()
+
+        if (self.__rb_unity_bg.get_active()) or (self.__rb_unityflat_bg.get_active()):
+            bgd.draw_shine()
 
         # draw the indicator(s) if necessary
         if not self.__rb_no_ind.get_active():
@@ -938,25 +970,33 @@ class DockPrefsWindow(Gtk.Window):
     def set_bg(self, bg):
         """ Set the active icon background type
 
-        Args : bg - an ActiveBgType
+        Args : bg - an IconBgType
         """
 
-        if bg == ActiveBgType.GRADIENT:
+        if bg == IconBgType.GRADIENT:
             self.__rb_grad_bg.set_active(True)
-        else:
+        elif bg == IconBgType.ALPHAFILL:
             self.__rb_fill_bg.set_active(True)
+        elif bg == IconBgType.UNITY:
+            self.__rb_unity_bg.set_active(True)
+        else:
+            self.__rb_unityflat_bg.set_active(True)
 
     def get_bg(self):
         """ Gets the currently selected active icon background type
 
-        Returns : An ActiveBgType
+        Returns : An IconBgType
 
         """
 
         if self.__rb_grad_bg.get_active():
-            return ActiveBgType.GRADIENT
+            return IconBgType.GRADIENT
+        elif self.__rb_fill_bg.get_active():
+            return IconBgType.ALPHAFILL
+        elif self.__rb_unity_bg.get_active():
+            return IconBgType.UNITY
         else:
-            return ActiveBgType.ALPHAFILL
+            return IconBgType.UNITY_FLAT
 
     def set_multi_ind(self, use_multi_ind):
         """Sets whether or not to display multiple indicators

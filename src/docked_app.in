@@ -77,6 +77,7 @@ import os
 import os.path
 import subprocess
 import re
+import colorsys
 
 from collections import namedtuple
 
@@ -87,6 +88,65 @@ import window_control
 from log_it import log_it as log_it
 
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
+
+
+def get_backlight_color(pixbuf):
+    """
+
+    Read all of the pixel values in a pixbuf and calculate an appropriate
+    colour to use as an icon backlight
+
+    Code adapated from Unity desktop (https://code.launchpad.net/~unity-team/unity/trunk)
+    specifically from LauncherIcon::ColorForIcon in LauncherIcon.cpp
+
+    Args:
+        pixbuf  : a pixbuf object containing the image
+
+    Returns:
+        a tuple of r,g,b value (0-255)
+    """
+
+    width = pixbuf.props.width
+    rowstride = pixbuf.props.rowstride
+    height = pixbuf.props.height
+
+    img = pixbuf.get_pixels()
+    r_total = g_total = b_total = 0
+    total = 0.0
+
+    for w_count in range(width):
+        for h_count in range(height):
+            pix_index = (h_count * rowstride + w_count * 4)
+            pix_r = img[pix_index]
+            pix_g = img[pix_index + 1]
+            pix_b = img[pix_index + 2]
+            pix_a = img[pix_index + 3]
+
+            saturation = float(max(pix_r, max(pix_g, pix_b)) - min(pix_r, min(pix_g, pix_b))) / 255.0
+            relevance = .1 + .9 * (float(pix_a) / 255) * saturation
+
+            r_total += (pix_r * relevance) % 256
+            g_total += (pix_g * relevance) % 256
+            b_total += (pix_b * relevance) % 256
+            total += relevance * 255.0
+
+    r = r_total / total
+    g = g_total / total
+    b = b_total / total
+
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+    if s > 0.15:
+        s = 0.65
+
+    v = 0.6666
+    # Note: Unty uses v = 0.9, but this produces a very bright value which
+    # is reduced elsewhere. We use 0.6666 to reduce it here
+    br, bg, bb = colorsys.hsv_to_rgb(h, s, v)
+
+    v = 1.0
+    gr, gg, gb = colorsys.hsv_to_rgb(h, s, v)
+
+    return int(br * 255), int(bg * 255), int(bb * 255)
 
 
 def get_avg_color(pixbuf):
@@ -405,7 +465,6 @@ class DockedApp(object):
 
         self.app_pb = None
         self.app_surface = None
-
         self.highlight_color = ColorTup(r=0.0, g=0.0, b=0.0)
 
         self.is_active = False
@@ -416,7 +475,7 @@ class DockedApp(object):
         # set defaults
         self.indicator = IndicatorType.LIGHT     # light indicator
         self.multi_ind = False                   # single indicator
-        self.active_bg = ActiveBgType.GRADIENT
+        self.active_bg = IconBgType.GRADIENT
 
         self.attention_type = dock_prefs.AttentionType.BLINK
 
@@ -953,24 +1012,45 @@ class DockedApp(object):
 
         ctx = cairo.Context(offscreen_surface)
 
-        if self.is_active and (self.is_dragee is False):
-
+        if self.is_dragee is False:
             # convert the highlight values to their cairo equivalents
             red = self.highlight_color.r / 255
             green = self.highlight_color.g / 255
             blue = self.highlight_color.b / 255
 
-            if self.active_bg == ActiveBgType.GRADIENT:
-                dbgd = DefaultBackgroundDrawer(ctx, self.drawing_area_size,
-                                               self.applet_orient, red, green, blue)
-            else:
-                dbgd = AlphaFillBackgroundDrawer(ctx, self.drawing_area_size,
-                                                 self.applet_orient, red, green, blue, 0.33)
+            dbgd = None
 
-            dbgd.draw()
+            if self.applet_win is not None:
+                scale_factor = self.applet_win.get_scale_factor()
+            else:
+                scale_factor = 1
+
+            if self.active_bg == IconBgType.UNITY_FLAT:
+                dbgd = UnityFlatBackgroundDrawer(ctx, self.drawing_area_size,
+                                                 self.applet_orient, red, green, blue,
+                                                 self.is_running(), scale_factor)
+            elif self.active_bg == IconBgType.UNITY:
+                dbgd = UnityBackgroundDrawer(ctx, self.drawing_area_size,
+                                             self.applet_orient, red, green, blue,
+                                             self.is_running(), scale_factor)
+            elif self.is_active:
+                if self.active_bg == IconBgType.GRADIENT:
+                    dbgd = DefaultBackgroundDrawer(ctx, self.drawing_area_size,
+                                                   self.applet_orient, red, green, blue)
+                else:
+                    dbgd = AlphaFillBackgroundDrawer(ctx, self.drawing_area_size,
+                                                     self.applet_orient, red, green, blue, 0.5)
+
+            if dbgd is not None:
+                dbgd.draw()
 
         # draw the app icon
-        ctx.set_source_surface(self.app_surface, 3, 3)
+        if self.active_bg in [IconBgType.UNITY_FLAT, IconBgType.UNITY]:
+            pb_size = (self.drawing_area_size) * 0.75
+            offset = self.drawing_area_size / 2 - pb_size / 2
+            ctx.set_source_surface(self.app_surface, offset, offset)
+        else:
+            ctx.set_source_surface(self.app_surface, 3, 3)
 
         if self.is_pulsing:
             # draw the icon semi-transparently according to how far through the
@@ -991,6 +1071,13 @@ class DockedApp(object):
             ctx.paint_with_alpha(0.0)
         else:
             ctx.paint()
+            ctx.save()
+            if self.active_bg == IconBgType.UNITY_FLAT:
+                if self.is_running():
+                    dbgd.draw_shine()
+            elif self.active_bg == IconBgType.UNITY:
+                dbgd.draw_shine()
+            ctx.restore()
 
         if (self.has_mouse is True) and ((self.is_dragee is False) and (self.scroll_dir == ScrollType.SCROLL_NONE)):
             # lighten the icon
@@ -1412,7 +1499,7 @@ class DockedApp(object):
 
         self.app_pb = pixbuf
 
-        rht, ght, bht = self.highlight_color = get_avg_color(pixbuf)
+        rht, ght, bht = self.highlight_color = get_backlight_color(pixbuf)
         self.highlight_color = ColorTup(r=rht, g=ght, b=bht)
 
     def set_surface(self, surface):

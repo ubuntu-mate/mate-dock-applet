@@ -544,6 +544,7 @@ class Dock(object):
         self.dds_done = False
         self.ns_app_removed = None
         self.read_settings()
+
         self.set_fallback_bar_colour()
         self.max_num_actions = 16
 
@@ -656,6 +657,7 @@ class Dock(object):
             Get the id of the panel the applet is on
             Do the initial panel colour change (if necessary)
             Set the minimise locations of open windows
+            Get the applet window
 
         """
 
@@ -707,6 +709,14 @@ class Dock(object):
                 self.write_settings()
 
         self.dds_done = True
+
+        if build_gtk2:
+            applet_win = self.applet.window
+        else:
+            applet_win = self.applet.get_window()
+        for app in self.app_list:
+            app.applet_win = applet_win
+
         return False        # cancel the timer
 
     def get_panel_id(self):
@@ -1984,6 +1994,8 @@ class Dock(object):
            fixed_size_changes:
 
             old_ind = self.indicator
+            old_bg = self.active_bg
+
             self.indicator = self.prefs_win.get_indicator_type()
             self.multi_ind = self.prefs_win.get_multi_ind()
             self.show_all_apps = self.prefs_win.get_show_unpinned_apps_on_all_ws()
@@ -2005,7 +2017,16 @@ class Dock(object):
             if self.panel_act_list != self.prefs_win.get_pan_act():
                 self.panel_act_list = self.prefs_win.get_pan_act()
 
+            old_bg = self.active_bg
             self.active_bg = self.prefs_win.get_bg()
+            # if we're changing to or from a Unity background we need
+            # to reload docked app icons
+            unity_bg_types = [docked_app_helpers.IconBgType.UNITY, docked_app_helpers.IconBgType.UNITY_FLAT]
+            if (old_bg in unity_bg_types and self.active_bg not in unity_bg_types) or \
+               (old_bg not in unity_bg_types and self.active_bg in unity_bg_types):
+                size = self.applet.get_size()
+                for app in self.app_list:
+                    self.set_app_icon(app, size)
 
             self.fallback_bar_col = self.prefs_win.get_fallback_bar_col()
             self.set_fallback_bar_colour()
@@ -2061,8 +2082,7 @@ class Dock(object):
                 app.set_multi_ind(self.multi_ind)
                 app.set_active_bg(self.active_bg)
                 app.set_attention_type(self.attention_type)
-                if app.is_running():
-                    app.queue_draw()
+                app.queue_draw()
             self.show_or_hide_app_icons()
             self.show_or_hide_indicators()
 
@@ -3110,25 +3130,29 @@ class Dock(object):
             size : the required icon size in pixels
         """
 
+        # if we're emulating the Unity look, icons need to be 66% smaller
+        orig_size = size
+
+        if self.active_bg in [docked_app_helpers.IconBgType.UNITY, docked_app_helpers.IconBgType.UNITY_FLAT]:
+            icon_size = (size * 3) / 4
+        else:
+            icon_size = size - 6
+
         if size >= 56:
-            icon_size = 64
             stock_size = Gtk.IconSize.DIALOG
         elif size >= 40:
-            icon_size = 48
             stock_size = Gtk.IconSize.DIALOG
         elif size >= 28:
-            icon_size = 32
             stock_size = Gtk.IconSize.DND
         elif size >= 20:
-            icon_size = 24
             stock_size = Gtk.IconSize.LARGE_TOOLBAR
         else:
-            icon_size = 16
             stock_size = Gtk.IconSize.BUTTON
 
         dock_app.icon_filename = None
         scale_factor = self.box.get_scale_factor()
         pixbuf = None
+        pixbuf_s = None
 
         if dock_app.icon_name == "wnck":
             # we need to get the icon from wnck
@@ -3151,10 +3175,12 @@ class Dock(object):
                 the_icon = dai.get_icon()
                 if the_icon is Gio.ThemedIcon:
                     icon_info = self.icontheme.choose_icon_for_scale(the_icon.get_names(),
-                                                                     icon_size, scale_factor, 0)
+                                                                     icon_size, scale_factor,
+                                                                     Gtk.IconLookUpFlags.FORCE_SIZE)
                 else:
                     icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
-                                                                     icon_size, scale_factor, 0)
+                                                                     icon_size, scale_factor,
+                                                                     Gtk.IconLookupFlags.FORCE_SIZE)
 
                 if icon_info is not None:
                     dock_app.icon_filename = icon_info.get_filename()
@@ -3219,15 +3245,15 @@ class Dock(object):
                         icon_file = "/usr/share/pixmaps/%s.png" % icon_name.lower()
 
                 # final attempt - look in ~/.local/share/icons for the icon
-                if icon_file == "":
-                    if os.path.isfile(os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)):
-                        icon_file = os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)
+            if icon_file == "":
+                if os.path.isfile(os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)):
+                    icon_file = os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)
 
                 # if we've found an icon, load it
                 if icon_file != "":
-                        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon_file,
-                                                                        icon_size * scale_factor,
-                                                                        icon_size * scale_factor)
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon_file,
+                                                                    icon_size * scale_factor,
+                                                                    icon_size * scale_factor)
                 else:
                     # if not, use a stock icon to represent the app
                     pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE,
@@ -3237,16 +3263,8 @@ class Dock(object):
         # we should now have an icon - either the app's own icon or the
         # stock_execute ..
 
-        # scale the icon to the size that is available
-        # Note - we're allowing for a 3 pixel border all around the icon,
-        # hence using size-6
-        pixbuf = pixbuf.scale_simple(scale_factor * (size - 6),
-                                     scale_factor * (size - 6),
-                                     GdkPixbuf.InterpType.BILINEAR)
-
         dock_app.set_drawing_area_size(size)
         dock_app.set_pixbuf(pixbuf)
-
         surface = Gdk.cairo_surface_create_from_pixbuf(pixbuf, scale_factor, None)
         dock_app.set_surface(surface)
 
