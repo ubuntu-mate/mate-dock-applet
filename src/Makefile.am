@@ -62,10 +62,13 @@ service_DATA     = $(service_in_files:.service.in=.service)
 xmldir		 =$(appletdir)
 xml_DATA 	 = app_match.xml
 
-#imagedir	 = $(libexecdir)
-#image_DATA	 = sahsl.png \
-#		   sahsd.png \
-#		   boinc.png
+data_assetsdir	 = $(appletdir)/assets
+data_assets_DATA	 = assets/unity_dock_bg_56.svg \
+							     assets/unity_dock_edge_56.svg \
+							     assets/unity_dock_shine_56.svg \
+							     assets/unity_dock_bg_168.svg \
+							 	 	 assets/unity_dock_edge_168.svg \
+							 	   assets/unity_dock_shine_168.svg
 
 #%.gschema.xml.in: %.gschema.xml.in.in Makefile
 #	$(AM_V_GEN)sed -e 's^\@GETTEXT_PACKAGE\@^$(GETTEXT_PACKAGE)^g' < $< > $@
@@ -195,4 +198,5 @@ EXTRA_DIST = dock_applet.in \
 	     $(gsettings_SCHEMAS) \
 	     $(applets_in_files) \
 	     $(service_in_files) \
-	     $(xml_DATA)
+	     $(xml_DATA) \
+			 $(data_assets_DATA)
