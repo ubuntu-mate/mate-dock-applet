@@ -97,9 +97,14 @@
          <description>Speicifies the maximum number of app icons the can contain. If this is number is exceeded the dock not expand will instead allow the user to scroll app icons. A value of -1 indicates the dock is not a fixed size and will expand and contract and apps are open and closed</description>
     </key>
     <key type = "i" name="click-action">
-     <default>0</default> 
+     <default>0</default>
      <summary>Defines what to do when a running app's dock icon is clicked</summary>
      <description>0 = display the app's window list, 1 = show compiz window spread, 2 = minimize/restore all app's windows. Note: the use-win-list key is now deprecated.</description>
+    </key>
+    <key type="i" name="theme">
+      <default>0</default>
+      <summary>Specifies the theme used by the dock (e.g. Unity, Subway, Default).</summary>
+      <description>Sets the indicator type and icon background used by the dock. If theme is set to 'Custom' these can be individually specified.</description>
     </key>
    </schema>
 </schemalist>
