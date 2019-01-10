@@ -62,6 +62,15 @@ class ClickActionType:
     MINMAX = 2    # minimize/maximize the app's open windows
 
 
+class ThemeType:
+    """ Class to define the various themes that may be set """
+    DEFAULT = 0
+    UNITY = 1
+    UNITY_FLAT = 2
+    SUBWAY = 3
+    CUSTOM = 4
+
+
 def create_frame(caption):
     """ Convenience function to create a Gtk.Frame with a desired caption
         in bold text
@@ -142,7 +151,7 @@ class DockPrefsWindow(Gtk.Window):
             self.__hbox1.set_orientation(Gtk.Orientation.HORIZONTAL)
         self.__hbox1.set_spacing(2)
 
-        self.__vbox = self.create_vbox
+        self.__vbox = self.create_vbox()
         self.__vbox.set_spacing(2)
 
         self.__cancel_btn = Gtk.Button(label="Cancel",
@@ -173,40 +182,28 @@ class DockPrefsWindow(Gtk.Window):
             self.__appearance_tbl.set_row_spacing(4)
             self.__appearance_tbl.set_row_homogeneous(False)
 
-        self.__frame_ind_type = create_frame("Indicator Type")
-        self.__rb_light_ind = Gtk.RadioButton(label="Default light")
-        self.__rb_dark_ind = Gtk.RadioButton(group=self.__rb_light_ind,
-                                             label="Default Dark")
-        self.__rb_bar_ind = Gtk.RadioButton(group=self.__rb_light_ind,
-                                            label="Single bar")
-        self.__rb_no_ind = Gtk.RadioButton(group=self.__rb_light_ind,
-                                           label="None")
-        self.__rb_no_ind.connect("toggled", self.rb_no_ind_toggled)
-        self.__rb_circ_ind = Gtk.RadioButton(group=self.__rb_light_ind,
-                                             label="Circle")
-        self.__rb_square_ind = Gtk.RadioButton(group=self.__rb_light_ind,
-                                               label="Square")
-        self.__rb_tri_ind = Gtk.RadioButton(group=self.__rb_light_ind,
-                                            label="Triangle")
-        self.__rb_dia_ind = Gtk.RadioButton(group=self.__rb_light_ind,
-                                            label="Diamond")
-        self.__rb_subway_ind = Gtk.RadioButton(group=self.__rb_light_ind,
-                                               label="Subway")
+        self.__frame_theme = create_frame("Theme")
+        self.__frame_theme_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                 xscale=1.0, yscale=1.0)
+        self.__frame_theme_align.set_padding(0, 0, 12, 0)
+        self.__frame_theme_align.set_padding(0, 0, 12, 0)
 
-        # connect event handlers so that we can update the preview when settings
-        # are changed
-        self.__rb_light_ind.connect("toggled", self.setting_toggled)
-        self.__rb_dark_ind.connect("toggled", self.setting_toggled)
-        self.__rb_bar_ind.connect("toggled", self.rb_no_ind_toggled)
-        self.__rb_circ_ind.connect("toggled", self.setting_toggled)
-        self.__rb_square_ind.connect("toggled", self.setting_toggled)
-        self.__rb_tri_ind.connect("toggled", self.setting_toggled)
-        self.__rb_dia_ind.connect("toggled", self.setting_toggled)
-        self.__rb_subway_ind.connect("toggled", self.setting_toggled)
+        self.__theme_options = ["Default", "Unity", "Unity Flat", "Subway", "Custom"]
+        self.__cbt_theme = self.create_textcombo(self.__theme_options)
+        self.__cbt_theme.connect("changed", self.theme_changed)
+        self.__frame_theme_align.add(self.__cbt_theme)
+        self.__frame_theme.add(self.__frame_theme_align)
+
+        self.__frame_ind_type = create_frame("Indicator Type")
+        self.__indicator_options = ["Default light", "Default dark", "Single bar",
+                                    "Circle", "Square", "Triangle", "Diamond",
+                                    "Subway", "None"]
+        self.__cbt_ind_type = self.create_textcombo(self.__indicator_options)
+        self.__cbt_ind_type.connect("changed", self.setting_toggled)
 
         self.__frame_preview = create_frame("Preview")
         self.__frame_preview.set_shadow_type(Gtk.ShadowType.NONE)
-        self.__hbox_preview = self.create_hbox
+        self.__hbox_preview = self.create_hbox()
         self.__hbox_preview.set_spacing(0)
 
         self.__da_preview = Gtk.DrawingArea()
@@ -217,7 +214,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_preview_align.set_padding(0, 0, 12, 0)
         self.__hbox_preview.pack_start(self.__da_preview, False, False, 0)
         self.__frame_preview_align.add(self.__hbox_preview)
-        self.__vbox_preview = self.create_vbox
+        self.__vbox_preview = self.create_vbox()
         self.__vbox.set_spacing(2)
         self.__vbox_preview.pack_start(self.__frame_preview_align, False, False, 4)
         self.__frame_preview.add(self.__vbox_preview)
@@ -234,66 +231,19 @@ class DockPrefsWindow(Gtk.Window):
         self.__cb_multi_ind.connect("toggled", self.setting_toggled)
 
         if build_gtk2:
-            self.__tbl_ind_type = Gtk.Table(rows=5, columns=2,
+            self.__tbl_ind_type = Gtk.Table(rows=1, columns=2,
                                             homogeneous=False)
-            self.__tbl_ind_type.attach(self.__rb_light_ind,
+            self.__tbl_ind_type.attach(self.__cbt_ind_type,
                                        0, 1, 0, 1,
                                        Gtk.AttachOptions.FILL,
                                        Gtk.AttachOptions.SHRINK,
                                        2, 2)
-            self.__tbl_ind_type.attach(self.__rb_dark_ind,
-                                       0, 1, 1, 2,
-                                       Gtk.AttachOptions.FILL,
-                                       Gtk.AttachOptions.SHRINK,
-                                       2, 2)
-            self.__tbl_ind_type.attach(self.__rb_bar_ind,
-                                       0, 1, 2, 3,
-                                       Gtk.AttachOptions.FILL,
-                                       Gtk.AttachOptions.SHRINK,
-                                       2, 2)
-            self.__tbl_ind_type.attach(self.__rb_circ_ind,
-                                       0, 1, 3, 4,
-                                       Gtk.AttachOptions.FILL,
-                                       Gtk.AttachOptions.SHRINK,
-                                       2, 2)
-            self.__tbl_ind_type.attach(self.__rb_square_ind,
-                                       0, 1, 4, 5,
-                                       Gtk.AttachOptions.FILL,
-                                       Gtk.AttachOptions.SHRINK,
-                                       2, 2)
-            self.__tbl_ind_type.attach(self.__rb_tri_ind,
-                                       1, 2, 0, 1,
-                                       Gtk.AttachOptions.FILL,
-                                       Gtk.AttachOptions.SHRINK,
-                                       2, 2)
-            self.__tbl_ind_type.attach(self.__rb_dia_ind,
-                                       1, 2, 1, 2,
-                                       Gtk.AttachOptions.FILL,
-                                       Gtk.AttachOptions.SHRINK,
-                                       2, 2)
-            self.__tbl_ind_type.attach(self.__rb_subway_ind,
-                                       1, 2, 2, 3,
-                                       Gtk.AttachOptions.FILL,
-                                       Gtk.AttachOptions.SHRINK,
-                                       2, 2)
-            self.__tbl_ind_type.attach(self.__rb_no_ind,
-                                       1, 2, 3, 4,
-                                       Gtk.AttachOptions.FILL,
-                                       Gtk.AttachOptions.SHRINK,
-                                       2, 2)
+
         else:
             self.__tbl_ind_type = Gtk.Grid()
             self.__tbl_ind_type.set_row_spacing(2)
             self.__tbl_ind_type.set_column_spacing(2)
-            self.__tbl_ind_type.attach(self.__rb_light_ind, 0, 0, 1, 1)
-            self.__tbl_ind_type.attach(self.__rb_dark_ind, 0, 1, 1, 1)
-            self.__tbl_ind_type.attach(self.__rb_bar_ind, 0, 2, 1, 1)
-            self.__tbl_ind_type.attach(self.__rb_circ_ind, 0, 3, 1, 1)
-            self.__tbl_ind_type.attach(self.__rb_square_ind, 0, 4, 1, 1)
-            self.__tbl_ind_type.attach(self.__rb_tri_ind, 1, 0, 1, 1)
-            self.__tbl_ind_type.attach(self.__rb_dia_ind, 1, 1, 1, 1)
-            self.__tbl_ind_type.attach(self.__rb_subway_ind, 1, 2, 1, 1)
-            self.__tbl_ind_type.attach(self.__rb_no_ind, 1, 3, 1, 1)
+            self.__tbl_ind_type.attach(self.__cbt_ind_type, 0, 0, 1, 1)
 
         self.__frame_ind_type_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                                     xscale=1.0, yscale=1.0)
@@ -301,28 +251,15 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_ind_type_align.add(self.__tbl_ind_type)
         self.__frame_ind_type.add(self.__frame_ind_type_align)
 
-        self.__frame_bg = create_frame("Icon background")
-        self.__rb_grad_bg = Gtk.RadioButton(label="Gradient fill")
-        self.__rb_fill_bg = Gtk.RadioButton(group=self.__rb_grad_bg,
-                                            label="Solid fill")
-        self.__rb_unity_bg = Gtk.RadioButton(group=self.__rb_grad_bg,
-                                             label="Unity")
-        self.__rb_unityflat_bg = Gtk.RadioButton(group=self.__rb_grad_bg,
-                                                 label="Unity flat")
-        self.__rb_grad_bg.connect("toggled", self.setting_toggled)
-        self.__rb_fill_bg.connect("toggled", self.setting_toggled)
-        self.__rb_unity_bg.connect("toggled", self.setting_toggled)
-        self.__rb_unityflat_bg.connect("toggled", self.setting_toggled)
+        self.__frame_bg = create_frame("Icon Background")
+        self.__bg_options = ["Gradient fill", "Solid fill", "Unity", "Unity Flat"]
+        self.__cbt_icon_bg = self.create_textcombo(self.__bg_options)
+        self.__cbt_icon_bg.connect("changed", self.setting_toggled)
 
-        self.__vbox_bg_type = self.create_vbox
-        self.__vbox_bg_type.add(self.__rb_grad_bg)
-        self.__vbox_bg_type.add(self.__rb_fill_bg)
-        self.__vbox_bg_type.add(self.__rb_unity_bg)
-        self.__vbox_bg_type.add(self.__rb_unityflat_bg)
         self.__frame_bg_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                               xscale=1.0, yscale=1.0)
         self.__frame_bg_align.set_padding(0, 0, 12, 0)
-        self.__frame_bg_align.add(self.__vbox_bg_type)
+        self.__frame_bg_align.add(self.__cbt_icon_bg)
         self.__frame_bg.add(self.__frame_bg_align)
 
         if build_gtk2:
@@ -345,9 +282,12 @@ class DockPrefsWindow(Gtk.Window):
 
         else:
             self.__appearance_tbl.attach(self.__frame_preview, 0, 0, 1, 1)
-            self.__appearance_tbl.attach(self.__frame_ind_type, 0, 1, 1, 1)
-            self.__appearance_tbl.attach(self.__cb_multi_ind, 0, 2, 1, 1)
-            self.__appearance_tbl.attach(self.__frame_bg, 0, 3, 1, 1)
+            self.__appearance_tbl.attach(self.__frame_theme, 0, 1, 1, 1)
+
+            #self.__appearance_tbl.attach(self.__frame_them_fb_bar_col, 0, 1, 1, 1)
+            self.__appearance_tbl.attach(self.__frame_ind_type, 0, 2, 1, 1)
+            self.__appearance_tbl.attach(self.__cb_multi_ind, 0, 3, 1, 1)
+            self.__appearance_tbl.attach(self.__frame_bg, 0, 4, 1, 1)
 
         self.__frame_pinned_apps = create_frame("Pinned application dock icons")
         self.__rb_pinned_all_ws = Gtk.RadioButton(label="Display on all workspaces")
@@ -433,7 +373,7 @@ class DockPrefsWindow(Gtk.Window):
                                      "and 'Display indicators/window list' items for the current workspace " +
                                      "only options.")
 
-        self.__ws_vbox = self.create_vbox
+        self.__ws_vbox = self.create_vbox()
         self.__ws_vbox.set_spacing(2)
         self.__ws_vbox.pack_start(self.__frame_pinned_apps, False, False, 4)
         self.__ws_vbox.pack_start(self.__frame_unpinned_apps, False, False, 4)
@@ -481,7 +421,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_behaviour_align.add(self.__table_behaviour)
         self.__frame_behaviour.add(self.__frame_behaviour_align)
 
-        self.__behaviour_vbox = self.create_vbox
+        self.__behaviour_vbox = self.create_vbox()
         self.__behaviour_vbox.set_spacing(2)
         self.__behaviour_vbox.pack_start(self.__frame_behaviour, False,
                                          False, 4)
@@ -556,7 +496,7 @@ class DockPrefsWindow(Gtk.Window):
 
             self.__lbl_fixed_size1 = Gtk.Label(" app icons")
 
-            self.__hbox_fixed_size = self.create_hbox
+            self.__hbox_fixed_size = self.create_hbox()
             self.__hbox_fixed_size.set_spacing(2)
             self.__hbox_fixed_size.pack_start(self.__lbl_fixed_size, False, False, 4)
             self.__hbox_fixed_size.pack_start(self.__sb_fixed_size, False, False, 4)
@@ -582,7 +522,7 @@ class DockPrefsWindow(Gtk.Window):
                                             "and show app actions\non panel " +
                                             "right click menu only")
 
-        self.__panel_vbox = self.create_vbox
+        self.__panel_vbox = self.create_vbox()
         self.__panel_vbox.set_spacing(2)
         self.__panel_vbox.pack_start(self.__frame_spc, False, False, 4)
         self.__panel_vbox.pack_start(self.__frame_color_change,
@@ -600,11 +540,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__cbtn_fb_bar_col.set_tooltip_text("Colour used for drawing bar indicators when theme colour " +
                                                 "cannot be determined or when using Gtk2")
 
-        self.__fb_bar_col_hbox = self.create_hbox
+        self.__fb_bar_col_hbox = self.create_hbox()
         self.__fb_bar_col_hbox.set_spacing(2)
         self.__fb_bar_col_hbox.pack_start(self.__lbl_fb_bar_col, False, False, 2)
         self.__fb_bar_col_hbox.pack_start(self.__cbtn_fb_bar_col, True, True, 2)
-        self.__fb_bar_col_vbox = self.create_vbox
+        self.__fb_bar_col_vbox = self.create_vbox()
         self.__fb_bar_col_vbox.set_spacing(2)
         self.__fb_bar_col_vbox.pack_start(self.__fb_bar_col_hbox, False, False, 2)
         self.__frame_fb_bar_col.add(self.__fb_bar_col_vbox)
@@ -664,7 +604,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_pdel_align.add(self.__sb_pdel)
         self.__frame_pdel.add(self.__frame_pdel_align)
 
-        self.__misc_vbox = self.create_vbox
+        self.__misc_vbox = self.create_vbox()
         self.__misc_vbox.set_spacing(2)
         self.__misc_vbox.pack_start(self.__frame_fb_bar_col, False, False, 4)
         self.__misc_vbox.pack_start(self.__frame_attention_type, False, False, 4)
@@ -685,7 +625,39 @@ class DockPrefsWindow(Gtk.Window):
         self.add(self.__vbox)
         self.show_all()
 
-    @property
+    def create_textcombo(self, items):
+        """
+            Convenience function to create a text combo box with a set of specified
+            items
+
+        Args:
+            items : a list of the items the box is to contain
+
+        Returns:
+            a ComboBoxText
+        """
+
+        cbt = Gtk.ComboBoxText()
+
+        # add the items
+        for item in items:
+            cbt.append_text(item)
+
+        return cbt
+
+    def set_combo_selected_item(self, cbt, item, items):
+        """
+            Sets a ComboBoxText's selected item
+
+        Args:
+            cbt : the ComboBoxText
+            item : a string, the selected item
+            items : the list of items the combo contains
+        """
+
+        index = items.index(item)
+        cbt.set_active(index)
+
     def create_vbox(self):
         """
             Convenience function to create a Gtk2 VBox or a Gtk3 Box
@@ -703,7 +675,6 @@ class DockPrefsWindow(Gtk.Window):
 
         return vbox
 
-    @property
     def create_hbox(self):
         """
             Convenience function to create a Gtk2 HBox or a Gtk3 Box
@@ -761,7 +732,8 @@ class DockPrefsWindow(Gtk.Window):
 
         # if a dark indicator is set, we draw a light background, otherwise a
         # dark background
-        if self.__rb_dark_ind.get_active():
+        indicator = self.get_indicator_type()
+        if indicator == IndicatorType.DARK:
             tgt_ctx.set_source_rgb(0.85, 0.85, 0.85)
         else:
             tgt_ctx.set_source_rgb(0.15, 0.21, 0.15)
@@ -778,13 +750,14 @@ class DockPrefsWindow(Gtk.Window):
         green = self.__app.highlight_color.g / 255
         blue = self.__app.highlight_color.b / 255
 
-        if self.__rb_grad_bg.get_active():
+        bg_type = self.get_bg()
+        if bg_type == IconBgType.GRADIENT:
             bgd = DefaultBackgroundDrawer(ctx, self.PREVIEW_SIZE,
                                           MatePanelApplet.AppletOrient.UP, red, green, blue)
-        elif self.__rb_fill_bg.get_active():
+        elif bg_type == IconBgType.ALPHAFILL:
             bgd = AlphaFillBackgroundDrawer(ctx, self.PREVIEW_SIZE,
                                             MatePanelApplet.AppletOrient.UP, red, green, blue, 0.5)
-        elif self.__rb_unity_bg.get_active():
+        elif bg_type == IconBgType.UNITY:
             bgd = UnityBackgroundDrawer(ctx, self.PREVIEW_SIZE,
                                         MatePanelApplet.AppletOrient.UP, red, green, blue, False, 1)
         else:
@@ -794,7 +767,7 @@ class DockPrefsWindow(Gtk.Window):
         bgd.draw()
 
         # draw the app icon
-        if (self.__rb_unity_bg.get_active()) or (self.__rb_unityflat_bg.get_active()):
+        if bg_type in [IconBgType.UNITY, IconBgType.UNITY_FLAT]:
             pb_size = self.PREVIEW_SIZE
             pb_size = self.PREVIEW_SIZE * 3 / 4
             # create scale down pixbuf and use that
@@ -808,39 +781,39 @@ class DockPrefsWindow(Gtk.Window):
 
         ctx.paint()
 
-        if (self.__rb_unity_bg.get_active()) or (self.__rb_unityflat_bg.get_active()):
+        if bg_type in [IconBgType.UNITY, IconBgType.UNITY_FLAT]:
             bgd.draw_shine()
 
         # draw the indicator(s) if necessary
-        if not self.__rb_no_ind.get_active():
+        if indicator != IndicatorType.NONE:
             # if we're showing indicators for each open window, show multiple indicators
             if self.__cb_multi_ind.get_active():
                 num_ind = randint(2, 4)
             else:
                 num_ind = 1
 
-            if self.__rb_light_ind.get_active():
+            if indicator == IndicatorType.LIGHT:
                 ind = DefaultLightInd(ctx, self.PREVIEW_SIZE,
                                       MatePanelApplet.AppletOrient.UP, num_ind)
-            elif self.__rb_dark_ind.get_active():
+            elif indicator == IndicatorType.DARK:
                 ind = DefaultDarkInd(ctx, self.PREVIEW_SIZE,
                                      MatePanelApplet.AppletOrient.UP, num_ind)
-            elif self.__rb_bar_ind.get_active():
+            elif indicator == IndicatorType.TBAR:
                 ind = ThemeBarInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
                                   self.__app.applet)
-            elif self.__rb_circ_ind.get_active():
+            elif indicator == IndicatorType.TCIRC:
                 ind = ThemeCircleInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
                                      self.__app.applet, num_ind)
-            elif self.__rb_square_ind.get_active():
+            elif indicator == IndicatorType.TSQUARE:
                 ind = ThemeSquareInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
                                      self.__app.applet, num_ind)
-            elif self.__rb_tri_ind.get_active():
+            elif indicator == IndicatorType.TTRI:
                 ind = ThemeTriInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
                                   self.__app.applet, num_ind)
-            elif self.__rb_dia_ind.get_active():
+            elif indicator == IndicatorType.TDIA:
                 ind = ThemeDiaInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
                                   self.__app.applet, num_ind)
-            elif self.__rb_subway_ind.get_active():
+            elif indicator == IndicatorType.SUBWAY:
                 active = bool(randint(0, 1))
                 ind = SubwayInd(ctx, self.PREVIEW_SIZE, MatePanelApplet.AppletOrient.UP,
                                 self.__app.applet, num_ind, surface, active)
@@ -876,6 +849,35 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         self.__cb_dock_panel_only.set_sensitive(self.__cb_panel_color_change.get_active())
+
+    def theme_changed(self, widget):
+        """ Handler for the theme being changed
+
+        Set the appropriate indicator and background type for the theme
+        """
+
+        theme = self.get_theme()
+
+        # enable or disable the indicator and backgroud type combos depending
+        # on whether or not we are using a custom themes
+        self.__cbt_ind_type.set_sensitive(theme == ThemeType.CUSTOM)
+        self.__cbt_icon_bg.set_sensitive(theme == ThemeType.CUSTOM)
+
+        if theme == ThemeType.DEFAULT:
+            self.set_indicator(IndicatorType.LIGHT)
+            self.set_bg(IconBgType.GRADIENT)
+        elif theme == ThemeType.UNITY:
+            self.set_indicator(IndicatorType.TTRI)
+            self.set_bg(IconBgType.UNITY)
+        elif theme == ThemeType.UNITY_FLAT:
+            self.set_indicator(IndicatorType.TTRI)
+            self.set_bg(IconBgType.UNITY_FLAT)
+        elif theme == ThemeType.SUBWAY:
+            self.set_indicator(IndicatorType.SUBWAY)
+            self.set_bg(IconBgType.ALPHAFILL)
+
+        # if a custom
+
 
     def setting_toggled(self, widget):
         """ Handler for updating the preview when appearance settings are changed
@@ -914,21 +916,22 @@ class DockPrefsWindow(Gtk.Window):
         Returns : IndicatorType
         """
 
-        if self.__rb_light_ind.get_active():
+        indicator = self.__cbt_ind_type.get_active_text()
+        if indicator == "Default light":
             return IndicatorType.LIGHT
-        elif self.__rb_dark_ind.get_active():
+        elif indicator == "Default dark":
             return IndicatorType.DARK
-        elif self.__rb_bar_ind.get_active():
+        elif indicator == "Single bar":
             return IndicatorType.TBAR
-        elif self.__rb_circ_ind.get_active():
+        elif indicator == "Circle":
             return IndicatorType.TCIRC
-        elif self.__rb_square_ind.get_active():
+        elif indicator == "Square":
             return IndicatorType.TSQUARE
-        elif self.__rb_tri_ind.get_active():
+        elif indicator == "Triangle":
             return IndicatorType.TTRI
-        elif self.__rb_dia_ind.get_active():
+        elif indicator == "Diamond":
             return IndicatorType.TDIA
-        elif self.__rb_subway_ind.get_active():
+        elif indicator == "Subway":
             return IndicatorType.SUBWAY
         else:
             return IndicatorType.NONE
@@ -940,23 +943,32 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         if indicator == IndicatorType.LIGHT:
-            self.__rb_light_ind.set_active(True)
+            self.set_combo_selected_item(self.__cbt_ind_type, "Default light",
+                                         self.__indicator_options)
         elif indicator == IndicatorType.DARK:
-            self.__rb_dark_ind.set_active(True)
+            self.set_combo_selected_item(self.__cbt_ind_type, "Default dark",
+                                         self.__indicator_options)
         elif indicator == IndicatorType.TBAR:
-            self.__rb_bar_ind.set_active(True)
+            self.set_combo_selected_item(self.__cbt_ind_type, "Single bar",
+                                         self.__indicator_options)
         elif indicator == IndicatorType.TCIRC:
-            self.__rb_circ_ind.set_active(True)
+            self.set_combo_selected_item(self.__cbt_ind_type, "Circle",
+                                         self.__indicator_options)
         elif indicator == IndicatorType.TSQUARE:
-            self.__rb_square_ind.set_active(True)
+            self.set_combo_selected_item(self.__cbt_ind_type, "Square",
+                                         self.__indicator_options)
         elif indicator == IndicatorType.TTRI:
-            self.__rb_tri_ind.set_active(True)
+            self.set_combo_selected_item(self.__cbt_ind_type, "Triangle",
+                                         self.__indicator_options)
         elif indicator == IndicatorType.TDIA:
-            self.__rb_dia_ind.set_active(True)
+            self.set_combo_selected_item(self.__cbt_ind_type, "Diamond",
+                                         self.__indicator_options)
         elif indicator == IndicatorType.SUBWAY:
-            self.__rb_subway_ind.set_active(True)
+            self.set_combo_selected_item(self.__cbt_ind_type, "Subway",
+                                         self.__indicator_options)
         else:
-            self.__rb_no_ind.set_active(True)
+            self.set_combo_selected_item(self.__cbt_ind_type, "None",
+                                         self.__indicator_options)
 
     def get_multi_ind(self):
         """Gets whether or not to use display an indicator for each open
@@ -974,29 +986,66 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         if bg == IconBgType.GRADIENT:
-            self.__rb_grad_bg.set_active(True)
+            self.set_combo_selected_item(self.__cbt_icon_bg, "Gradient fill", self.__bg_options)
         elif bg == IconBgType.ALPHAFILL:
-            self.__rb_fill_bg.set_active(True)
+            self.set_combo_selected_item(self.__cbt_icon_bg, "Solid fill", self.__bg_options)
         elif bg == IconBgType.UNITY:
-            self.__rb_unity_bg.set_active(True)
+            self.set_combo_selected_item(self.__cbt_icon_bg, "Unity", self.__bg_options)
         else:
-            self.__rb_unityflat_bg.set_active(True)
+            self.set_combo_selected_item(self.__cbt_icon_bg, "Unity Flat", self.__bg_options)
 
     def get_bg(self):
         """ Gets the currently selected active icon background type
 
-        Returns : An IconBgType
+        Returns: An IconBgType
 
         """
 
-        if self.__rb_grad_bg.get_active():
+        bg = self.__cbt_icon_bg.get_active_text()
+        if bg == "Gradient fill":
             return IconBgType.GRADIENT
-        elif self.__rb_fill_bg.get_active():
+        elif bg == "Solid fill":
             return IconBgType.ALPHAFILL
-        elif self.__rb_unity_bg.get_active():
+        elif bg == "Unity":
             return IconBgType.UNITY
         else:
             return IconBgType.UNITY_FLAT
+
+    def set_theme(self, theme):
+        """ Sets the theme
+
+        Args:
+            theme : a ThemeType
+        """
+
+        if theme == ThemeType.DEFAULT:
+            self.set_combo_selected_item(self.__cbt_theme, "Default", self.__theme_options)
+        elif theme == ThemeType.UNITY:
+            self.set_combo_selected_item(self.__cbt_theme, "Unity", self.__theme_options)
+        elif theme == ThemeType.UNITY_FLAT:
+            self.set_combo_selected_item(self.__cbt_theme, "Unity Flat", self.__theme_options)
+        elif theme == ThemeType.SUBWAY:
+            self.set_combo_selected_item(self.__cbt_theme, "Subway", self.__theme_options)
+        elif theme == ThemeType.CUSTOM:
+            self.set_combo_selected_item(self.__cbt_theme, "Custom", self.__theme_options)
+
+    def get_theme(self):
+        """ Get the currently selected theme
+
+        Returns : a ThemeType
+        """
+
+        theme = self.__cbt_theme.get_active_text()
+        if theme == "Default":
+            return ThemeType.DEFAULT
+        elif theme == "Unity":
+            return ThemeType.UNITY
+        elif theme == "Unity Flat":
+            return ThemeType.UNITY_FLAT
+        elif theme == "Subway":
+            return ThemeType.SUBWAY
+        else:
+            return ThemeType.CUSTOM
 
     def set_multi_ind(self, use_multi_ind):
         """Sets whether or not to display multiple indicators
