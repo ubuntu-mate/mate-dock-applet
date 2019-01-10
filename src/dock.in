@@ -391,6 +391,9 @@ class Dock(object):
                                (will be mainly of use in gtk2)
             active_bg : the type of background to use for the currently active app's
                         icon background (e.g. gradient fill or solid fill)
+            theme     : the theme used by the dock. Can indicate a custom themes
+                        in which case the indicator and background types can be
+                        individually specified
             multi_ind : whether or not multiple indicators are to be used
             show_all_apps : whether or not unpinned apps from all workspaces
                                      are displayed in the dock
@@ -534,6 +537,7 @@ class Dock(object):
         self.change_panel_color = False
         self.change_dock_color_only = False
         self.active_bg = 0
+        self.theme = 0
         self.app_spacing = 0
         self.attention_type = dock_prefs.AttentionType.BLINK
         self.popup_delay = 1000
@@ -961,6 +965,7 @@ class Dock(object):
                 self.pa_on_all_ws = xml_settings[16]
                 self.dock_fixed_size = xml_settings[17]
                 self.click_action = xml_settings[18]
+                self.theme = xml_settings[19]
 
                 # now, immediately write the settings to dconf and back to the
                 # config file so the dock can access them
@@ -995,6 +1000,7 @@ class Dock(object):
                 self.settings.set_value("saved-configs", GLib.Variant('as', configs))
                 self.settings.set_int("dock-fixed-size", self.dock_fixed_size)
                 self.settings.set_int("click-action", self.click_action)
+                self.settings.set_int("theme", self.theme)
 
                 dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                                    self.show_all_apps, self.multi_ind,
@@ -1010,7 +1016,8 @@ class Dock(object):
                                    self.pa_configs,
                                    self.pa_on_all_ws,
                                    self.dock_fixed_size,
-                                   self.click_action)
+                                   self.click_action,
+                                   self.theme)
 
                 return
 
@@ -1036,6 +1043,7 @@ class Dock(object):
         self.pa_on_all_ws = self.settings.get_boolean("pinned-apps-on-all-workspaces")
         self.dock_fixed_size = self.settings.get_int("dock-fixed-size")
         self.click_action = self.settings.get_int("click-action")
+        self.theme = self.settings.get_int("theme")
 
     def configs_to_settings(self):
         """ Convenience function to convert the current set of saved configs
@@ -1107,6 +1115,7 @@ class Dock(object):
             self.settings.set_value("saved-configs", GLib.Variant('as', pa_configs))
             self.settings.set_int("dock-fixed-size", self.dock_fixed_size)
             self.settings.set_int("click-action", self.click_action)
+            self.settings.set_int("theme", self.theme)
 
         dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                            self.show_all_apps, self.multi_ind,
@@ -1123,7 +1132,8 @@ class Dock(object):
                            self.pa_configs,
                            self.pa_on_all_ws,
                            self.dock_fixed_size,
-                           self.click_action)
+                           self.click_action,
+                           self.theme)
 
     def read_app_match(self):
         """ Read an xml file which contains a list of apps which are difficult
@@ -1933,6 +1943,7 @@ class Dock(object):
             self.prefs_win.set_attention_type(self.attention_type)
             self.prefs_win.set_popup_delay(self.popup_delay)
             self.prefs_win.set_show_pinned_apps_on_all_ws(self.pa_on_all_ws)
+            self.prefs_win.set_theme(self.theme)
             if not build_gtk2 and not self.nice_sizing:
                 self.prefs_win.set_fixed_size(self.dock_fixed_size != -1, self.dock_fixed_size,
                                               self.panel_layout.upper() == "MUTINY")
@@ -1991,6 +2002,7 @@ class Dock(object):
            (self.attention_type != self.prefs_win.get_attention_type()) or \
            (self.popup_delay != self.prefs_win.get_popup_delay()) or \
            (self.pa_on_all_ws != self.prefs_win.get_show_pinned_apps_on_all_ws()) or \
+           (self.theme != self.prefs_win.get_theme()) or \
            fixed_size_changes:
 
             old_ind = self.indicator
@@ -2019,6 +2031,7 @@ class Dock(object):
 
             old_bg = self.active_bg
             self.active_bg = self.prefs_win.get_bg()
+            self.theme = self.prefs_win.get_theme()
             # if we're changing to or from a Unity background we need
             # to reload docked app icons
             unity_bg_types = [docked_app_helpers.IconBgType.UNITY, docked_app_helpers.IconBgType.UNITY_FLAT]
