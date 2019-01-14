@@ -2655,6 +2655,10 @@ class Dock(object):
                     self.show_or_hide_app_icons()
                     self.show_or_hide_indicators()
 
+                # make sure the dock_app has been fully realised
+                while Gtk.events_pending():
+                    Gtk.main_iteration()
+
                 self.set_all_apps_minimise_targets()
 
                 dock_app.applet_orient = self.applet.get_orient()
