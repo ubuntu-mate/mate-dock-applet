@@ -110,6 +110,12 @@ def applet_button_press(widget, event, the_dock):
         the_dock.hide_win_list()
         the_dock.hide_act_list()
     elif event.button == 1:
+
+        if the_dock.panel_expand is not True:
+            # prevent the panel acting on the button press that we got
+            # e.g. so that dragging dock icons does not also start a drag of the panel
+            GObject.signal_stop_emission_by_name(widget, "button_press_event")
+
         dx, dy = the_dock.get_drag_coords()
         if (dx == -1) and (dy == -1):
             the_dock.set_drag_coords(event.x, event.y)
@@ -141,7 +147,6 @@ def applet_button_release(widget, event, the_dock):
     """
 
     if event.button == 1:
-
         the_dock.clear_drag_coords()
 
         # hide popups
@@ -611,6 +616,8 @@ def applet_fill(applet):
         applet.set_flags(MatePanelApplet.AppletFlags.EXPAND_MAJOR |
                          MatePanelApplet.AppletFlags.EXPAND_MINOR |
                          MatePanelApplet.AppletFlags.FLAGS_NONE)
+    else:
+        applet.set_flags(AppletFlags.FLAGS_NONE)
 
     if build_gtk2:
         applet.add(the_dock.box)

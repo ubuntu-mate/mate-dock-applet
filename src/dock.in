@@ -423,6 +423,7 @@ class Dock(object):
             panel_x : the panel's x position on screen
             panel_y : the panel's y position on screen
             panel_size : the size of the panel
+            panel_expand : whether or not the panel is set to expand
             applet_pos : the position of the applet(in pixels) in the panel
             dm_timer : timer to monitor mouse movement during app icon drag and drop
             da_timer : timer to provide a short delay before activating an app when
@@ -568,6 +569,7 @@ class Dock(object):
         self.panel_x = 0
         self.panel_y = 0
         self.panel_size = 0
+        self.panel_expand = True
         self.panel_orient = "top"
         self.applet_pos = 0
 
@@ -837,6 +839,7 @@ class Dock(object):
         self.panel_x = self.panel_settings.get_int("x")
         self.panel_y = self.panel_settings.get_int("y")
         self.panel_size = self.panel_settings.get_int("size")
+        self.panel_expand = self.panel_settings.get_boolean("expand")
 
         # if this is left or right oriented panel we need to account for the
         # height of any top panel so that minimise locations are correctly
@@ -909,7 +912,8 @@ class Dock(object):
         app minimise locations
         """
 
-        if (key == "orientation") or (key == "size"):
+        if key in ["orientation", "size", "expand", "x", "x-centered", "y", "y-centered",
+                   "x-right", "y-bottom"]:
             self.get_applet_panel_info()
             if not build_gtk2:
                 self.set_dock_panel_size()
@@ -3301,7 +3305,7 @@ class Dock(object):
 
         num_vis = self.get_total_num_visible_apps()
         if num_vis > min_icons:
-            i = num_vis
+            i = num_vis - min_icons
             size_hints = []
             while i > 0:
                 size_hints.append(i * app_size)
