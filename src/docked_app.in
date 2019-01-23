@@ -960,7 +960,7 @@ class DockedApp(object):
         if self.bamf_app is not None:
             for win in self.get_windows():
                 win_type = win.get_window_type()
-                if win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or win.is_user_visible():
+                if win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] and win.is_user_visible():
                     if cur_ws is None:
                         num_win += 1
                     else:

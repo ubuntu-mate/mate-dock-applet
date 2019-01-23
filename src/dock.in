@@ -2821,14 +2821,9 @@ class Dock(object):
                 # unpinned apps that are no longer running can be removed from the dock
 
                 if dock_app.is_running():
-                    # if the app is still running but does nor have normal or dialog windows remaining
+                    # if the app is still running but does not have visible normal or dialog windows remaining
                     # it needs to be removed from the dock
-                    keep_in_dock = False
-                    for win in dock_app.get_windows():
-                        if (win != object) and win.get_window_type() in [Bamf.WindowType.NORMAL,
-                                                                         Bamf.WindowType.DIALOG]:
-                            keep_in_dock = True
-                            break
+                    keep_in_dock = dock_app.get_num_windows() > 0
 
                     if keep_in_dock:
                         if self.show_all_apps:
@@ -2867,7 +2862,7 @@ class Dock(object):
                     dock_app.is_active = False
                     dock_app.queue_draw()
 
-                elif dock_app.is_running():
+                elif (dock_app.is_running() and (dock_app.get_num_windows() > 0)):
                     if self.show_all_apps:
                         dock_app.queue_redraw()
                     else:
@@ -3181,6 +3176,10 @@ class Dock(object):
                 win = dock_app.get_first_normal_win()
                 if win is not None:
                     pixbuf = window_control.get_icon_pb(win)
+                    # scale at best quality
+                    pixbuf = pixbuf.scale_simple(icon_size * scale_factor, icon_size * scale_factor,
+                                                 GdkPixbuf.InterpType.HYPER)
+                    # scale to the correct size
                     dock_app.icon_filename = "wnck"  # we got it from wnck
 
             # can happen e.g. with dock prefs window...
