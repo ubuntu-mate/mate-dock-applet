@@ -3208,10 +3208,7 @@ class Dock(object):
                     try:
                         pixbuf = icon_info.load_icon()
                     except GLib.GError:
-                        # default to a stock icon if we couldn't load the app icon
-                        pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE, stock_size,
-                                                         None)
-                        dock_app.icon_filename = "STOCK_EXECUTE"
+                        pixbuf = None
 
         if pixbuf is None:
             # we couldn't get the icon from the .desktop or wnck but there a still a few
@@ -3237,6 +3234,7 @@ class Dock(object):
 
             icon_file = ""
             if os.path.isfile(dock_app.icon_name):
+                icon_file = dock_app.icon_name
                 pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(dock_app.icon_name,
                                                                 icon_size * scale_factor,
                                                                 icon_size * scale_factor)
