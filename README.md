@@ -1,7 +1,7 @@
 # An application dock applet for the MATE panel
 
-### Mate dock applet V0.80 on Solus OS, MATE edition
-![V0.80 on Solus OS MATE edition](https://github.com/robint99/screenshots/blob/master/Solus%20and%20V.80.png)
+### Mate dock applet V0.88 on Ubuntu MATE 18.10
+![V0.88 on Ubuntu MATE 18.10](https://github.com/robint99/screenshots/blob/master/dock%20applet%20V0.88.png)
 
 The applet works with both GTK2 and GTK3 versions of MATE and allows you to:
 
