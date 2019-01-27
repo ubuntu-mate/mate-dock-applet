@@ -5,6 +5,7 @@ V0.88 Added Unity and Unity Flat looks to the dock
       Fix for issue #167 - Unpinned applications do not minimize to their own button
       Fix for issue #166 - MATE's Sticky Notes show up in the Dock
       Fix for issue #126 - Version 0.83 adds extra space on the right side of the panel.
+      Fix for issue #113 - Unity-like icons backlight + gloss
       Fix for issue #101 - Double click needed, if panel not expaned
       Fix for an untracked issue where apps whose .desktop file specified a
       full path and filename for their desktop icon would not load the icon correctly.
