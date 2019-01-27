@@ -1,7 +1,20 @@
+V0.88 Added Unity and Unity Flat looks to the dock
+      Changed the way in which the dock appearance is set in the
+      preferences dialog, so that preset 'themes' or a custom mix
+      of icon background and indicators can be applied.
+      Fix for issue #167 - Unpinned applications do not minimize to their own button
+      Fix for issue #166 - MATE's Sticky Notes show up in the Dock
+      Fix for issue #126 - Version 0.83 adds extra space on the right side of the panel.
+      Fix for issue #101 - Double click needed, if panel not expaned
+      Fix for an untracked issue where apps whose .desktop file specified a
+      full path and filename for their desktop icon would not load the icon correctly.
+      Also closed several historic and no longer relevant issues relating to
+      older versions of the applet.
+
 V0.87 Fix for issue #158 - Odd Icon Behavior when Minimizing and then unminimizing.
       Fix for issue #139 - LibreOffice Writer not showing in dock
-      Fix for issue #160 - Unused event parameter removed
-      Fix for issue #159 - Use dark variant when defined by theme
+      Fix for issue #160 - Unused evenFixt parameter removed
+      Fix for issue #ccccc159 - Use dark variant when defined by theme
       Fix for issue #154 - Added a 'bring all windows forward' option
       Fix for issue #156 - AttributeError in do_window_scroll()
 	    Fix for issue #152 - Icons of wine applications aren't displayed
