@@ -3170,45 +3170,38 @@ class Dock(object):
         pixbuf = None
         pixbuf_s = None
 
+        # try to get the icon from wnck
         if dock_app.icon_name == "wnck":
-            # we need to get the icon from wnck
-            if dock_app.icon_name == "wnck":
-                win = dock_app.get_first_normal_win()
-                if win is not None:
-                    pixbuf = window_control.get_icon_pb(win)
+            win = dock_app.get_first_normal_win()
+            if win is not None:
+                pixbuf = window_control.get_icon_pb(win)
+                if pixbuf is not None:
                     # scale at best quality
                     pixbuf = pixbuf.scale_simple(icon_size * scale_factor, icon_size * scale_factor,
                                                  GdkPixbuf.InterpType.HYPER)
                     # scale to the correct size
                     dock_app.icon_filename = "wnck"  # we got it from wnck
 
-            # can happen e.g. with dock prefs window...
-            # pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE,
-            #                                  stock_size, None)
-            # dock_app.icon_filename = "STOCK_EXECUTE"
+        # look up the icon filename using Gtk
+        if pixbuf is None and dock_app.has_desktop_file():
+            dai = Gio.DesktopAppInfo.new_from_filename(dock_app.desktop_file)
+            the_icon = dai.get_icon()
+            if the_icon is Gio.ThemedIcon:
+                icon_info = self.icontheme.choose_icon_for_scale(the_icon.get_names(),
+                                                                 icon_size, scale_factor,
+                                                                 Gtk.IconLookUpFlags.FORCE_SIZE)
+            else:
+                icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
+                                                                 icon_size, scale_factor,
+                                                                 Gtk.IconLookupFlags.FORCE_SIZE)
 
-        else:
-            if dock_app.has_desktop_file():
-                # look up the icon filename using Gtk
+            if icon_info is not None:
+                dock_app.icon_filename = icon_info.get_filename()
 
-                dai = Gio.DesktopAppInfo.new_from_filename(dock_app.desktop_file)
-                the_icon = dai.get_icon()
-                if the_icon is Gio.ThemedIcon:
-                    icon_info = self.icontheme.choose_icon_for_scale(the_icon.get_names(),
-                                                                     icon_size, scale_factor,
-                                                                     Gtk.IconLookUpFlags.FORCE_SIZE)
-                else:
-                    icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
-                                                                     icon_size, scale_factor,
-                                                                     Gtk.IconLookupFlags.FORCE_SIZE)
-
-                if icon_info is not None:
-                    dock_app.icon_filename = icon_info.get_filename()
-
-                    try:
-                        pixbuf = icon_info.load_icon()
-                    except GLib.GError:
-                        pixbuf = None
+                try:
+                    pixbuf = icon_info.load_icon()
+                except GLib.GError:
+                    pixbuf = None
 
         if pixbuf is None:
             # we couldn't get the icon from the .desktop or wnck but there a still a few
