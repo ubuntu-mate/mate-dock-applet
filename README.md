@@ -1,14 +1,5 @@
 # An application dock applet for the MATE panel
 
-## Important!!!
-
-V0.89 will be the final release of the applet. Over the past year or so, time to work on the project and the enthusiasm to do so have both been hard to find. Since my free time is so limited right now, I would much rather be spending it doing something I am more enthusiastic about and will get more enjoyment from. Because of this, I've reluctantly decided to stop work on the applet...
-
-Hopefully, this won't mean the end of the applet. Being GPL, the code is freely available and I hope that other developers will take it and use it to create new and better versions of the dock applet in the future.
-
-As a final note, I would like to express my thanks to all those users who've contributed via bug reports, pull requests etc. over the past few years.
-
-
 ### Mate dock applet V0.88 on Ubuntu MATE 18.10
 ![V0.88 on Ubuntu MATE 18.10](https://github.com/robint99/screenshots/blob/master/dock%20applet%20V0.88.png)
 
