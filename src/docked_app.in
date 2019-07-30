@@ -110,17 +110,23 @@ def get_backlight_color(pixbuf):
     rowstride = pixbuf.props.rowstride
     height = pixbuf.props.height
 
+    num_channels = pixbuf.get_n_channels()
+    has_alpha = pixbuf.get_has_alpha()
+
     img = pixbuf.get_pixels()
     r_total = g_total = b_total = 0
     total = 0.0
 
     for w_count in range(width):
         for h_count in range(height):
-            pix_index = (h_count * rowstride + w_count * 4)
+            pix_index = (h_count * rowstride + w_count * num_channels)
             pix_r = img[pix_index]
             pix_g = img[pix_index + 1]
             pix_b = img[pix_index + 2]
-            pix_a = img[pix_index + 3]
+            if has_alpha:
+                pix_a = img[pix_index + 3]
+            else:
+                pix_a = 255
 
             saturation = float(max(pix_r, max(pix_g, pix_b)) - min(pix_r, min(pix_g, pix_b))) / 255.0
             relevance = .1 + .9 * (float(pix_a) / 255) * saturation
