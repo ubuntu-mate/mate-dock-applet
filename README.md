@@ -57,13 +57,14 @@ An ebuild is available via the [mate-de-gentoo](https://github.com/oz123/mate-de
 Users of other distros will need to install from source, so first install the required dependencies. Note, the package names below are for Ubuntu/Linux Mint/Debian - the name of the packages will vary on other distros.
 
 * Python3
-* Python wnck bindings (gir1.2-wnck-1.0 for Gtk2 versions of the applet, gir1.2-wnck-3.0 for Gtk3)
-* Python implementation of Xlib - python-xlib (python3-xlib in Ubuntu based distributions)
-* GLib development files (libglib2.0-dev)
-* Python Imaging Library (python3-pil)
+* Python wnck bindings (gir1.2-wnck-1.0 for Gtk2 versions of the applet, gir1.2-wnck-3.0 for Gtk3) (`gnome-python2-libwnck` in Fedora)
+* Python implementation of Xlib - python-xlib (python3-xlib in Ubuntu based distributions and Fedora)
+* GLib development files (libglib2.0-dev) (`glib2-devel` in Fedora)
+* Python Imaging Library (python3-pil) (`python3-pillow` in Fedora)
 * Python 3 Cairo bindings (python3-cairo)
-* Bamf (bamfdaemon, libbamf and gir1.2-bamf)
+* Bamf (bamfdaemon, libbamf and gir1.2-bamf) (`bamf-daemon` and `bamf` in Fedora)
 
+  
 
 then cd to the directory containing all of the development files and run:
 
