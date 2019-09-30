@@ -4546,24 +4546,27 @@ class Dock(object):
 
         dx, dy = self.get_dock_root_coords()
 
-        if self.panel_orient in ["top", "bottom"]:
-            final_x = x - self.scrolled_win.get_hadjustment().get_value()
-            if self.nice_sizing:
-                max_w = self.applet.get_allocation().width
+        try:
+            if self.panel_orient in ["top", "bottom"]:
+                final_x = x - self.scrolled_win.get_hadjustment().get_value()
+                if self.nice_sizing:
+                    max_w = self.applet.get_allocation().width
+                else:
+                    max_w = self.scrolled_win.get_max_content_width()
+                final_x = min(max(final_x, dx), dx + max_w)
+                final_y = y
             else:
-                max_w = self.scrolled_win.get_max_content_width()
-            final_x = min(max(final_x, dx), dx + max_w)
-            final_y = y
-        else:
-            final_y = y - self.scrolled_win.get_vadjustment().get_value()
-            if self.nice_sizing:
-                max_h = self.applet.get_allocation().height
-            else:
-                max_h = self.scrolled_win.get_max_content_height()
-            final_y = min(max(final_y, dy), dy + max_h)
-            final_x = x
+                final_y = y - self.scrolled_win.get_vadjustment().get_value()
+                if self.nice_sizing:
+                    max_h = self.applet.get_allocation().height
+                else:
+                    max_h = self.scrolled_win.get_max_content_height()
+                final_y = min(max(final_y, dy), dy + max_h)
+                final_x = x
 
-        return final_x, final_y
+            return final_x, final_y
+        except:
+            return x, y
 
     def get_app_icon_size(self):
         """ Gets the size of a single app icon
