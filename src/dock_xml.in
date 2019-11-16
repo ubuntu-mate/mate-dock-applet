@@ -42,7 +42,7 @@ files and which specifies the .desktop file to use
 import xml.etree.ElementTree as ET
 import sys
 import os
-import distro
+import distro as linux_distro
 
 
 def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
@@ -414,7 +414,7 @@ def read_app_xml(filename):
         is running on
     """
 
-    distro, release, did = distro.linux_distribution()
+    distro, release, did = linux_distro.linux_distribution()
 
     if (distro is None) or (distro == ""):
         return [False]
