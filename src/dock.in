@@ -533,6 +533,7 @@ class Dock(object):
         self.show_all_apps = True
         self.win_from_cur_ws_only = False
         self.use_win_list = True
+        self.win_switch_unity_style = False
         self.click_action = dock_prefs.ClickActionType.MINMAX
         self.panel_act_list = False
         self.change_panel_color = False
@@ -1035,6 +1036,7 @@ class Dock(object):
         self.multi_ind = self.settings.get_boolean("multi-ind")
         self.show_all_apps = self.settings.get_boolean("apps-from-all-workspaces")
         self.use_win_list = self.settings.get_boolean("use-win-list")
+#        self.win_switch_unity_style = self.settings.get_boolean("switch-unity-style")
         self.click_restore_last_active = self.settings.get_boolean("click-restore-last-active")
         self.change_panel_color = self.settings.get_boolean("change-panel-color")
         self.change_dock_color_only = self.settings.get_boolean("change-panel-color-dock-only")
@@ -1941,6 +1943,7 @@ class Dock(object):
             self.prefs_win.set_change_dock_color_only(self.change_dock_color_only)
             self.prefs_win.set_pan_act(self.panel_act_list)
             self.prefs_win.set_win_cur_ws_only(self.win_from_cur_ws_only)
+            self.prefs_win.set_win_switch_unity_style(self.win_switch_unity_style)
             self.prefs_win.set_bg(self.active_bg)
             self.prefs_win.set_fallback_bar_col(self.fallback_bar_col)
             self.prefs_win.set_app_spacing(self.app_spacing)
@@ -1996,6 +1999,7 @@ class Dock(object):
            (self.multi_ind != self.prefs_win.get_multi_ind()) or \
            (self.show_all_apps != self.prefs_win.get_show_unpinned_apps_on_all_ws()) or \
            (self.win_from_cur_ws_only != self.prefs_win.get_win_cur_ws_only()) or \
+           (self.win_switch_unity_style != self.prefs_win.get_win_switch_unity_style()) or \
            (self.click_action != self.prefs_win.get_click_action()) or \
            (self.change_panel_color != self.prefs_win.get_change_panel_color()) or \
            (self.change_dock_color_only != self.prefs_win.get_change_dock_color_only()) or \
@@ -2016,6 +2020,7 @@ class Dock(object):
             self.multi_ind = self.prefs_win.get_multi_ind()
             self.show_all_apps = self.prefs_win.get_show_unpinned_apps_on_all_ws()
             self.win_from_cur_ws_only = self.prefs_win.get_win_cur_ws_only()
+            self.win_switch_unity_style = self.prefs_win.get_win_switch_unity_style()
             self.click_action = self.prefs_win.get_click_action()
             self.app_spacing = self.prefs_win.get_app_spacing()
             self.attention_type = self.prefs_win.get_attention_type()
