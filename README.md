@@ -63,6 +63,7 @@ Users of other distros will need to install from source, so first install the re
 * Python Imaging Library (python3-pil) (`python3-pillow` in Fedora)
 * Python 3 Cairo bindings (python3-cairo)
 * Bamf (bamfdaemon, libbamf and gir1.2-bamf) (`bamf-daemon` and `bamf` in Fedora)
+* Python Distro (python3-distro)
 
   
 
