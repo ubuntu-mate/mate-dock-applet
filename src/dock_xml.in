@@ -46,7 +46,7 @@ import distro as distribution
 
 
 def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
-              use_dock_win_list, win_from_cur_ws_only,
+              use_dock_win_list, win_from_cur_ws_only, win_switch_unity_style,
               panel_change_color, dock_panel_change_only, use_panel_act_list,
               active_icon_bg, fallback_bar_col, spacing, attention_type,
               popup_delay, saved_configs, pa_on_all_ws, dock_fixed_size,
@@ -89,6 +89,9 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
         win_from_cur_ws_only: boolean - If True, indicators and window list
                               items will only be shown for windows on the
                               current workspace (new with V0.67)
+        win_switch_unity_style : boolean - If True, first left-click on a dock-icon
+                                 switches to the last focused window first, in
+                                 case the app has multiple windows opened
         panel_change_color : boolean - Whether or not MATE panels are to change
                              color according to the desktop wallpaper (new
                              with V0.66)
@@ -142,6 +145,8 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
                         uwl="%s" % use_dock_win_list)
     wcw_el = ET.Element("win_from_cur_ws_only",
                         wcw="%s" % win_from_cur_ws_only)
+    wsu_el = ET.Element("win_switch_unity_style",
+                        wsu="%s" % win_switch_unity_style)
     pcc_el = ET.Element("panel_change_color", pcc="%s" % panel_change_color)
     dcc_el = ET.Element("dock_panel_change_only",
                         dcc="%s" % dock_panel_change_only)
@@ -189,6 +194,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
     root.append(mi_el)
     root.append(uwl_el)
     root.append(wcw_el)
+    root.append(wsu_el)
     root.append(pcc_el)
     root.append(dcc_el)
     root.append(pal_el)
@@ -289,6 +295,12 @@ def read_xml(filename):
     else:
         win_from_cur_ws_only = True
 
+    wsu_el = root.find("win_switch_unity_style")
+    if wsu_el is not None:
+        win_switch_unity_style = wsu_el.get("wsu") == "True"
+    else:
+        win_switch_unity_style = False
+
     crla_el = root.find("panel_change_color")
     if crla_el is not None:
         panel_change_color = crla_el.get("pcc") == "True"
@@ -388,7 +400,7 @@ def read_xml(filename):
         theme = 0
 
     return [True, df_list, light_ind, show_all, multi_ind,
-            use_win_list, win_from_cur_ws_only,
+            use_win_list, win_from_cur_ws_only, win_switch_unity_style,
             panel_change_color, dock_panel_change_only,
             use_panel_act_list, bg_type, fallback_bar_col,
             spacing, attention_type, popup_delay, saved_configs,

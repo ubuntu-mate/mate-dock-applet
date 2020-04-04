@@ -26,6 +26,11 @@
         <summary>Whether to show indicators and window list items for the current workspace only</summary>
         <description>Whether to show indicators and window list items only for apps which have windows open on the current workspace</description>
     </key>
+    <key type="b" name="win-switch-unity-style">
+        <default>false</default>
+        <summary>Whether to focus the last active window of an app on first left click instead of showing a window list</summary>
+        <description>Whether to focus the last active window of an app on first left click. Otherwise a window list will be shown (default behaviour)</description>
+    </key>
     <key type="b" name="use-win-list">
         <default>true</default>
         <summary>Whether or not to use the applet's window list, or Compiz thumbnail previews</summary>

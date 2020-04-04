@@ -161,13 +161,19 @@ def applet_button_release(widget, event, the_dock):
             if start_app:
                 app.start_app()
             else:
-
-                # if the app only has a single window minimize or restore it, otherwise
-                # perform the action specified by the user
-                if app.get_num_windows() == 1:
-                    the_dock.minimize_or_restore_windows(app)
+                if the_dock.win_switch_unity_style:
+                    if app.is_active and app.get_num_windows() > 1:
+                        the_dock.do_window_selection(app)
+                    else:
+                        the_dock.minimize_or_restore_windows(app)
                 else:
-                    the_dock.do_window_selection(app)
+                    # if the app only has a single window minimize or restore it, otherwise
+                    # perform the action specified by the user
+                    if app.get_num_windows() == 1:
+                        the_dock.minimize_or_restore_windows(app)
+                    else:
+                        the_dock.do_window_selection(app)
+
 
     # See https://bugs.launchpad.net/ubuntu-mate/+bug/1554128
     if event.button == 2:
