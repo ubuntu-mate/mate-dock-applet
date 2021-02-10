@@ -4080,7 +4080,7 @@ class Dock(object):
         if self.app_act_list is not None:
             self.app_act_list.hide()
 
-    def minimize_or_restore_windows(self, app):
+    def minimize_or_restore_windows(self, app, restore_topmost_only=False):
         """ Minimize or restore an app's windows
 
         the action to perform (minimizing, moving workspace, activating)
@@ -4100,6 +4100,7 @@ class Dock(object):
 
         Args:
             app: the docked app whose windows are to be minimized or restored
+            restore_topmost_only: only the topmost window should be restored
 
         """
 
@@ -4126,14 +4127,15 @@ class Dock(object):
 
             # if we're restoring all windows, do this now before we finally
             # activate the last active window
-            for win in app.get_windows():
-                win_type = win.get_window_type()
-                if (win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or
-                    win.is_user_visible()) and (win != last_active_win):
-                    window_control.activate_win(win)
-                    sleep(0.01)
+            if restore_topmost_only is False:
+                for win in app.get_windows():
+                    win_type = win.get_window_type()
+                    if (win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or
+                        win.is_user_visible()) and (win != last_active_win):
+                        window_control.activate_win(win)
+                        sleep(0.01)
 
-                app.last_active_win = last_active_win
+            app.last_active_win = last_active_win
 
             if last_active_win is not None:
                 wnck_win = Wnck.Window.get(last_active_win.get_xid())

@@ -165,7 +165,7 @@ def applet_button_release(widget, event, the_dock):
                     if app.is_active and app.get_num_windows() > 1:
                         the_dock.do_window_selection(app)
                     else:
-                        the_dock.minimize_or_restore_windows(app)
+                        the_dock.minimize_or_restore_windows(app, True)
                 else:
                     # if the app only has a single window minimize or restore it, otherwise
                     # perform the action specified by the user
