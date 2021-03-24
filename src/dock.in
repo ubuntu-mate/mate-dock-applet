@@ -493,7 +493,7 @@ class Dock(object):
 
         super().__init__()
 
-        Notify.init("Mate Dock Applet")
+        Notify.init(_("Mate Dock Applet"))
         self.applet = applet    # the panel applet, in case we need it later
 
         self.app_list = []
@@ -1350,9 +1350,9 @@ class Dock(object):
             unpin_action.set_visible(app.is_pinned)
 
         if pin_action.is_visible():
-            pin_action.set_label("Pin %s" % app.app_name)
+            pin_action.set_label(_("Pin %s") % app.app_name)
         else:
-            unpin_action.set_label("Unpin %s" % app.app_name)
+            unpin_action.set_label(_("Unpin %s") % app.app_name)
 
         move_up_action = self.dock_action_group.get_action("move_up_action")
         move_down_action = self.dock_action_group.get_action("move_down_action")
@@ -1369,23 +1369,23 @@ class Dock(object):
             move_down_action.set_visible(index < (len(self.box.get_children())) - 1)
             move_left_action.set_visible(False)
             move_right_action.set_visible(False)
-            move_up_action.set_label("Move %s up the dock" % app.app_name)
-            move_down_action.set_label("Move %s down the dock" % app.app_name)
+            move_up_action.set_label(_("Move %s up the dock") % app.app_name)
+            move_down_action.set_label(_("Move %s down the dock") % app.app_name)
         else:
             move_up_action.set_visible(False)
             move_down_action.set_visible(False)
             move_left_action.set_visible(index > 0)
             move_right_action.set_visible(index < (len(self.box.get_children())) - 1)
-            move_left_action.set_label("Move %s to the left on the dock" % app.app_name)
-            move_right_action.set_label("Move %s to the right on the dock" % app.app_name)
+            move_left_action.set_label(_("Move %s to the left on the dock") % app.app_name)
+            move_right_action.set_label(_("Move %s to the right on the dock") % app.app_name)
 
         # set the actions for selecting specific windows
 
         num_win = app.get_num_windows()
         if num_win == 1:
-            close_win_action.set_label("Close %s" % app.app_name)
+            close_win_action.set_label(_("Close %s") % app.app_name)
         else:
-            close_win_action.set_label("Close all windows")
+            close_win_action.set_label(_("Close all windows"))
 
         if num_win > 0:
             close_win_action.set_visible(True)
@@ -1424,34 +1424,34 @@ class Dock(object):
         # add the rest of the actions to the dock
         self.dock_action_group.add_actions([
                                            ("pin_action", Gtk.STOCK_ADD,
-                                            "_Pin app to the dock", None, "Pin app to the dock",
+                                            _("_Pin app to the dock"), None, _("Pin app to the dock"),
                                             self.pin_app),
                                            ("unpin_action", Gtk.STOCK_REMOVE,
-                                            "_Unpin app from the dock", None, "Unpin app from the dock",
+                                            _("_Unpin app from the dock"), None, _("Unpin app from the dock"),
                                             self.unpin_app),
                                            ("move_up_action", Gtk.STOCK_GO_UP,
-                                            "Move app _up the dock", None, "Move app up the dock",
+                                            _("Move app _up the dock"), None, _("Move app up the dock"),
                                             self.move_app_up),
                                            ("move_down_action", Gtk.STOCK_GO_DOWN,
-                                            "Move app _down the dock", None, "Move app down the dock",
+                                            _("Move app _down the dock"), None, _("Move app down the dock"),
                                             self.move_app_down),
                                            ("move_left_action", Gtk.STOCK_GO_BACK,
-                                            "Move app _left in the dock", None, "Move app left in the dock",
+                                            _("Move app _left in the dock"), None, _("Move app left in the dock"),
                                             self.move_app_up),
                                            ("move_right_action", Gtk.STOCK_GO_FORWARD,
-                                            "Move app _right in the dock", None, "Move app right in the dock",
+                                            _("Move app _right in the dock"), None, _("Move app right in the dock"),
                                             self.move_app_down),
                                            ("prefs_action", Gtk.STOCK_PREFERENCES,
-                                            "Dock P_references", None, "Dock Preferences",
+                                            _("Dock P_references"), None, _("Dock Preferences"),
                                             self.show_prefs_win),
                                            ("ccl_action", Gtk.STOCK_EXECUTE,
-                                            "Create custo_m launcher for this app", None, "Create custom launcher for this app",
+                                            _("Create custo_m launcher for this app"), None, _("Create custom launcher for this app"),
                                             self.show_ccl_win),
                                            ("about_action", Gtk.STOCK_ABOUT,
-                                            "About...", None, "About...",
+                                            _("About..."), None, _("About..."),
                                             self.show_about_win),
                                            ("close_win_action", Gtk.STOCK_CLOSE,
-                                            "_Close", None, "Close",
+                                            _("_Close"), None, _("Close"),
                                             self.close_win)
                                            ])
 
@@ -1471,12 +1471,12 @@ class Dock(object):
             menu_xml += '<menuitem name="move_left" action="move_left_action"/>'
             menu_xml += '<menuitem name="move_right" action="move_right_action"/>'
 
-        menu_xml += '<separator/><menuitem name="Pin" action="pin_action"/>'
-        menu_xml += '<menuitem name="Unpin" action="unpin_action"/><separator/>'
+        menu_xml += '<separator/><menuitem name="' + _("Pin") + '" action="pin_action"/>'
+        menu_xml += '<menuitem name="' + _("Unpin") + '" action="unpin_action"/><separator/>'
 
-        menu_xml += '<menuitem name="Preferences" action="prefs_action"/>'
-        menu_xml += '<menuitem name="Create custom launcher" action="ccl_action"/>'
-        menu_xml += '<menuitem name="About" action="about_action"/><separator/>'
+        menu_xml += '<menuitem name="' + _("Preferences") + '" action="prefs_action"/>'
+        menu_xml += '<menuitem name="' + _("Create custom launcher") + '" action="ccl_action"/>'
+        menu_xml += '<menuitem name="' + _("About") + '" action="about_action"/><separator/>'
 
         self.applet.setup_menu(menu_xml, self.dock_action_group)
 
@@ -1493,10 +1493,10 @@ class Dock(object):
 
         self.popup_action_group.add_actions([
                                             ("pin_action", Gtk.STOCK_ADD,
-                                             "Pin app to the dock", None, "Pin app to the dock",
+                                             _("Pin app to the dock"), None, _("Pin app to the dock"),
                                              self.pin_app),
                                             ("unpin_action", Gtk.STOCK_REMOVE,
-                                             "_Unpin app from the dock", None, "Unpin app from the dock",
+                                             _("_Unpin app from the dock"), None, _("Unpin app from the dock"),
                                              self.unpin_app)
                                             ])
 
@@ -1611,9 +1611,9 @@ class Dock(object):
                         self.right_clicked_app = None
 
             # maintain a reference to the unpin notification...
-            self.notification = Notify.Notification.new("%s unpinned" % the_app.app_name)
+            self.notification = Notify.Notification.new(_("%s unpinned") % the_app.app_name)
             self.notification.set_icon_from_pixbuf(the_app.app_pb)
-            self.notification.add_action("action_click", "Undo", self.notify_cb, [the_app, app_index])
+            self.notification.add_action("action_click", _("Undo"), self.notify_cb, [the_app, app_index])
             self.notification.show()
 
             self.write_settings()
@@ -1651,7 +1651,7 @@ class Dock(object):
             self.add_app(the_app)
             self.move_app(the_app, app_data[1])
 
-        notification = Notify.Notification.new("%s re-pinned" % the_app.app_name)
+        notification = Notify.Notification.new(_("%s re-pinned") % the_app.app_name)
         notification.set_icon_from_pixbuf(the_app.app_pb)
         notification.show()
 
@@ -2172,11 +2172,11 @@ class Dock(object):
 
         valid_launcher = False
         if self.ccl_win.name == "":
-            error_text = "The name of the launcher has not been set"
+            error_text = _("The name of the launcher has not been set")
         elif self.ccl_win.command == "":
-            error_text = "The command of the launcher has not been set"
+            error_text = _("The command of the launcher has not been set")
         elif self.ccl_win.icon_filename == "":
-            error_text = "The icon of the launcher has not been set"
+            error_text = _("The icon of the launcher has not been set")
         else:
             valid_launcher = True
 
@@ -2185,7 +2185,7 @@ class Dock(object):
                                    Gtk.MessageType.ERROR,
                                    Gtk.ButtonsType.OK,
                                    None)
-            md.set_markup('<span size="x-large"><b>Cannot create launcher</b></span>')
+            md.set_markup('<span size="x-large"><b>' + _("Cannot create launcher") + '</b></span>')
             md.format_secondary_text(error_text)
             md.run()
             md.destroy()

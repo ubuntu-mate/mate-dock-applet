@@ -311,9 +311,9 @@ class TestWindow(Gtk.Window):
         Create the window and its contents
         """
 
-        super().__init__(title="Dock color changer test")
+        super().__init__(title=_("Dock color changer test"))
 
-        self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
+        self.__button = Gtk.Button(label=_("Close"), stock=Gtk.STOCK_CLOSE)
         self.__button.connect("button-press-event", self.win_button_press)
         self.connect("delete-event", self.win_delete_event)
 
@@ -340,9 +340,9 @@ class TestWindow(Gtk.Window):
         self.__lbl_desktop_img.set_use_markup(True)
 
         self.__red = self.__green = self.__blue = 0
-        self.__lbl_red = Gtk.Label("red:")
-        self.__lbl_green = Gtk.Label("green:")
-        self.__lbl_blue = Gtk.Label("blue:")
+        self.__lbl_red = Gtk.Label(_("red:"))
+        self.__lbl_green = Gtk.Label(_("green:"))
+        self.__lbl_blue = Gtk.Label(_("blue:"))
 
         self.__vbox1.pack_start(self.__lbl_red, False, False, 2)
         self.__vbox1.pack_start(self.__lbl_green, False, False, 2)
@@ -369,9 +369,9 @@ class TestWindow(Gtk.Window):
         self.__red, self.__green, self.__blue = self.pcc.panel_rgb()
         pfn = os.path.split(self.pcc.wallpaper_filename())[1]
         self.__lbl_desktop_img.set_markup("<b>%s</b>" % pfn)
-        self.__lbl_red.set_text("red: %s" % self.__red)
-        self.__lbl_green.set_text("red: %s" % self.__green)
-        self.__lbl_blue.set_text("red: %s" % self.__blue)
+        self.__lbl_red.set_text(_("red:") + " %s" % self.__red)
+        self.__lbl_green.set_text(_("green:") + " %s" % self.__green)
+        self.__lbl_blue.set_text(_("blue:") + " %s" % self.__blue)
         red = self.__red / 255
         green = self.__green / 255
         blue = self.__blue / 255

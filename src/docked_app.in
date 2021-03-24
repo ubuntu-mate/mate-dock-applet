@@ -882,7 +882,7 @@ class DockedApp(object):
             else:
                 self.desktop_ai = Gio.DesktopAppInfo.new(self.desktop_file)
 
-            self.app_name = self.desktop_ai.get_string("Name")
+            self.app_name = self.desktop_ai.get_locale_string("Name")
             self.icon_name = self.desktop_ai.get_string("Icon")
 
             # if the desktop file does not specify an icon name, use the app
