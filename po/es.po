@@ -1,0 +1,752 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 0.80\n"
+"Report-Msgid-Bugs-To: https://github.com/ubuntu-mate/mate-dock-applet/"
+"issues\n"
+"POT-Creation-Date: 2021-03-24 12:28+0100\n"
+"PO-Revision-Date: 2017-12-14 13:03-0600\n"
+"Last-Translator: Joel Barrios <darkshram@gmail.com>\n"
+"Language-Team: Spanish <darkshram@gmail.com>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/dock.py:496
+msgid "Mate Dock Applet"
+msgstr "Dock Applet de Mate"
+
+#: src/dock.py:1353
+#, python-format
+msgid "Pin %s"
+msgstr "Prender %s"
+
+#: src/dock.py:1355
+#, python-format
+msgid "Unpin %s"
+msgstr "Desprender %s"
+
+#: src/dock.py:1372
+#, python-format
+msgid "Move %s up the dock"
+msgstr "Mover %s arriba"
+
+#: src/dock.py:1373
+#, python-format
+msgid "Move %s down the dock"
+msgstr "Mover %s abajo"
+
+#: src/dock.py:1379
+#, python-format
+msgid "Move %s to the left on the dock"
+msgstr "Mover %s a la izquierda"
+
+#: src/dock.py:1380
+#, python-format
+msgid "Move %s to the right on the dock"
+msgstr "Mover %s a la derecha"
+
+#: src/dock.py:1386
+#, python-format
+msgid "Close %s"
+msgstr "Cerrar %s"
+
+#: src/dock.py:1388
+msgid "Close all windows"
+msgstr "Cerrar todas las ventanas"
+
+#: src/dock.py:1427
+msgid "_Pin app to the dock"
+msgstr "_Prender aplicación"
+
+#: src/dock.py:1427 src/dock.py:1496
+msgid "Pin app to the dock"
+msgstr "Prender aplicación"
+
+#: src/dock.py:1430 src/dock.py:1499
+msgid "_Unpin app from the dock"
+msgstr "_Desprender aplicación"
+
+#: src/dock.py:1430 src/dock.py:1499
+msgid "Unpin app from the dock"
+msgstr "Desprender aplicación"
+
+#: src/dock.py:1433
+msgid "Move app _up the dock"
+msgstr "Mover _arriba"
+
+#: src/dock.py:1433
+msgid "Move app up the dock"
+msgstr "Mover arriba"
+
+#: src/dock.py:1436
+msgid "Move app _down the dock"
+msgstr "Mover _debajo"
+
+#: src/dock.py:1436
+msgid "Move app down the dock"
+msgstr "Mover debajo"
+
+#: src/dock.py:1439
+msgid "Move app _left in the dock"
+msgstr "Mover a _la izquierda"
+
+#: src/dock.py:1439
+msgid "Move app left in the dock"
+msgstr "Mover a la izquierda"
+
+#: src/dock.py:1442
+msgid "Move app _right in the dock"
+msgstr "Mover a la de_recha"
+
+#: src/dock.py:1442
+msgid "Move app right in the dock"
+msgstr "Mover a las derecha"
+
+#: src/dock.py:1445
+msgid "Dock P_references"
+msgstr "P_referencias"
+
+#: src/dock.py:1445
+msgid "Dock Preferences"
+msgstr "Preferencias de Dock Applet"
+
+#: src/dock.py:1448
+msgid "Create custo_m launcher for this app"
+msgstr "Crear _lanzador personalizado para esta aplicación"
+
+#: src/dock.py:1448
+msgid "Create custom launcher for this app"
+msgstr "Crear lanzador personalizado para esta aplicación"
+
+#: src/dock.py:1451
+msgid "About..."
+msgstr "Acerca de..."
+
+#: src/dock.py:1454
+msgid "_Close"
+msgstr "_Cerrar"
+
+#: src/dock.py:1454 src/dock_about.py:63 src/dock_color_changer.py:316
+#: src/dock_info.py:70
+msgid "Close"
+msgstr "Cerrar"
+
+#: src/dock.py:1474
+msgid "Pin"
+msgstr "Prender"
+
+#: src/dock.py:1475
+msgid "Unpin"
+msgstr "Desprender"
+
+#: src/dock.py:1477 src/dock_prefs.py:123
+msgid "Preferences"
+msgstr "Preferencias"
+
+#: src/dock.py:1478
+#, fuzzy
+msgid "Create custom launcher"
+msgstr "Crear lanzador personalizado"
+
+#: src/dock.py:1479
+msgid "About"
+msgstr "Acerca de"
+
+#: src/dock.py:1614
+#, python-format
+msgid "%s unpinned"
+msgstr "%s desprendido"
+
+#: src/dock.py:1616
+msgid "Undo"
+msgstr "Deshacer"
+
+#: src/dock.py:1654
+#, python-format
+msgid "%s re-pinned"
+msgstr "Se ha vuelto a prender %s"
+
+#: src/dock.py:2175
+msgid "The name of the launcher has not been set"
+msgstr "Nombre del lanzador sin establecer"
+
+#: src/dock.py:2177
+msgid "The command of the launcher has not been set"
+msgstr "Orden del lanzador sin establecer"
+
+#: src/dock.py:2179
+msgid "The icon of the launcher has not been set"
+msgstr "Icono del lanzador sin establecer"
+
+#: src/dock.py:2188
+msgid "Cannot create launcher"
+msgstr "Imposible crear lanzador"
+
+#: src/dock_about.py:58
+msgid "About Dock Applet"
+msgstr "Acerca de Dock Applet"
+
+#: src/dock_about.py:65
+msgid "Hints & Tips"
+msgstr "Consejos y Trucos"
+
+#: src/dock_about.py:67
+msgid "License"
+msgstr "Licencia"
+
+#: src/dock_about.py:121
+msgid "MATE Dock Applet"
+msgstr "Dock Applet de MATE"
+
+#: src/dock_about.py:131
+msgid ""
+"MATE Dock Applet is free software; you can redistribute it and/or modify it "
+"under the terms of the GNU General Public Licence as published by the Free "
+"Software Foundation; either version 3 of the Licence, or (at your option) "
+"any later version. \n"
+"\n"
+"MATE Dock Applet is distributed in the hope that it will be useful, but "
+"WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY "
+"or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public Licence for "
+"more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public Licence along with "
+"the applet; if not, write to the Free Software Foundation, Inc., 51 Franklin "
+"St, Fifth Floor, Boston, MA 02110-1301 USA\n"
+msgstr ""
+"MATE Dock Applet es un software libre, puedes redistribuirlo y/o modificarlo "
+"bajo los términos de la Licencia Pública General de GNU publicada por la "
+"Fundación de Software Libre, ya sea la versión 3 de la licencia o (a su "
+"elección) cualquier versión posterior.\n"
+"\n"
+"MATE Dock Applet se distribuye con la esperanza de que sea útil, pero SIN "
+"NINGUNA GARANTÍA, incluso sin la garantía implícita de COMERCIABILIDAD o "
+"APTITUD PARA UN PROPÓSITO PARTICULAR. Consulte la Licencia Pública General "
+"de  GNU para más detalles. \n"
+"\n"
+"Debes haber recibido una copia de la Licencia Pública General de GNU junto "
+"con Dock Applet; si no, escribe a Free Software Foundation, Inc., 51 "
+"Franklin St, Fifth Floor, Boston, MA 02110-1301 USA\n"
+
+#: src/dock_about.py:151
+msgid "A dock applet for the MATE desktop"
+msgstr "Una mini aplicación lanzadores para el escritorio de MATE"
+
+#: src/dock_about.py:153
+msgid "This program comes with ABSOLUTELY NO WARRANTY"
+msgstr "Este programa viene ABSOLUTAMENTE SIN GARANTÍA"
+
+#: src/dock_about.py:154
+msgid "and is distributed under the GNU General"
+msgstr "y distribuido bajo los términos de la"
+
+#: src/dock_about.py:155
+msgid "Public License, version 3 or later"
+msgstr "Licencia Pública General de GNU, versión 3 o posterior"
+
+#: src/dock_about.py:164
+msgid "For details click"
+msgstr "Para detalles, haga clic"
+
+#: src/dock_about.py:167
+msgid "here"
+msgstr "aquí"
+
+#: src/dock_about.py:225
+msgid "Drag and drop data between applications"
+msgstr "Arrastre y suelte datos entre aplicaciones"
+
+#: src/dock_about.py:227
+msgid ""
+"To easily drag and drop data from one application to another, drag the data "
+"from the first application onto the dock icon of the second application. The "
+"dock will activate the second application's window, allowing the data to be "
+"dragged onto it. Note: the second application must already be running."
+msgstr ""
+"Para arrastrar y soltar fácilemente datos de una aplicación a otra, arrastre "
+"los datos desde la primera aplicación hacia el icono en Dock Applet de la "
+"segunda aplicación. Dock Applet activará la ventana de la segunda aplicación "
+"Permitiendo que los datos sean arastrados hacia ésta. Nota: la segunda "
+"aplicación debe estar en ejecución."
+
+#: src/dock_about.py:234
+msgid "Adding new applications to the dock"
+msgstr "Añadir nuevas aplicaciones a Dock Applet"
+
+#: src/dock_about.py:236
+msgid ""
+"Applications can be dragged and dropped from any menu applet (i.e. the Main "
+"Menu, Menu Bar, Advanced Menu, or Brisk Menu) directly onto the dock."
+msgstr ""
+"Las aplicaciones pueden ser arrastradas y soltadas desde la mini-aplicación "
+"de menú (ejemplo: Main Menu, Advanced Menu o Brisk Menu) directamente sobre "
+"Dock Applet."
+
+#: src/dock_about.py:242
+msgid "Activating apps with keyboard shortcuts"
+msgstr "Activando aplicaciones con atajos de teclado"
+
+#: src/dock_about.py:244
+msgid ""
+"Holding down the <Super> (i.e. Windows) key and pressing a number key will "
+"activate an app in the dock. For example, pressing 1 will activate the first "
+"app, 2 the second etc. Pressing 0 will activate the tenth app. To activate "
+"apps 11 to 20, hold down the <Alt> key as well as <Super>."
+msgstr ""
+"Sosteniendo la tecla <Super> (logo de Windows) y presionado una tecla de "
+"número activará una aplicación en Dock Applet. Por ejemplo, presionado 1 "
+"activará la primera aplicación, 2 la segunda, etc. Presionar 0 activará la "
+"décima aplicación. Para activar aplicaciones de la 11 a 20, sostenga la "
+"tecla <Alt> junto con <Super>"
+
+#: src/dock_about.py:252
+msgid "Opening a new instance of a running application"
+msgstr "Abrir una nueva instancia de una aplicación en ejecución"
+
+#: src/dock_about.py:254 src/dock_info.py:123
+msgid ""
+"To quickly open a new instance of a running application either hold down the "
+"<shift> key while clicking the application's dock icon, or middle click on "
+"the icon.\n"
+"\n"
+"Note: this works for most, but not all, apps."
+msgstr ""
+"Para abrir rápidamente una nueva instancia de una aplicación en "
+"ejecuciónpulse y sostenga la tecla <Mayús> mientras mientras hace clic "
+"sobreel icono de ésta o bien haga clic central sobre el icono.\n"
+"Nota: ésto funciona para la mayoría —pero no todas— las aplicaciones."
+
+#: src/dock_about.py:261 src/dock_info.py:129
+msgid "Window switching using the mouse wheel"
+msgstr "Intercambio de ventana utilizando la rueda del ratón"
+
+#: src/dock_about.py:264 src/dock_info.py:132
+msgid ""
+"To quickly switch between an application's open windows, move the mouse "
+"cursor over the apps's dock icon and use the mouse scroll wheel. This will "
+"activate and display each window in turn, changing workspaces as necessary."
+msgstr ""
+"Para cambiar rápidamente entre ventanas abiertas de una aplicación, mueva el "
+"puntero del ratón sobre el icono de ésta y utilice la rueda del ratón. Ésto "
+"activará y mostrará cada ventana en turno, incluyendo espacios de trabajo."
+
+#: src/dock_about.py:271 src/dock_info.py:138
+msgid "Panel colour changing"
+msgstr "Cambio del color del panel"
+
+#: src/dock_about.py:273 src/dock_info.py:140
+msgid ""
+"When the applet sets the panel colour for the first time, the result may not "
+"look exactly as expected. This is because the default opacity of custom "
+"coloured MATE panels is set extremely low, so that the panel appears almost "
+"transparent.\n"
+"\n"
+"To remedy this, simply right click the panel, select Properties and adjust "
+"the panel opacity as required."
+msgstr ""
+"Cuando la mini-aplicación establece el color del panel por primera vez, el "
+"resultado pudiera verse distinto al esperado. Ésto es debido a que la "
+"opacidad predeterminada de paneles de MATE personalizados es muy baja, de "
+"modo que el panel aparece casi transparente.\n"
+"\n"
+"Para solucionar ésto, simplemente haga clic derecho sobre el panel, "
+"seleccione Propiedades y ajuste la opacidad de panel requerida."
+
+#: src/dock_color_changer.py:314
+msgid "Dock color changer test"
+msgstr ""
+
+#: src/dock_color_changer.py:343 src/dock_color_changer.py:372
+msgid "red:"
+msgstr ""
+
+#: src/dock_color_changer.py:344 src/dock_color_changer.py:373
+msgid "green:"
+msgstr ""
+
+#: src/dock_color_changer.py:345 src/dock_color_changer.py:374
+msgid "blue:"
+msgstr ""
+
+#: src/dock_custom_launcher.py:79
+msgid "Create Launcher"
+msgstr "Crear lanzador"
+
+#: src/dock_custom_launcher.py:101
+msgid "Help"
+msgstr "Ayuda"
+
+#: src/dock_custom_launcher.py:104 src/dock_prefs.py:157
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: src/dock_custom_launcher.py:107 src/dock_prefs.py:161
+msgid "Ok"
+msgstr "De acuerdo"
+
+#: src/dock_custom_launcher.py:141
+msgid "Click to select an icon"
+msgstr "Haga clic para elegir un icono"
+
+#: src/dock_custom_launcher.py:163
+msgid "Name:"
+msgstr "Nombre:"
+
+#: src/dock_custom_launcher.py:178
+msgid "Command:"
+msgstr "Orden:"
+
+#: src/dock_custom_launcher.py:183
+msgid "Browse..."
+msgstr "Examinar..."
+
+#: src/dock_custom_launcher.py:190
+msgid "Run in terminal:"
+msgstr "Ejecutar en terminal"
+
+#: src/dock_custom_launcher.py:198
+msgid "Comment:"
+msgstr "Comentario:"
+
+#: src/dock_custom_launcher.py:204
+msgid "Window Class"
+msgstr "Clase de Ventana"
+
+#: src/dock_custom_launcher.py:337 src/dock_custom_launcher.py:387
+msgid "Choose an application..."
+msgstr "Escoja una aplicación"
+
+#: src/dock_custom_launcher.py:391
+msgid "Image files"
+msgstr "Archivos de imagen"
+
+#: src/dock_custom_launcher.py:502
+msgid "Custom Launchers"
+msgstr "Lanzadores personalizados"
+
+#: src/dock_custom_launcher.py:503
+msgid ""
+"Custom launchers are an advanced feature meant to be used only with apps "
+"that the dock does not recognise (i.e. they display the wrong name or "
+"icon). \n"
+"\n"
+"Normally, this will only happen when the apps have been installed to a non "
+"standard location within the file system, so for the vast majority of apps "
+"this feature is not needed.\n"
+"\n"
+"Note: if an app is running when a custom launcher is created for it, the app "
+"will need to be closed and restarted for the dock to recognise it."
+msgstr ""
+"Los lanzadores personalizados son una función avanzada que debe ser usada "
+"sólo con aplicaciones que Dock Applet no reconozca (ej. cuando muestran "
+"nombre o icono equivocado).\n"
+"\n"
+"Normalmente ocurre sólo la aplicación se instaló fuera de un lugar estándar "
+"en el sistema de archivos, así que esta función es innecesaria para la "
+"mayoría de las aplicaciones.\n"
+"\n"
+"Nota: si está ejecutando la aplicación mientras se crea el lanzador "
+"personalizado, es necesario reiniciar ésta para ser reconocida por Dock "
+"Applet."
+
+#: src/dock_info.py:66
+msgid "Dock Applet hints, tips, and information"
+msgstr "Consejos, información y trucos para Dock Applet"
+
+#: src/dock_info.py:149
+msgid ""
+"Click the 'Hints & Tips' button on the applet 'About' dialog box to see this "
+"information again."
+msgstr ""
+"Clic sobre el botón 'Consejos y Trucos' en el diálogo de la ventana 'Acerca "
+"de' para ver esta información de nuevo."
+
+#: src/dock_prefs.py:185
+msgid "Theme"
+msgstr ""
+
+#: src/dock_prefs.py:191 src/dock_prefs.py:1026 src/dock_prefs.py:1043
+#, fuzzy
+msgid "Default"
+msgstr "Defecto"
+
+#: src/dock_prefs.py:191 src/dock_prefs.py:255 src/dock_prefs.py:997
+#: src/dock_prefs.py:1013 src/dock_prefs.py:1028 src/dock_prefs.py:1045
+msgid "Unity"
+msgstr ""
+
+#: src/dock_prefs.py:191 src/dock_prefs.py:255 src/dock_prefs.py:999
+#: src/dock_prefs.py:1030 src/dock_prefs.py:1047
+msgid "Unity Flat"
+msgstr ""
+
+#: src/dock_prefs.py:191 src/dock_prefs.py:200 src/dock_prefs.py:938
+#: src/dock_prefs.py:971 src/dock_prefs.py:1032 src/dock_prefs.py:1049
+msgid "Subway"
+msgstr "Subterráneo"
+
+#: src/dock_prefs.py:191 src/dock_prefs.py:1034
+msgid "Custom"
+msgstr ""
+
+#: src/dock_prefs.py:197
+msgid "Indicator Type"
+msgstr "Tipo de Indicador"
+
+#: src/dock_prefs.py:198 src/dock_prefs.py:924 src/dock_prefs.py:950
+msgid "Default light"
+msgstr "Claro por defecto"
+
+#: src/dock_prefs.py:198 src/dock_prefs.py:926 src/dock_prefs.py:953
+msgid "Default dark"
+msgstr "Oscuro por defecto"
+
+#: src/dock_prefs.py:198 src/dock_prefs.py:928 src/dock_prefs.py:956
+msgid "Single bar"
+msgstr "Barra única"
+
+#: src/dock_prefs.py:199 src/dock_prefs.py:930 src/dock_prefs.py:959
+msgid "Circle"
+msgstr "Círculo"
+
+#: src/dock_prefs.py:199 src/dock_prefs.py:932 src/dock_prefs.py:962
+msgid "Square"
+msgstr "Cuadrado"
+
+#: src/dock_prefs.py:199 src/dock_prefs.py:934 src/dock_prefs.py:965
+msgid "Triangle"
+msgstr "Triángulo"
+
+#: src/dock_prefs.py:199 src/dock_prefs.py:936 src/dock_prefs.py:968
+msgid "Diamond"
+msgstr "Diamante"
+
+#: src/dock_prefs.py:200 src/dock_prefs.py:974
+msgid "None"
+msgstr "Ninguno"
+
+#: src/dock_prefs.py:204
+msgid "Preview"
+msgstr ""
+
+#: src/dock_prefs.py:229
+msgid "Display an indicator for each open window"
+msgstr "Mostrar un indicador para cada ventana abierta"
+
+#: src/dock_prefs.py:230
+msgid "Display an indicator (max 4) for each open window"
+msgstr "Mostrar un indicador (máximo 4) para cada ventana abierta"
+
+#: src/dock_prefs.py:254
+#, fuzzy
+msgid "Icon Background"
+msgstr "Fondo de icono"
+
+#: src/dock_prefs.py:255 src/dock_prefs.py:993 src/dock_prefs.py:1009
+msgid "Gradient fill"
+msgstr "Relleno en gradiente"
+
+#: src/dock_prefs.py:255 src/dock_prefs.py:995 src/dock_prefs.py:1011
+msgid "Solid fill"
+msgstr "Rellenar sólido"
+
+#: src/dock_prefs.py:292
+msgid "Pinned application dock icons"
+msgstr "Iconos de aplicaciones prendidas"
+
+#: src/dock_prefs.py:293
+msgid "Display on all workspaces"
+msgstr "Mostrar en todos los espacios de trabajo"
+
+#: src/dock_prefs.py:294
+msgid "Display only on the workspace the app was pinned"
+msgstr ""
+"Mostrar sólo en espacios de trabajo donde la aplicación ha sido prendida"
+
+#: src/dock_prefs.py:325
+msgid "Unpinned application dock icons"
+msgstr "Iconos de aplicaciones desprendidas"
+
+#: src/dock_prefs.py:326
+msgid "Display unpinned apps from all workspaces"
+msgstr "Mostrar aplicaciones desprendidas en todos los espacios de trabajo"
+
+#: src/dock_prefs.py:328
+msgid "Display unpinned apps only from current workspace"
+msgstr "Mostrar aplicaciones desprendidas sólo en el espacio de trabajo actual"
+
+#: src/dock_prefs.py:358
+msgid "Display indicators/window list items for current workspace only"
+msgstr ""
+"Mostrar lista de elementos de indicadores/ventanas sólo en espacio de "
+"trabajo actual"
+
+#: src/dock_prefs.py:371
+msgid ""
+"Note: when displaying pinned apps only on the workspace where they were "
+"created, it is a good idea to also select the 'Display unpinned apps' and "
+"'Display indicators/window list' items for the current workspace only "
+"options."
+msgstr ""
+"Nota: al aplicaciones prendidas en el espacio de trabajo donde fueron "
+"creadas, es buena idea seleccionar también opciones 'Mostrar aplicaciones "
+"desprendidas' y 'Mostrar lista de indicadores/ventanas' para el espacio de "
+"trabajo actual"
+
+#: src/dock_prefs.py:383
+msgid "Left clicking a running app's icon will:"
+msgstr ""
+
+#: src/dock_prefs.py:384
+#, fuzzy
+msgid "Display a list of the app's windows"
+msgstr "Mostrar un indicador para cada ventana abierta"
+
+#: src/dock_prefs.py:386
+msgid "Show thumbnail previews of the app's windows"
+msgstr ""
+
+#: src/dock_prefs.py:388
+msgid "Minimize/restore all of the app's windows"
+msgstr ""
+
+#: src/dock_prefs.py:407
+msgid "Unity-style behaviour (always focus app on first click)"
+msgstr ""
+
+#: src/dock_prefs.py:417
+msgid ""
+"\n"
+"Notes:\n"
+"If an app has only a single window open, a window list will not be "
+"displayed. Instead the window will be minimized/restored.\n"
+"Window thumbnail previews require Compiz"
+msgstr ""
+
+#: src/dock_prefs.py:434
+msgid "App spacing"
+msgstr "Espacio entre apps"
+
+#: src/dock_prefs.py:452
+msgid "Panel colour"
+msgstr "Color del panel"
+
+#: src/dock_prefs.py:453
+msgid "Change panel colour to match wallpaper"
+msgstr "Cambiar el color del panel para coincidir con fondo de pantalla"
+
+#: src/dock_prefs.py:455
+msgid "Change colour of dock's panel only"
+msgstr "Cambiar sólo el color del panel de Dock Applet"
+
+#: src/dock_prefs.py:488
+msgid "Dock size"
+msgstr ""
+
+#: src/dock_prefs.py:489
+msgid "Variable - expand or contract as necessary"
+msgstr ""
+
+#: src/dock_prefs.py:491
+msgid "Fixed"
+msgstr ""
+
+#: src/dock_prefs.py:493
+msgid "Display up to "
+msgstr ""
+
+#: src/dock_prefs.py:501
+#, fuzzy
+msgid " app icons"
+msgstr " icono de aplicación"
+
+#: src/dock_prefs.py:525
+msgid ""
+"Disable popup action list and show app actions\n"
+"on panel right click menu only"
+msgstr ""
+"Desactivar ventana emergente de lista de acciones y mostrar\n"
+"acciones de aplicación sólo en el menú de clic derecho del panel"
+
+#: src/dock_prefs.py:541
+msgid "Fallback bar indicator colour"
+msgstr "Color de repliegue de barra indicadora"
+
+#: src/dock_prefs.py:542
+msgid "Colour"
+msgstr "Color"
+
+#: src/dock_prefs.py:544
+msgid ""
+"Colour used for drawing bar indicators when theme colour cannot be "
+"determined or when using Gtk2"
+msgstr ""
+"Color utilizado para dibujar barras indicadoras cuando el color del temano "
+"puede ser determinado o cuando se utiliza Gtk2"
+
+#: src/dock_prefs.py:556
+msgid "Action when apps need attention"
+msgstr "Acción a realizar cuando las aplicaciones requieren atención"
+
+#: src/dock_prefs.py:557
+msgid "Blink the app icon"
+msgstr "Parpadear el icono de aplicación"
+
+#: src/dock_prefs.py:558
+msgid "Show a badge on the app icon"
+msgstr "Mostrar insignia en el icono de aplicación"
+
+#: src/dock_prefs.py:591
+msgid "Popup Delay(s)"
+msgstr "Demora de ventana(s) emergente(s)"
+
+#: src/dock_prefs.py:618
+msgid "Appearance"
+msgstr "Apariencia"
+
+#: src/dock_prefs.py:619
+msgid "Workspaces"
+msgstr "Espacios de trabajo"
+
+#: src/dock_prefs.py:620
+msgid "Behaviour"
+msgstr ""
+
+#: src/dock_prefs.py:622
+msgid "Panel Options"
+msgstr "Opciones de panel"
+
+#: src/dock_prefs.py:623
+msgid "Misc"
+msgstr "Varios"
+
+#~ msgid "My test launcher"
+#~ msgstr "Mi lanzador de prueba"
+
+#~ msgid "This is a comment"
+#~ msgstr "Ésto es un comentario"
+
+#~ msgid "Window selection"
+#~ msgstr "Selección de ventana"
+
+#~ msgid "From applet's window list"
+#~ msgstr "Desde la lista de ventanas"
+
+#~ msgid "From window thumbnail previews (requires Compiz)"
+#~ msgstr "Desde vistas previas de "
+
+#~ msgid "Windows"
+#~ msgstr "Ventanas"
+
+#~ msgid "Must be implemented by Indicator subclasses"
+#~ msgstr "Debe se implementado por las subclases del Indicador"
+
+#~ msgid "Must be implemented by ActiveBackgroundDrawer descendents"
+#~ msgstr ""
+#~ "Debe ser implementado por los descendientes de ActiveBackgroundDrawer"
