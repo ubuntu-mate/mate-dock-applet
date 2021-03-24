@@ -316,7 +316,7 @@ class DockWinList(DockPopup):
 #            cell_area = self.__tree_view.get_cell_area(path, col)
 #            if (x >= cell_area.x + cell_area.width  - CONST_CLOSE_ICON_SIZE) and \
 #               (y <= cell_area.y + CONST_CLOSE_ICON_SIZE):
-#                tooltip.set_text("Close window")
+#                tooltip.set_text(_("Close window"))
 #                return True
 #            else:
 #                return False
