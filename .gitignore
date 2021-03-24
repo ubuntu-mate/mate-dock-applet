@@ -20,3 +20,13 @@ py-compile
 .tags1
 .vscode
 
+ABOUT-NLS
+po/Makefile.in.in
+po/POTFILES
+po/Makevars.template
+po/Rules-quot
+po/*.gmo
+po/*.header
+po/*.sed
+po/*.sin
+po/*.pot

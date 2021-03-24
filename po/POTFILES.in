@@ -1,0 +1,17 @@
+# List of source files which contain translatable strings.
+src/dock.py
+src/dock_about.py
+src/dock_action_list.py
+src/dock_applet.py
+src/dock_color_changer.py
+src/dock_custom_launcher.py
+src/dock_info.py
+src/dock_popup.py
+src/dock_prefs.py
+src/dock_win_list.py
+src/dock_xml.py
+src/docked_app.py
+src/docked_app_helpers.py
+src/dom_color.py
+src/log_it.py
+src/window_control.py
