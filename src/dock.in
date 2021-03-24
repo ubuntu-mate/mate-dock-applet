@@ -75,6 +75,8 @@ from time import sleep
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 
+import gettext
+
 import docked_app
 import dock_prefs
 import dock_about
@@ -87,6 +89,8 @@ import docked_app_helpers
 import window_control
 
 from log_it import log_it as log_it
+
+gettext.install('mate-dock-applet', '@localedir@')
 
 
 class DragMotionTimer(object):
