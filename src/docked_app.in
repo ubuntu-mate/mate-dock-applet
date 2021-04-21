@@ -1520,7 +1520,10 @@ class DockedApp(object):
             Use Gio.DesktopAppinfo as it supports startup notfication
         """
         # start the app
-        run_it = self.desktop_ai.get_string("Exec")
+        try:
+            run_it = self.desktop_ai.get_string("Exec")
+        except:
+            run_it = None
 
         if run_it is not None:
 
