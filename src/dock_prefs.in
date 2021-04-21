@@ -404,6 +404,8 @@ class DockPrefsWindow(Gtk.Window):
                                       Gtk.AttachOptions.SHRINK,
                                       2, 2)
 
+        self.__cb_win_switch_unity_style = Gtk.CheckButton(label="Unity-style behaviour (always focus app on first click)")
+
         self.__notes_behaviour_tv = Gtk.TextView()
         self.__notes_behaviour_tv.set_wrap_mode(Gtk.WrapMode.WORD)
         self.__notes_behaviour_tv.set_editable(False)
@@ -419,12 +421,14 @@ class DockPrefsWindow(Gtk.Window):
                                                      xscale=1.0, yscale=1.0)
         self.__frame_behaviour_align.set_padding(0, 0, 12, 0)
         self.__frame_behaviour_align.add(self.__table_behaviour)
+
         self.__frame_behaviour.add(self.__frame_behaviour_align)
 
         self.__behaviour_vbox = self.create_vbox()
         self.__behaviour_vbox.set_spacing(2)
         self.__behaviour_vbox.pack_start(self.__frame_behaviour, False,
                                          False, 4)
+        self.__behaviour_vbox.pack_start(self.__cb_win_switch_unity_style, False, False, 4)
         self.__behaviour_vbox.pack_start(self.__notes_behaviour_tv, False, False, 4)
 
         self.__frame_spc = create_frame("App spacing")
@@ -1275,6 +1279,24 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         self.__cb_win_cur_ws.set_active(win_cur_ws_only)
+
+    def get_win_switch_unity_style(self):
+        """ Gets whether the dock will focus the last active window of an app
+            on first click
+
+        Returns: boolean
+        """
+
+        return self.__cb_win_switch_unity_style.get_active()
+
+    def set_win_switch_unity_style(self, win_switch_unity_style):
+        """ Sets whether the dock will focus the last active window of an app
+            on first click
+
+        Args: win_switch_unity_style - boolean
+        """
+
+        self.__cb_win_switch_unity_style.set_active(win_switch_unity_style)
 
     def set_fallback_bar_col(self, colrgb):
         """
