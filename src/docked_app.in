@@ -1520,7 +1520,10 @@ class DockedApp(object):
             Use Gio.DesktopAppinfo as it supports startup notfication
         """
         # start the app
-        run_it = self.desktop_ai.get_string("Exec")
+        try:
+            run_it = self.desktop_ai.get_string("Exec")
+        except:
+            run_it = None
 
         if run_it is not None:
 
@@ -1541,7 +1544,11 @@ class DockedApp(object):
                 self.run_cmd_line(run_it)
                 return
 
-        gdai = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
+        if self.desktop_file is not None:
+            gdai = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
+        else:
+            gdai = None
+
         disp = Gdk.Display.get_default()
         if build_gtk2:
             alc = Gdk.AppLaunchContext()
@@ -1553,9 +1560,10 @@ class DockedApp(object):
         alc.connect("launch-failed", self.launch_failed)
 
         # indicate we want startup notification
-        self.startup_id = alc.get_startup_notify_id(gdai, [])
+        if gdai is not None:
+            self.startup_id = alc.get_startup_notify_id(gdai, [])
 
-        gdai.launch_uris_as_manager([], alc, GLib.SpawnFlags.SEARCH_PATH,
+            gdai.launch_uris_as_manager([], alc, GLib.SpawnFlags.SEARCH_PATH,
                                     None, None, None, None)
 
         # make the app's icon pulse
