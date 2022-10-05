@@ -404,6 +404,10 @@ class DockPrefsWindow(Gtk.Window):
                                       Gtk.AttachOptions.SHRINK,
                                       2, 2)
 
+        self.__cb_pan_act = Gtk.CheckButton(label=_("Disable popup action list " +
+                                            "and show app actions\non panel " +
+                                            "right click menu only"))
+
         self.__cb_win_switch_unity_style = Gtk.CheckButton(label=_("Unity-style behaviour (always focus app on first click)"))
 
         self.__notes_behaviour_tv = Gtk.TextView()
@@ -428,6 +432,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__behaviour_vbox.set_spacing(2)
         self.__behaviour_vbox.pack_start(self.__frame_behaviour, False,
                                          False, 4)
+        self.__behaviour_vbox.pack_start(self.__cb_pan_act, False, False, 4)
         self.__behaviour_vbox.pack_start(self.__cb_win_switch_unity_style, False, False, 4)
         self.__behaviour_vbox.pack_start(self.__notes_behaviour_tv, False, False, 4)
 
@@ -522,10 +527,6 @@ class DockPrefsWindow(Gtk.Window):
             self.__frame_dock_size_align.add(self.__table_dock_size)
             self.__frame_dock_size.add(self.__frame_dock_size_align)
 
-        self.__cb_pan_act = Gtk.CheckButton(label=_("Disable popup action list " +
-                                            "and show app actions\non panel " +
-                                            "right click menu only"))
-
         self.__panel_vbox = self.create_vbox()
         self.__panel_vbox.set_spacing(2)
         self.__panel_vbox.pack_start(self.__frame_spc, False, False, 4)
@@ -534,9 +535,6 @@ class DockPrefsWindow(Gtk.Window):
         if not build_gtk2:
             self.__panel_vbox.pack_start(self.__frame_dock_size,
                                          False, False, 4)
-
-        self.__panel_vbox.pack_start(self.__cb_pan_act,
-                                     False, False, 4)
 
         self.__frame_fb_bar_col = create_frame(_("Fallback bar indicator colour"))
         self.__lbl_fb_bar_col = Gtk.Label(_("Colour"))
