@@ -877,32 +877,36 @@ class DockedApp(object):
         """
 
         if self.desktop_file:
-            if os.path.isabs(self.desktop_file):
-                self.desktop_ai = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
-            else:
-                self.desktop_ai = Gio.DesktopAppInfo.new(self.desktop_file)
+            try:
+                if os.path.isabs(self.desktop_file):
+                    self.desktop_ai = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
+                else:
+                    self.desktop_ai = Gio.DesktopAppInfo.new(self.desktop_file)
+            except:
+                self.desktop_ai = None
 
-            self.app_name = self.desktop_ai.get_locale_string("Name")
-            self.icon_name = self.desktop_ai.get_string("Icon")
+            if self.desktop_ai is not None:
+                self.app_name = self.desktop_ai.get_locale_string("Name")
+                self.icon_name = self.desktop_ai.get_string("Icon")
 
-            # if the desktop file does not specify an icon name, use the app
-            # name instead
-            if (self.icon_name is None) or (self.icon_name == ""):
-                self.icon_name = self.app_name.lower()
+                # if the desktop file does not specify an icon name, use the app
+                # name instead
+                if (self.icon_name is None) or (self.icon_name == ""):
+                    self.icon_name = self.app_name.lower()
 
-                # hack for the MATE application browser app, where the
-                # .desktop file on Ubuntu does not specify an icon
-                if self.icon_name == "application browser":
-                    self.icon_name = "computer"
+                    # hack for the MATE application browser app, where the
+                    # .desktop file on Ubuntu does not specify an icon
+                    if self.icon_name == "application browser":
+                        self.icon_name = "computer"
 
-            # get the command specified in the .desktop file used to launch the app
-            self.cmd_line = self.desktop_ai.get_string("Exec")
+                # get the command specified in the .desktop file used to launch the app
+                self.cmd_line = self.desktop_ai.get_string("Exec")
 
-            # get the list of addtional application actions (to be activated by right
-            # clicking the app's dock icon)
-            self.rc_actions = self.desktop_ai.list_actions()
+                # get the list of addtional application actions (to be activated by right
+                # clicking the app's dock icon)
+                self.rc_actions = self.desktop_ai.list_actions()
 
-            return True
+                return True
 
         return False
 

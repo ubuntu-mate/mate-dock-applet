@@ -2267,7 +2267,6 @@ class Dock(object):
 
         dock_app = docked_app.DockedApp()
         dock_app.desktop_file = desktop_file
-        dock_app.read_info_from_desktop_file()
         if dock_app.read_info_from_desktop_file():
             if build_gtk2:
                 dock_app.applet_win = self.applet.window
