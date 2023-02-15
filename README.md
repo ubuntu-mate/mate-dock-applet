@@ -65,16 +65,12 @@ Users of other distros will need to install from source, so first install the re
 * Bamf (bamfdaemon, libbamf and gir1.2-bamf) (`bamf-daemon` and `bamf` in Fedora)
 * Python Distro (python3-distro)
 
-  
+
 
 then cd to the directory containing all of the development files and run:
 
 ```
-aclocal
-
-automake --add-missing
-
-autoreconf
+autoreconf --install
 ```
 
 To build a GTK2 version of the applet:
