@@ -515,8 +515,12 @@ class Dock(object):
         self.right_clicked_app = None   # the app that most recently had a right click
 
         self.settings_path = self.applet.get_preferences_path()
-        self.settings = Gio.Settings.new_with_path("org.mate.panel.applet.dock",
-                                                   self.settings_path)
+
+        try:
+            self.settings = applet.settings_new("org.mate.panel.applet.dock")
+        except Exception as e:
+            self.settings = Gio.Settings.new_with_path("org.mate.panel.applet.dock",
+                                                        self.settings_path)
 
         # instantiate these - will be set up later
         self.object_settings = None
