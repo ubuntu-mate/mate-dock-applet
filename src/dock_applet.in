@@ -72,12 +72,8 @@ from log_it import log_it as log_it
 drag_dropped = False   # nasty global var used to keep track of whether or not a drag-drop event has occurred
 
 # define a list of keyboard shortcuts to be used to activate specific apps in the dock
-# '<Super>1' to '<Super>0' will correspond to apps 1 to 10
-# '<Super><Alt>1' to '<Super><Alt>9' will correspond to apps 11 to 20
-keyb_shortcuts = ["<Super>1", "<Super>2", "<Super>3", "<Super>4", "<Super>5",
-                  "<Super>6", "<Super>7", "<Super>8", "<Super>9", "<Super>0",
-                  "<Super><Alt>1", "<Super><Alt>2", "<Super><Alt>3", "<Super><Alt>4", "<Super><Alt>5",
-                  "<Super><Alt>6", "<Super><Alt>7", "<Super><Alt>8", "<Super><Alt>9", "<Super><Alt>0"]
+# shortcuts are loaded from applets prefs gsettings with keys run-application-1..run-application-20
+keyb_shortcuts = dict(map(lambda i: ("run-application-%s" % i, ""), range(1, 21)))
 
 
 def applet_button_press(widget, event, the_dock):
@@ -560,8 +556,13 @@ def applet_drag_motion(widget, context, x, y, time, the_dock):
 
     return True
 
+def applet_shortcut_changed(settings, key, keybinder):
+    old_shortcut = keyb_shortcuts[key]
+    new_shortcut = settings.get_string(key)
+    keybinder.ungrab(old_shortcut)
+    keybinder.grab(new_shortcut, key)
 
-def applet_shortcut_handler(keybinder, the_dock):
+def applet_shortcut_handler(keybinder, key, the_dock):
     """ Handler for global keyboard shortcut presses
 
     Start the app if it isn't already running
@@ -569,25 +570,29 @@ def applet_shortcut_handler(keybinder, the_dock):
     If it is already runnning cycle through its windows ...
 
     :param keybinder: the keybinder object with the keystring which was pressed e.g. "<Super>4"
+    :param key shortcut gsettings key id
     :param the_dock: the dock...
     """
     # get the position in the dock of the app we need to activate
-    if keybinder.current_shortcut in keybinder.shortcuts:
-        app_no = keybinder.shortcuts.index(keybinder.current_shortcut)
+    if key not in keyb_shortcuts:
+        return
+
+    app_no = int(key.split('-')[-1]) - 1
 
     app = the_dock.get_app_by_pos(app_no)
-    if app is not None:
-        start_app = app.is_running() is False
-        if start_app:
-            app.start_app()
-        else:
+    if app is None:
+        return
 
-            # if the app only has a single window minimize or restore it
-            # otherwise scroll through all available windows
-            if app.get_num_windows() == 1:
-                the_dock.minimize_or_restore_windows(app)
-            else:
-                the_dock.do_window_scroll(Gdk.ScrollDirection.DOWN, 0, app)
+    start_app = app.is_running() is False
+    if start_app:
+        app.start_app()
+    else:
+        # if the app only has a single window minimize or restore it
+        # otherwise scroll through all available windows
+        if app.get_num_windows() == 1:
+            the_dock.minimize_or_restore_windows(app)
+        else:
+            the_dock.do_window_scroll(Gdk.ScrollDirection.DOWN, 0, app)
 
 
 def applet_fill(applet):
@@ -674,8 +679,12 @@ def applet_fill(applet):
 
     # set up keyboard shortcuts used to activate apps in the dock
     keybinder = GlobalKeyBinding()
-    for shortcut in keyb_shortcuts:
-        keybinder.grab(shortcut)
+    for key in keyb_shortcuts.keys():
+        shortcut = the_dock.settings.get_string(key)
+        keyb_shortcuts[key] = shortcut
+        keybinder.grab(shortcut, key)
+        the_dock.settings.connect("changed::" + key, applet_shortcut_changed, keybinder)
+
     keybinder.connect("activate", applet_shortcut_handler, the_dock)
     keybinder.start()
 
@@ -705,7 +714,7 @@ def applet_factory(applet, iid, data):
 
 class GlobalKeyBinding(GObject.GObject, threading.Thread):
     __gsignals__ = {
-        'activate': (GObject.SignalFlags.RUN_LAST, None, ()),
+        'activate': (GObject.SignalFlags.RUN_LAST, None, (object,)),
     }
 
     def __init__(self):
@@ -719,7 +728,7 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
         self.keymap = Gdk.Keymap().get_default()
         self.ignored_masks = self.get_mask_combinations(X.LockMask | X.Mod2Mask | X.Mod5Mask)
         self.map_modifiers()
-        self.shortcuts = []
+        self.shortcuts = {}
 
     def get_mask_combinations(self, mask):
         return [x for x in range(mask + 1) if not (x & ~mask)]
@@ -734,13 +743,14 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
                 self.known_modifiers_mask |= modifier
 
     def idle(self):
-        self.emit("activate")
+        user_data = self.shortcuts.get(self.current_shortcut)
+        self.emit("activate", user_data)
         return False
 
     def activate(self):
         GLib.idle_add(self.run)
 
-    def grab(self, shortcut):
+    def _to_internal_shortcut(self, shortcut):
         keycode = None
         accelerator = shortcut.replace("<Super>", "<Mod4>")
         keyval, modifiers = Gtk.accelerator_parse(accelerator)
@@ -751,7 +761,14 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
             # In older Gtk3 the get_entries_for_keyval() returns an unnamed tuple...
             keycode = self.keymap.get_entries_for_keyval(keyval)[1][0].keycode
         modifiers = int(modifiers)
-        self.shortcuts.append([keycode, modifiers])
+        return (keycode, modifiers)
+
+    def grab(self, shortcut, user_data):
+        if not shortcut:
+            return
+
+        keycode, modifiers = internal_shortcut = self._to_internal_shortcut(shortcut)
+        self.shortcuts[internal_shortcut] = user_data
 
         # Request to receive key press/release reports from other windows that may not be using modifiers
         catch = error.CatchError(error.BadWindow)
@@ -775,9 +792,10 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
             if (hasattr(event, 'state')):
                 modifiers = event.state & self.known_modifiers_mask
                 self.current_shortcut = None
-                if event.type == X.KeyPress and [event.detail, modifiers] in self.shortcuts:
+                shortcut = (event.detail, modifiers)
+                if event.type == X.KeyPress and shortcut in self.shortcuts:
                     # Track this shortcut to know which app to activate
-                    self.current_shortcut = [event.detail, modifiers]
+                    self.current_shortcut = shortcut
                     GLib.idle_add(self.idle)
                     self.display.allow_events(X.AsyncKeyboard, event.time)
                 else:
@@ -785,12 +803,24 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
 
     def stop(self):
         self.running = False
-        self.ungrab()
+        self.ungrab_all()
         self.display.close()
 
-    def ungrab(self):
-        for shortcut in self.shortcuts:
-            self.window.ungrab_key(shortcut[0], X.AnyModifier, self.window)
+    def ungrab(self, shortcut):
+        if not shortcut:
+            return
+
+        internal_shortcut = self._to_internal_shortcut(shortcut)
+
+        if internal_shortcut in self.shortcuts:
+            keycode, _ = internal_shortcut
+            self.window.ungrab_key(keycode, X.AnyModifier, self.window)
+            self.shortcuts[internal_shortcut] = None
+
+    def ungrab_all(self):
+        for shortcut in self.shortcuts.keys():
+            keycode, _ = shortcut
+            self.window.ungrab_key(keycode, X.AnyModifier, self.window)
 
 
 MatePanelApplet.Applet.factory_main("DockAppletFactory", True,
