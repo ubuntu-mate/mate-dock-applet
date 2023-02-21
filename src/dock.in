@@ -70,6 +70,7 @@ from gi.repository import Bamf
 import os
 import os.path
 import sys
+import xdg.BaseDirectory as BaseDirectory
 import subprocess
 from time import sleep
 import dbus
@@ -2357,12 +2358,8 @@ class Dock(object):
     def find_desktop_file(self, df_name):
         """ Find the full filename of a specified .desktop file
 
-        Search the following directories (and their subdirectories) for
-        the specified filename
-            /usr/share/applications
-            /usr/local/share/applications
-            /var/lib/snapd/desktop/applications
-            ~/.local/share/applications
+        Search the applications subdirectory of each XDG data directory
+        (and their subdirectories) for the specified filename.
 
         Args :
             df_name : the name of the .desktop file e.g. pluma.desktop. The
@@ -2373,10 +2370,8 @@ class Dock(object):
             exists or "" otherwise
         """
 
-        srch_dirs = ["/usr/share/applications/",
-                     "/usr/local/share/applications/",
-                     "/var/lib/snapd/desktop/applications/",
-                     os.path.expanduser("~/.local/share/applications/")]
+        srch_dirs = [os.path.join(d, "applications")
+                     for d in BaseDirectory.xdg_data_dirs]
 
         for srch_dir in srch_dirs:
             for the_dir, dir_list, file_list in os.walk(srch_dir):
