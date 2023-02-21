@@ -67,6 +67,7 @@ from gi.repository import GLib
 from gi.repository import Notify
 from gi.repository import Bamf
 
+import xdg.BaseDirectory as BaseDirectory
 import os
 import os.path
 import sys
@@ -2373,10 +2374,7 @@ class Dock(object):
             exists or "" otherwise
         """
 
-        srch_dirs = ["/usr/share/applications/",
-                     "/usr/local/share/applications/",
-                     "/var/lib/snapd/desktop/applications/",
-                     os.path.expanduser("~/.local/share/applications/")]
+        srch_dirs = map(lambda dir: os.path.join(dir, "applications"), BaseDirectory.xdg_data_dirs)
 
         for srch_dir in srch_dirs:
             for the_dir, dir_list, file_list in os.walk(srch_dir):
@@ -4160,11 +4158,11 @@ class Dock(object):
             # rarely, the last active win does not end up as the active window
             # if we activate here, so instead a workaround which seems to do
             # the trick is use a timer as below
-            
+
             # fix for #176, don't send the current event time to the activation
             # timer
             GObject.timeout_add(20, win_activation_timer,
-                                [last_active_win, 0]) 
+                                [last_active_win, 0])
 
         else:
             # minimize all windows and do the last active window last of all
