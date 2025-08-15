@@ -579,15 +579,20 @@ def applet_shortcut_handler(keybinder, the_dock):
     if app is not None:
         start_app = app.is_running() is False
         if start_app:
-            app.start_app()
+            app.start_app(keybinder.current_timestamp)
         else:
-
-            # if the app only has a single window minimize or restore it
-            # otherwise scroll through all available windows
-            if app.get_num_windows() == 1:
-                the_dock.minimize_or_restore_windows(app)
+            if the_dock.win_switch_unity_style:
+                if app.is_active and app.get_num_windows() > 1:
+                    the_dock.do_window_selection(app)
+                else:
+                    the_dock.minimize_or_restore_windows(app, True)
             else:
-                the_dock.do_window_scroll(Gdk.ScrollDirection.DOWN, 0, app)
+                # if the app only has a single window minimize or restore it
+                # otherwise scroll through all available windows
+                if app.get_num_windows() == 1:
+                    the_dock.minimize_or_restore_windows(app, True)
+                else:
+                    the_dock.do_window_scroll(Gdk.ScrollDirection.DOWN, keybinder.current_timestamp, app)
 
 
 def applet_fill(applet):
@@ -720,6 +725,7 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
         self.ignored_masks = self.get_mask_combinations(X.LockMask | X.Mod2Mask | X.Mod5Mask)
         self.map_modifiers()
         self.shortcuts = []
+        self.current_timestamp = 0
 
     def get_mask_combinations(self, mask):
         return [x for x in range(mask + 1) if not (x & ~mask)]
@@ -778,6 +784,7 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
                 if event.type == X.KeyPress and [event.detail, modifiers] in self.shortcuts:
                     # Track this shortcut to know which app to activate
                     self.current_shortcut = [event.detail, modifiers]
+                    self.current_timestamp = event.time
                     GLib.idle_add(self.idle)
                     self.display.allow_events(X.AsyncKeyboard, event.time)
                 else:
