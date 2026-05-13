@@ -50,7 +50,7 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
               panel_change_color, dock_panel_change_only, use_panel_act_list,
               active_icon_bg, fallback_bar_col, spacing, attention_type,
               popup_delay, saved_configs, pa_on_all_ws, dock_fixed_size,
-              click_action, theme):
+              click_action, theme, keyboard_shortcuts=True):
     """ Write the xml file using the specified information
 
     The xml file will be in e.g. the following format:
@@ -188,6 +188,8 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
 
     theme_el = ET.Element("theme", id="%d" % theme)
 
+    kb_el = ET.Element("keyboard_shortcuts", enabled="%s" % keyboard_shortcuts)
+
     root.append(pa_el)
     root.append(ind_el)
     root.append(sa_el)
@@ -208,11 +210,12 @@ def write_xml(filename, desktop_files, light_ind, show_all_apps, multi_ind,
     root.append(dfs_el)
     root.append(ct_el)
     root.append(theme_el)
+    root.append(kb_el)
 
     try:
         ET.ElementTree(root).write(filename, xml_declaration=True)
-    except FileNotFoundError:
-        return False  # invalid file or path name
+    except (FileNotFoundError, PermissionError):
+        return False
 
     return True
 
@@ -399,13 +402,19 @@ def read_xml(filename):
     else:
         theme = 0
 
+    kb_el = root.find("keyboard_shortcuts")
+    if kb_el is not None:
+        keyboard_shortcuts = kb_el.get("enabled") == "True"
+    else:
+        keyboard_shortcuts = True
+
     return [True, df_list, light_ind, show_all, multi_ind,
             use_win_list, win_from_cur_ws_only, win_switch_unity_style,
             panel_change_color, dock_panel_change_only,
             use_panel_act_list, bg_type, fallback_bar_col,
             spacing, attention_type, popup_delay, saved_configs,
             pinned_apps_all_workspaces, dock_fixed_size, click_action,
-            theme]
+            theme, keyboard_shortcuts]
 
 
 def read_app_xml(filename):

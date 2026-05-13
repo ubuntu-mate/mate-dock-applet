@@ -554,6 +554,8 @@ class Dock(object):
         self.pa_configs = []
         self.pa_on_all_ws = True
         self.dock_fixed_size = -1
+        self.keyboard_shortcuts = True
+        self.keybinder = None
         self.ns_new_app = False
         self.dds_done = False
         self.ns_app_removed = None
@@ -980,6 +982,8 @@ class Dock(object):
                 self.dock_fixed_size = xml_settings[18]
                 self.click_action = xml_settings[19]
                 self.theme = xml_settings[20]
+                if len(xml_settings) > 21:
+                    self.keyboard_shortcuts = xml_settings[21]
 
                 # now, immediately write the settings to dconf and back to the
                 # config file so the dock can access them
@@ -1017,6 +1021,7 @@ class Dock(object):
                 self.settings.set_int("dock-fixed-size", self.dock_fixed_size)
                 self.settings.set_int("click-action", self.click_action)
                 self.settings.set_int("theme", self.theme)
+                self.settings.set_boolean("keyboard-shortcuts", self.keyboard_shortcuts)
 
                 dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                                    self.show_all_apps, self.multi_ind,
@@ -1034,7 +1039,8 @@ class Dock(object):
                                    self.pa_on_all_ws,
                                    self.dock_fixed_size,
                                    self.click_action,
-                                   self.theme)
+                                   self.theme,
+                                   self.keyboard_shortcuts)
 
                 return
 
@@ -1062,6 +1068,7 @@ class Dock(object):
         self.dock_fixed_size = self.settings.get_int("dock-fixed-size")
         self.click_action = self.settings.get_int("click-action")
         self.theme = self.settings.get_int("theme")
+        self.keyboard_shortcuts = self.settings.get_boolean("keyboard-shortcuts")
 
     def configs_to_settings(self):
         """ Convenience function to convert the current set of saved configs
@@ -1136,6 +1143,7 @@ class Dock(object):
             self.settings.set_int("dock-fixed-size", self.dock_fixed_size)
             self.settings.set_int("click-action", self.click_action)
             self.settings.set_int("theme", self.theme)
+            self.settings.set_boolean("keyboard-shortcuts", self.keyboard_shortcuts)
 
         dock_xml.write_xml(self.xml_conf, pinned_apps, self.indicator,
                            self.show_all_apps, self.multi_ind,
@@ -1154,7 +1162,8 @@ class Dock(object):
                            self.pa_on_all_ws,
                            self.dock_fixed_size,
                            self.click_action,
-                           self.theme)
+                           self.theme,
+                           self.keyboard_shortcuts)
 
     def read_app_match(self):
         """ Read an xml file which contains a list of apps which are difficult
@@ -1966,6 +1975,7 @@ class Dock(object):
             self.prefs_win.set_popup_delay(self.popup_delay)
             self.prefs_win.set_show_pinned_apps_on_all_ws(self.pa_on_all_ws)
             self.prefs_win.set_theme(self.theme)
+            self.prefs_win.set_keyboard_shortcuts(self.keyboard_shortcuts)
             if not build_gtk2 and not self.nice_sizing:
                 self.prefs_win.set_fixed_size(self.dock_fixed_size != -1, self.dock_fixed_size,
                                               self.panel_layout.upper() == "MUTINY")
@@ -2026,6 +2036,7 @@ class Dock(object):
            (self.popup_delay != self.prefs_win.get_popup_delay()) or \
            (self.pa_on_all_ws != self.prefs_win.get_show_pinned_apps_on_all_ws()) or \
            (self.theme != self.prefs_win.get_theme()) or \
+           (self.keyboard_shortcuts != self.prefs_win.get_keyboard_shortcuts()) or \
            fixed_size_changes:
 
             old_ind = self.indicator
@@ -2056,6 +2067,15 @@ class Dock(object):
             old_bg = self.active_bg
             self.active_bg = self.prefs_win.get_bg()
             self.theme = self.prefs_win.get_theme()
+
+            if self.keyboard_shortcuts != self.prefs_win.get_keyboard_shortcuts():
+                self.keyboard_shortcuts = self.prefs_win.get_keyboard_shortcuts()
+                if self.keybinder is not None:
+                    if self.keyboard_shortcuts:
+                        self.keybinder.regrab()
+                    else:
+                        self.keybinder.ungrab()
+
             # if we're changing to or from a Unity background we need
             # to reload docked app icons
             unity_bg_types = [docked_app_helpers.IconBgType.UNITY, docked_app_helpers.IconBgType.UNITY_FLAT]
