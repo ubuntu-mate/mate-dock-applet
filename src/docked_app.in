@@ -1570,7 +1570,10 @@ class DockedApp(object):
         if gdai is not None:
             self.startup_id = alc.get_startup_notify_id(gdai, [])
 
-            gdai.launch_uris_as_manager([], alc, GLib.SpawnFlags.SEARCH_PATH,
+            gdai.launch_uris_as_manager([], alc,
+                                    GLib.SpawnFlags.SEARCH_PATH |
+                                    GLib.SpawnFlags.STDOUT_TO_DEV_NULL |
+                                    GLib.SpawnFlags.STDERR_TO_DEV_NULL,
                                     None, None, None, None)
 
         # make the app's icon pulse
