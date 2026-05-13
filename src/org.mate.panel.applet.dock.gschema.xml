@@ -111,5 +111,105 @@
       <summary>Specifies the theme used by the dock (e.g. Unity, Subway, Default).</summary>
       <description>Sets the indicator type and icon background used by the dock. If theme is set to 'Custom' these can be individually specified.</description>
     </key>
+    <key type="s" name="run-application-1">
+      <default>'&lt;Super&gt;1'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-2">
+      <default>'&lt;Super&gt;2'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-3">
+      <default>'&lt;Super&gt;3'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-4">
+      <default>'&lt;Super&gt;4'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-5">
+      <default>'&lt;Super&gt;5'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-6">
+      <default>'&lt;Super&gt;6'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-7">
+      <default>'&lt;Super&gt;7'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-8">
+      <default>'&lt;Super&gt;8'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-9">
+      <default>'&lt;Super&gt;9'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-10">
+      <default>'&lt;Super&gt;0'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-11">
+      <default>'&lt;Super&gt;&lt;Alt&gt;1'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-12">
+      <default>'&lt;Super&gt;&lt;Alt&gt;2'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-13">
+      <default>'&lt;Super&gt;&lt;Alt&gt;3'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-14">
+      <default>'&lt;Super&gt;&lt;Alt&gt;4'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-15">
+      <default>'&lt;Super&gt;&lt;Alt&gt;5'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-16">
+      <default>'&lt;Super&gt;&lt;Alt&gt;6'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-17">
+      <default>'&lt;Super&gt;&lt;Alt&gt;7'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-18">
+      <default>'&lt;Super&gt;&lt;Alt&gt;8'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-19">
+      <default>'&lt;Super&gt;&lt;Alt&gt;9'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
+    <key type="s" name="run-application-20">
+      <default>'&lt;Super&gt;&lt;Alt&gt;0'</default>
+      <summary>Hotkey to run defined application</summary>
+      <description>The keybinding that runs the correspondingly-numbered application.</description>
+    </key>
    </schema>
 </schemalist>
