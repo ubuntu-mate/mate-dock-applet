@@ -106,6 +106,11 @@
      <summary>Defines what to do when a running app's dock icon is clicked</summary>
      <description>0 = display the app's window list, 1 = show compiz window spread, 2 = minimize/restore all app's windows. Note: the use-win-list key is now deprecated.</description>
     </key>
+    <key type="b" name="keyboard-shortcuts">
+       <default>true</default>
+       <summary>Whether keyboard shortcuts (Super+N) are enabled</summary>
+       <description>Whether the Super+1 through Super+0 (and Super+Alt+1 through Super+Alt+0) keyboard shortcuts are enabled for activating docked apps</description>
+    </key>
     <key type="i" name="theme">
       <default>0</default>
       <summary>Specifies the theme used by the dock (e.g. Unity, Subway, Default).</summary>

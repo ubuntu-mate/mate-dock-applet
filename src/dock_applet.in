@@ -571,6 +571,9 @@ def applet_shortcut_handler(keybinder, the_dock):
     :param keybinder: the keybinder object with the keystring which was pressed e.g. "<Super>4"
     :param the_dock: the dock...
     """
+    if not the_dock.keyboard_shortcuts:
+        return
+
     # get the position in the dock of the app we need to activate
     if keybinder.current_shortcut in keybinder.shortcuts:
         app_no = keybinder.shortcuts.index(keybinder.current_shortcut)
@@ -679,10 +682,12 @@ def applet_fill(applet):
 
     # set up keyboard shortcuts used to activate apps in the dock
     keybinder = GlobalKeyBinding()
-    for shortcut in keyb_shortcuts:
-        keybinder.grab(shortcut)
     keybinder.connect("activate", applet_shortcut_handler, the_dock)
+    if the_dock.keyboard_shortcuts:
+        for shortcut in keyb_shortcuts:
+            keybinder.grab(shortcut)
     keybinder.start()
+    the_dock.keybinder = keybinder
 
     applet.set_background_widget(applet)  # hack for panel transparency
 
@@ -798,6 +803,19 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
     def ungrab(self):
         for shortcut in self.shortcuts:
             self.window.ungrab_key(shortcut[0], X.AnyModifier, self.window)
+        self.display.flush()
+
+    def regrab(self):
+        if not self.shortcuts:
+            for shortcut in keyb_shortcuts:
+                self.grab(shortcut)
+        else:
+            for shortcut in self.shortcuts:
+                catch = error.CatchError(error.BadAccess)
+                for ignored_mask in self.ignored_masks:
+                    mod = shortcut[1] | ignored_mask
+                    self.window.grab_key(shortcut[0], mod, True, X.GrabModeAsync, X.GrabModeAsync, onerror=catch)
+                self.display.flush()
 
 
 MatePanelApplet.Applet.factory_main("DockAppletFactory", True,

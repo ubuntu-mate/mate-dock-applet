@@ -410,6 +410,9 @@ class DockPrefsWindow(Gtk.Window):
 
         self.__cb_win_switch_unity_style = Gtk.CheckButton(label=_("Unity-style behaviour (always focus app on first click)"))
 
+        self.__cb_keyboard_shortcuts = Gtk.CheckButton(label=_("Enable keyboard shortcuts (Super+N) to activate apps"))
+        self.__cb_keyboard_shortcuts.set_tooltip_text(_("Enable Super+1 through Super+0 keyboard shortcuts to activate docked apps"))
+
         self.__notes_behaviour_tv = Gtk.TextView()
         self.__notes_behaviour_tv.set_wrap_mode(Gtk.WrapMode.WORD)
         self.__notes_behaviour_tv.set_editable(False)
@@ -434,6 +437,7 @@ class DockPrefsWindow(Gtk.Window):
                                          False, 4)
         self.__behaviour_vbox.pack_start(self.__cb_pan_act, False, False, 4)
         self.__behaviour_vbox.pack_start(self.__cb_win_switch_unity_style, False, False, 4)
+        self.__behaviour_vbox.pack_start(self.__cb_keyboard_shortcuts, False, False, 4)
         self.__behaviour_vbox.pack_start(self.__notes_behaviour_tv, False, False, 4)
 
         self.__frame_spc = create_frame(_("App spacing"))
@@ -1295,6 +1299,12 @@ class DockPrefsWindow(Gtk.Window):
         """
 
         self.__cb_win_switch_unity_style.set_active(win_switch_unity_style)
+
+    def get_keyboard_shortcuts(self):
+        return self.__cb_keyboard_shortcuts.get_active()
+
+    def set_keyboard_shortcuts(self, keyboard_shortcuts):
+        self.__cb_keyboard_shortcuts.set_active(keyboard_shortcuts)
 
     def set_fallback_bar_col(self, colrgb):
         """
