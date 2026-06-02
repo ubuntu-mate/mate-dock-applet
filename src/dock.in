@@ -1231,6 +1231,38 @@ class Dock(object):
 
         return None
 
+    def get_docked_app_by_wm_class(self, wm_class):
+        """ Returns the docked app whose StartupWMClass or desktop file
+            basename matches the specified wm_class
+
+        Flatpak Electron apps sometimes set their WM_CLASS to the flatpak app id
+        (e.g. im.riot.Riot) rather than the StartupWMClass value (e.g.
+        element), so we also compare against the desktop file basename.
+
+        Params:
+            wm_class: the WM_CLASS string from the running window
+
+        Returns a docked app if a match is found, None otherwise
+        """
+
+        if wm_class is None:
+            return None
+
+        wm_lower = wm_class.lower()
+        for app in self.app_list:
+            if app.desktop_file is not None:
+                df_base = os.path.basename(app.desktop_file)
+                df_name = os.path.splitext(df_base)[0].lower()
+                if wm_lower == df_name:
+                    return app
+
+            if app.desktop_ai is not None:
+                swmc = app.desktop_ai.get_string("StartupWMClass")
+                if swmc is not None and swmc.lower() == wm_lower:
+                    return app
+
+        return None
+
     def get_docked_app_by_bamf_window(self, bamf_win):
         """ Returns the docked app which owns the specified window
 
@@ -2466,18 +2498,30 @@ class Dock(object):
                         break
 
                 if add_to_dock:
-                    dock_app = docked_app.DockedApp()
-                    dock_app.set_bamf_app(b_app)
+                    # try WM_CLASS matching against pinned apps first
+                    matched_app = None
+                    for b_win in b_app.get_windows():
+                        wm_class = window_control.get_wm_class_group_name(b_win)
+                        if wm_class is not None:
+                            matched_app = self.get_docked_app_by_wm_class(wm_class)
+                            if matched_app is not None:
+                                break
 
-                    dock_app.desktop_file = b_app.get_desktop_file()
-                    if dock_app.desktop_file is not None:
-                        if dock_app.read_info_from_desktop_file():
+                    if matched_app is not None and (matched_app.bamf_app is None or not matched_app.is_running()):
+                        matched_app.set_bamf_app(b_app)
+                    elif matched_app is None:
+                        dock_app = docked_app.DockedApp()
+                        dock_app.set_bamf_app(b_app)
+
+                        dock_app.desktop_file = b_app.get_desktop_file()
+                        if dock_app.desktop_file is not None:
+                            if dock_app.read_info_from_desktop_file():
+                                self.app_list.append(dock_app)
+                        else:
+                            # bamf cannot match the app, so get as much info about it as we can
+                            # e.g. the icon, and use that ...
+                            dock_app.setup_from_bamf(self.app_match)
                             self.app_list.append(dock_app)
-                    else:
-                        # bamf cannot match the app, so get as much info about it as we can
-                        # e.g. the icon, and use that ...
-                        dock_app.setup_from_bamf(self.app_match)
-                        self.app_list.append(dock_app)
 
         # for all the apps we have, setup signal handlers
         for app in self.app_list:
@@ -2652,12 +2696,27 @@ class Dock(object):
 
         if b_app.get_desktop_file() is not None:
             dock_app = self.get_docked_app_by_desktop_file(b_app.get_desktop_file())
-            if (dock_app is not None) and (dock_app.bamf_app is None):
-                dock_app.set_bamf_app(b_app)
-                self.set_bamf_app_handlers(b_app)
+            if dock_app is not None:
+                if dock_app.bamf_app is None or not dock_app.is_running():
+                    if b_app.is_running() or len(b_app.get_windows()) > 0:
+                        dock_app.set_bamf_app(b_app)
+                        self.set_bamf_app_handlers(b_app)
         else:
             # see if there's a match by Bamf.Application
             dock_app = self.get_docked_app_by_bamf_app(b_app)
+
+        if dock_app is None:
+            # try matching by WM_CLASS against pinned apps' StartupWMClass
+            for b_win in b_app.get_windows():
+                wm_class = window_control.get_wm_class_group_name(b_win)
+                if wm_class is not None:
+                    dock_app = self.get_docked_app_by_wm_class(wm_class)
+                    if dock_app is not None:
+                        if dock_app.bamf_app is None or not dock_app.is_running():
+                            dock_app.set_bamf_app(b_app)
+                            self.set_bamf_app_handlers(b_app)
+                        dock_app.queue_draw()
+                        break
 
         if dock_app is None:
             # No match, so add the app to the dock
@@ -2733,7 +2792,7 @@ class Dock(object):
             if object.is_user_visible():
                 dock_app = self.match_bamf_app_to_dock_app(object)
                 if dock_app is not None:
-                    if dock_app.startup_id is None:
+                    if dock_app.startup_id is None and not dock_app.is_running():
                         dock_app.pulse_once()
             else:
                 self.hidden_views.append(object)
@@ -2787,6 +2846,15 @@ class Dock(object):
             if dock_app is None:
                 if application.get_desktop_file() is not None:
                     dock_app = self.get_docked_app_by_desktop_file(application.get_desktop_file())
+
+                if dock_app is None:
+                    # try WM_CLASS matching against pinned apps
+                    wm_class = window_control.get_wm_class_group_name(object)
+                    if wm_class is not None:
+                        dock_app = self.get_docked_app_by_wm_class(wm_class)
+                        if dock_app is not None and (dock_app.bamf_app is None or not dock_app.is_running()):
+                            dock_app.set_bamf_app(application)
+                            self.set_bamf_app_handlers(application)
 
                 if dock_app is None:
                     # try again to to match the docked_app, but this time create a new one if it
