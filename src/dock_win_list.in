@@ -371,6 +371,9 @@ class DockWinList(DockPopup):
             # if the window to be activated is not on the current workspace,
             # switchto that workspace
             wnck_win = Wnck.Window.get(win.get_xid())
+            if wnck_win is None:
+                return True
+
             wnck_aws = self.wnck_screen.get_active_workspace()
             wnck_ws = wnck_win.get_workspace()
 
@@ -486,7 +489,8 @@ class DockWinList(DockPopup):
                 if win_on_cur_ws_only:
                     # only add if the window is on the current workspace
                     wnck_win = Wnck.Window.get(win.get_xid())
-                    add_to_list = wnck_win.is_on_workspace(wnck_aws)
+                    add_to_list = wnck_win is not None and wnck_aws is not None and \
+                                  wnck_win.is_on_workspace(wnck_aws)
                 else:
                     add_to_list = True
 
