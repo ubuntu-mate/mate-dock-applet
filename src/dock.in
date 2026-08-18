@@ -94,18 +94,6 @@ from log_it import log_it as log_it
 gettext.install('mate-dock-applet', '@localedir@')
 
 
-def get_adjustment_value(adjustment):
-    if adjustment is None:
-        return 0
-
-    return adjustment.get_value()
-
-
-def set_adjustment_value(adjustment, value):
-    if adjustment is not None:
-        adjustment.set_value(value)
-
-
 class DragMotionTimer(object):
     """Timer to allow us to track mouse motion during a drag and drop
        operation.
@@ -201,9 +189,9 @@ class DragMotionTimer(object):
         if self.the_dock.scrolling:
             if (orient == MatePanelApplet.AppletOrient.UP) or \
                (orient == MatePanelApplet.AppletOrient.DOWN):
-                ax -= get_adjustment_value(self.the_dock.scrolled_win.get_hadjustment())
+                ax -= self.the_dock.scrolled_win.get_hadjustment().get_value()
             else:
-                ay -= get_adjustment_value(self.the_dock.scrolled_win.get_vadjustment())
+                ay -= self.the_dock.scrolled_win.get_vadjustment().get_value()
 
         orient = self.the_dock.applet.get_orient()
         if (orient == MatePanelApplet.AppletOrient.UP) or \
@@ -341,9 +329,9 @@ class ScrollAnimator(object):
 
         """
         if self.__orient in ["top", "bottom"]:
-            set_adjustment_value(self.__scrolled_win.get_hadjustment(), pos)
+            self.__scrolled_win.get_hadjustment().set_value(pos)
         else:
-            set_adjustment_value(self.__scrolled_win.get_vadjustment(), pos)
+            self.__scrolled_win.get_vadjustment().set_value(pos)
 
     def do_timer(self):
         """ Update the scrolled window position
@@ -511,8 +499,10 @@ class Dock(object):
 
         self.app_list = []
         self.box = None
+        self.sw_hadj = Gtk.Adjustment(0, 0, 1, 1, 1, 1)
+        self.sw_vadj = Gtk.Adjustment(0, 0, 1, 1, 1, 1)
         if not build_gtk2:
-            self.scrolled_win = Gtk.ScrolledWindow()
+            self.scrolled_win = Gtk.ScrolledWindow.new(self.sw_hadj, self.sw_vadj)
             self.scrolled_win.set_policy(Gtk.PolicyType.EXTERNAL, Gtk.PolicyType.EXTERNAL)
             self.scrolled_win.connect("scroll-event", self.window_scroll)
 
@@ -605,9 +595,6 @@ class Dock(object):
         self.scrolling = False
         self.scroll_index = 0
         self.scroll_timer = None
-
-        self.sw_hadj = Gtk.Adjustment(0, 0, 1, 1, 1, 1)
-        self.sw_vadj = Gtk.Adjustment(0, 0, 1, 1, 1, 1)
 
         # set a callback so that the window_control module can account for dock scrolling
         # when calculating window minimise positions
@@ -3215,9 +3202,9 @@ class Dock(object):
                 if self.get_total_num_visible_apps() < self.dock_fixed_size:
                     self.scrolling = False
                     if self.panel_orient in ["top", "bottom"]:
-                        set_adjustment_value(self.scrolled_win.get_hadjustment(), 0)
+                        self.scrolled_win.get_hadjustment().set_value(0)
                     else:
-                        set_adjustment_value(self.scrolled_win.get_vadjustment(), 0)
+                        self.scrolled_win.get_vadjustment().set_value(0)
 
                 else:
                     do_scroll = False
@@ -3234,9 +3221,9 @@ class Dock(object):
                         self.scroll_index -= 1
                         new_pos = self.scroll_index * self.get_app_icon_size()
                         if self.panel_orient in ["top", "bottom"]:
-                            set_adjustment_value(self.scrolled_win.get_hadjustment(), new_pos)
+                            self.scrolled_win.get_hadjustment().set_value(new_pos)
                         else:
-                            set_adjustment_value(self.scrolled_win.get_vadjustment(), new_pos)
+                            self.scrolled_win.get_vadjustment().set_value(new_pos)
 
                     self.set_app_scroll_dirs(True)
 
@@ -3457,9 +3444,9 @@ class Dock(object):
             self.scroll_index = self.get_total_num_visible_apps() - self.get_max_visible_apps()
 
             if self.panel_orient in ["top", "bottom"]:
-                startpos = get_adjustment_value(self.scrolled_win.get_hadjustment())
+                startpos = self.scrolled_win.get_hadjustment().get_value()
             else:
-                startpos = get_adjustment_value(self.scrolled_win.get_vadjustment())
+                startpos = self.scrolled_win.get_vadjustment().get_value()
 
             endpos = startpos + (self.scroll_index * self.get_app_icon_size())
 
@@ -3471,9 +3458,9 @@ class Dock(object):
                 self.scrolling = False
                 self.set_app_scroll_dirs(False)
                 if self.panel_orient in ["top", "bottom"]:
-                    set_adjustment_value(self.scrolled_win.get_hadjustment(), 0)
+                    self.scrolled_win.get_hadjustment().set_value(0)
                 else:
-                    set_adjustment_value(self.scrolled_win.get_vadjustment(), 0)
+                    self.scrolled_win.get_vadjustment().set_value(0)
             else:
                 do_scroll = False
                 if self.ns_app_removed < self.scroll_index:
@@ -3489,9 +3476,9 @@ class Dock(object):
 
                     new_pos = self.scroll_index * self.get_app_icon_size()
                     if self.panel_orient in ["top", "bottom"]:
-                        set_adjustment_value(self.scrolled_win.get_hadjustment(), new_pos)
+                        self.scrolled_win.get_hadjustment().set_value(new_pos)
                     else:
-                        set_adjustment_value(self.scrolled_win.get_vadjustment(), new_pos)
+                        self.scrolled_win.get_vadjustment().set_value(new_pos)
 
                 self.set_app_scroll_dirs(True)
 
@@ -3549,9 +3536,9 @@ class Dock(object):
                 self.scroll_index = self.get_total_num_visible_apps() - self.dock_fixed_size
 
                 if self.panel_orient in ["top", "bottom"]:
-                    startpos = get_adjustment_value(self.scrolled_win.get_hadjustment())
+                    startpos = self.scrolled_win.get_hadjustment().get_value()
                 else:
-                    startpos = get_adjustment_value(self.scrolled_win.get_vadjustment())
+                    startpos = self.scrolled_win.get_vadjustment().get_value()
 
                 endpos = startpos + (self.scroll_index * self.get_app_icon_size())
 
@@ -3777,9 +3764,9 @@ class Dock(object):
                     # panel orientation) to account for the current scroll position
 
                     if self.panel_orient in ["top", "bottom"]:
-                        mx += get_adjustment_value(self.scrolled_win.get_hadjustment())
+                        mx += self.scrolled_win.get_hadjustment().get_value()
                     else:
-                        my += get_adjustment_value(self.scrolled_win.get_vadjustment())
+                        my += self.scrolled_win.get_vadjustment().get_value()
                         # was this ...my += self.scroll_index * self.get_app_icon_size()
 
                 if (mx >= alloc.x) and (mx <= alloc.x + alloc.width):
@@ -3850,9 +3837,9 @@ class Dock(object):
                     hide_popups()
 
                     if self.panel_orient in ["top", "bottom"]:
-                        sp = get_adjustment_value(self.scrolled_win.get_hadjustment())
+                        sp = self.scrolled_win.get_hadjustment().get_value()
                     else:
-                        sp = get_adjustment_value(self.scrolled_win.get_vadjustment())
+                        sp = self.scrolled_win.get_vadjustment().get_value()
 
                     ScrollAnimator(self.scrolled_win, sp, sp - self.get_app_icon_size(),
                                    self.panel_orient, 16, 5, self.scroll_anim_finished_cb)
@@ -3869,9 +3856,9 @@ class Dock(object):
                     hide_popups()
 
                     if self.panel_orient in ["top", "bottom"]:
-                        sp = get_adjustment_value(self.scrolled_win.get_hadjustment())
+                        sp = self.scrolled_win.get_hadjustment().get_value()
                     else:
-                        sp = get_adjustment_value(self.scrolled_win.get_vadjustment())
+                        sp = self.scrolled_win.get_vadjustment().get_value()
 
                     ScrollAnimator(self.scrolled_win, sp, sp + self.get_app_icon_size(),
                                    self.panel_orient, 16, 5, self.scroll_anim_finished_cb)
@@ -3980,9 +3967,9 @@ class Dock(object):
             scroll_adj = 0
         else:
             if self.panel_orient in ["top", "bottom"]:
-                scroll_adj = get_adjustment_value(self.scrolled_win.get_hadjustment())
+                scroll_adj = self.scrolled_win.get_hadjustment().get_value()
             else:
-                scroll_adj = get_adjustment_value(self.scrolled_win.get_vadjustment())
+                scroll_adj = self.scrolled_win.get_vadjustment().get_value()
 
         self.app_act_list = dock_action_list.DockActionList(self.wnck_screen,
                                                             self.applet.get_orient(),
@@ -4130,9 +4117,9 @@ class Dock(object):
             scroll_adj = 0
         else:
             if self.panel_orient in ["top", "bottom"]:
-                scroll_adj = get_adjustment_value(self.scrolled_win.get_hadjustment())
+                scroll_adj = self.scrolled_win.get_hadjustment().get_value()
             else:
-                scroll_adj = get_adjustment_value(self.scrolled_win.get_vadjustment())
+                scroll_adj = self.scrolled_win.get_vadjustment().get_value()
 
         self.app_win_list = dock_win_list.DockWinList(self.wnck_screen,
                                                       self.applet.get_orient(),
@@ -4662,7 +4649,7 @@ class Dock(object):
 
         try:
             if self.panel_orient in ["top", "bottom"]:
-                final_x = x - get_adjustment_value(self.scrolled_win.get_hadjustment())
+                final_x = x - self.scrolled_win.get_hadjustment().get_value()
                 if self.nice_sizing:
                     max_w = self.applet.get_allocation().width
                 else:
@@ -4670,7 +4657,7 @@ class Dock(object):
                 final_x = min(max(final_x, dx), dx + max_w)
                 final_y = y
             else:
-                final_y = y - get_adjustment_value(self.scrolled_win.get_vadjustment())
+                final_y = y - self.scrolled_win.get_vadjustment().get_value()
                 if self.nice_sizing:
                     max_h = self.applet.get_allocation().height
                 else:
@@ -4714,9 +4701,9 @@ class Dock(object):
 
         self.scroll_index = 0
         if self.panel_orient in ["top", "bottom"]:
-            set_adjustment_value(self.scrolled_win.get_hadjustment(), 0)
+            self.scrolled_win.get_hadjustment().set_value(0)
         else:
-            set_adjustment_value(self.scrolled_win.get_vadjustment(), 0)
+            self.scrolled_win.get_vadjustment().set_value(0)
 
     def set_app_scroll_dirs(self, can_scroll):
         """
