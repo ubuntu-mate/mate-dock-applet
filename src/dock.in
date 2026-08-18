@@ -3105,7 +3105,6 @@ class Dock(object):
                         if not app.is_visible():
                             app.show_icon()
             else:
-                ws_name = cur_ws.get_name()
                 for app in self.app_list:
                     if not app.is_pinned:
                         pinned_ws = self.app_is_pinned_to_workspace(app)
