@@ -4246,8 +4246,9 @@ class Dock(object):
             
             # fix for #176, don't send the current event time to the activation
             # timer
-            GObject.timeout_add(20, win_activation_timer,
-                                [last_active_win, 0]) 
+            if last_active_win is not None:
+                GObject.timeout_add(20, win_activation_timer,
+                                    [last_active_win, 0])
 
         else:
             # minimize all windows and do the last active window last of all
@@ -4348,6 +4349,9 @@ class Dock(object):
             return
 
         windows = app.get_windows()
+        if len(windows) == 0:
+            return
+
         if (app.last_active_win is None) or (len(windows) == 1):
             new_index = 0
         else:
@@ -4376,12 +4380,14 @@ class Dock(object):
         # if the new window is on a different workspace, we need to switch
         # workspace
 
-        wnck_aws = self.wnck_screen.get_active_workspace()
-        wnck_ws = wnck_win.get_workspace()
+        if wnck_win is not None:
+            wnck_aws = self.wnck_screen.get_active_workspace()
+            wnck_ws = wnck_win.get_workspace()
 
-        if wnck_aws is not None and (wnck_aws != wnck_ws):
-            wnck_ws.activate(0)
-            sleep(0.01)
+            if wnck_aws is not None and wnck_ws is not None and \
+               (wnck_aws != wnck_ws):
+                wnck_ws.activate(0)
+                sleep(0.01)
 
         # activate the new window
         window_control.activate_win(windows[new_index])
