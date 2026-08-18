@@ -4416,7 +4416,8 @@ class Dock(object):
         """  Stop the drag motion timer
         """
 
-        self.dm_timer.drag_ended = True
+        if self.dm_timer is not None:
+            self.dm_timer.drag_ended = True
 
     def start_da_timer(self, app):
         """
