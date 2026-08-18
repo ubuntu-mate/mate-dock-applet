@@ -3291,10 +3291,10 @@ class Dock(object):
             dai = Gio.DesktopAppInfo.new_from_filename(dock_app.desktop_file)
             if dai is not None:
                 the_icon = dai.get_icon()
-                if the_icon is Gio.ThemedIcon:
+                if isinstance(the_icon, Gio.ThemedIcon):
                     icon_info = self.icontheme.choose_icon_for_scale(the_icon.get_names(),
                                                                      icon_size, scale_factor,
-                                                                     Gtk.IconLookUpFlags.FORCE_SIZE)
+                                                                     Gtk.IconLookupFlags.FORCE_SIZE)
                 else:
                     icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
                                                                      icon_size, scale_factor,
@@ -3376,6 +3376,12 @@ class Dock(object):
                 pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE,
                                                  stock_size, None)
                 dock_app.icon_filename = "STOCK_EXECUTE"
+
+            if pixbuf is None:
+                pixbuf_size = int(icon_size * scale_factor)
+                pixbuf = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8,
+                                              pixbuf_size, pixbuf_size)
+                pixbuf.fill(0)
 
         # we should now have an icon - either the app's own icon or the
         # stock_execute ..
