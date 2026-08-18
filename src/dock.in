@@ -3290,23 +3290,24 @@ class Dock(object):
         # look up the icon filename using Gtk
         if pixbuf is None and dock_app.has_desktop_file():
             dai = Gio.DesktopAppInfo.new_from_filename(dock_app.desktop_file)
-            the_icon = dai.get_icon()
-            if the_icon is Gio.ThemedIcon:
-                icon_info = self.icontheme.choose_icon_for_scale(the_icon.get_names(),
-                                                                 icon_size, scale_factor,
-                                                                 Gtk.IconLookUpFlags.FORCE_SIZE)
-            else:
-                icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
-                                                                 icon_size, scale_factor,
-                                                                 Gtk.IconLookupFlags.FORCE_SIZE)
+            if dai is not None:
+                the_icon = dai.get_icon()
+                if the_icon is Gio.ThemedIcon:
+                    icon_info = self.icontheme.choose_icon_for_scale(the_icon.get_names(),
+                                                                     icon_size, scale_factor,
+                                                                     Gtk.IconLookUpFlags.FORCE_SIZE)
+                else:
+                    icon_info = self.icontheme.choose_icon_for_scale([dock_app.icon_name, None],
+                                                                     icon_size, scale_factor,
+                                                                     Gtk.IconLookupFlags.FORCE_SIZE)
 
-            if icon_info is not None:
-                dock_app.icon_filename = icon_info.get_filename()
+                if icon_info is not None:
+                    dock_app.icon_filename = icon_info.get_filename()
 
-                try:
-                    pixbuf = icon_info.load_icon()
-                except GLib.GError:
-                    pixbuf = None
+                    try:
+                        pixbuf = icon_info.load_icon()
+                    except GLib.GError:
+                        pixbuf = None
 
         if pixbuf is None:
             # we couldn't get the icon from the .desktop or wnck but there a still a few
@@ -3333,9 +3334,6 @@ class Dock(object):
             icon_file = ""
             if os.path.isfile(dock_app.icon_name):
                 icon_file = dock_app.icon_name
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(dock_app.icon_name,
-                                                                icon_size * scale_factor,
-                                                                icon_size * scale_factor)
             else:
                 icon_name = dock_app.icon_name
 
@@ -3361,20 +3359,24 @@ class Dock(object):
                         icon_file = "/usr/share/pixmaps/%s.png" % icon_name.lower()
 
                 # final attempt - look in ~/.local/share/icons for the icon
-            if icon_file == "":
-                if os.path.isfile(os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)):
-                    icon_file = os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)
+                if icon_file == "":
+                    if os.path.isfile(os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)):
+                        icon_file = os.path.expanduser("~/.local/share/icons/%s" % dock_app.icon_name)
 
-                # if we've found an icon, load it
-                if icon_file != "":
+            # if we've found an icon, load it
+            if icon_file != "":
+                try:
                     pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon_file,
                                                                     icon_size * scale_factor,
                                                                     icon_size * scale_factor)
-                else:
-                    # if not, use a stock icon to represent the app
-                    pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE,
-                                                     stock_size, None)
-                    dock_app.icon_filename = "STOCK_EXECUTE"
+                except GLib.GError:
+                    pixbuf = None
+
+            # if not, use a stock icon to represent the app
+            if pixbuf is None:
+                pixbuf = self.applet.render_icon(Gtk.STOCK_EXECUTE,
+                                                 stock_size, None)
+                dock_app.icon_filename = "STOCK_EXECUTE"
 
         # we should now have an icon - either the app's own icon or the
         # stock_execute ..
