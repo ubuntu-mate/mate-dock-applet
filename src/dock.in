@@ -4283,15 +4283,16 @@ class Dock(object):
             # if the window to be activated is not on the current workspace,
             # switchto that workspace
             wnck_win = Wnck.Window.get(win.get_xid())
-            wnck_aws = self.wnck_screen.get_active_workspace()
-            wnck_ws = wnck_win.get_workspace()
+            if wnck_win is not None:
+                wnck_aws = self.wnck_screen.get_active_workspace()
+                wnck_ws = wnck_win.get_workspace()
 
-            # the windows's current workspace can be None if it is pinned to all
-            # workspaces or it is not on any at all...
-            # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392 and
-            # https://bugs.launchpad.net/ubuntu-mate/+bug/1555336 (regarding software updater))
-            if (wnck_aws is not None) and (wnck_ws is not None) and \
-               (wnck_aws != wnck_ws):
+                # the windows's current workspace can be None if it is pinned to all
+                # workspaces or it is not on any at all...
+                # (fix for https://bugs.launchpad.net/ubuntu/+source/mate-dock-applet/+bug/1550392 and
+                # https://bugs.launchpad.net/ubuntu-mate/+bug/1555336 (regarding software updater))
+                if (wnck_aws is not None) and (wnck_ws is not None) and \
+                   (wnck_aws != wnck_ws):
                     wnck_ws.activate(0)
                     sleep(0.01)
 
