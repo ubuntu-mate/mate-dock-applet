@@ -128,6 +128,10 @@ def get_backlight_color(pixbuf):
             b_total += (pix_b * relevance) % 256
             total += relevance * 255.0
 
+    if total == 0:
+        # fully transparent/unsaturated icon - nothing to sample
+        return 0, 0, 0
+
     r = r_total / total
     g = g_total / total
     b = b_total / total

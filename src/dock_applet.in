@@ -365,9 +365,9 @@ def applet_scroll_event(applet, event, the_dock):
     if event.direction == Gdk.ScrollDirection.SMOOTH:
         hasdeltas, dx, dy = event.get_scroll_deltas()
         if dy < 0:
-            the_dock.do_window_scroll(Gdk.ScrollDirection.DOWN, event.time)
-        elif dy > 0:
             the_dock.do_window_scroll(Gdk.ScrollDirection.UP, event.time)
+        elif dy > 0:
+            the_dock.do_window_scroll(Gdk.ScrollDirection.DOWN, event.time)
 
 
 def applet_drag_begin(applet, context, the_dock):

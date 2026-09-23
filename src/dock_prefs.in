@@ -1192,7 +1192,7 @@ class DockPrefsWindow(Gtk.Window):
 
         cbrgba = self.__cbtn_fb_bar_col.get_rgba().to_color()
 
-        return ["%s" % int(cbrgba.red / 256), "%s" % int(cbrgba.green / 256), "%s" % int(cbrgba.blue / 256)]
+        return ["%s" % int(cbrgba.red / 255), "%s" % int(cbrgba.green / 255), "%s" % int(cbrgba.blue / 255)]
 
     def set_app_spacing(self, spacing):
         """ Set the amount of space between icons in the dock
