@@ -2361,7 +2361,7 @@ class Dock(object):
         for srch_dir in srch_dirs:
             for the_dir, dir_list, file_list in os.walk(srch_dir):
                 try:
-                    unused_var = file_list.index(df_name)
+                    file_list.index(df_name)
 
                     # if we get here the file is found
                     the_name = os.path.join(the_dir, df_name)
@@ -4550,7 +4550,8 @@ class Dock(object):
                 final_x = x
 
             return final_x, final_y
-        except:
+        except (TypeError, ValueError, AttributeError):
+            # e.g. an adjustment isn't available yet during applet startup
             return x, y
 
     def get_app_icon_size(self):

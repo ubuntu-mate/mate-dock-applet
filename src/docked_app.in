@@ -793,7 +793,7 @@ class DockedApp(object):
                     self.desktop_ai = Gio.DesktopAppInfo.new_from_filename(self.desktop_file)
                 else:
                     self.desktop_ai = Gio.DesktopAppInfo.new(self.desktop_file)
-            except:
+            except GLib.Error:
                 self.desktop_ai = None
 
             if self.desktop_ai is not None:
@@ -1418,7 +1418,8 @@ class DockedApp(object):
         # start the app
         try:
             run_it = self.desktop_ai.get_string("Exec")
-        except:
+        except (AttributeError, GLib.Error):
+            # e.g. there's no desktop info for this app, or it has no Exec
             run_it = None
 
         if run_it is not None:
