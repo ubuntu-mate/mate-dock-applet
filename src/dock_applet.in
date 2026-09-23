@@ -567,8 +567,12 @@ def applet_shortcut_handler(keybinder, the_dock):
         return
 
     # get the position in the dock of the app we need to activate
+    # if the key pressed is no longer a registered shortcut (e.g. removed
+    # in the preferences after the grab) it won't be found - ignore it
     if keybinder.current_shortcut in keybinder.shortcuts:
         app_no = keybinder.shortcuts.index(keybinder.current_shortcut)
+    else:
+        return
 
     app = the_dock.get_app_by_pos(app_no)
     if app is not None:
