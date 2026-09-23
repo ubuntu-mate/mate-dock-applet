@@ -1254,13 +1254,3 @@ class DockPrefsWindow(Gtk.Window):
 
         self.__sb_pdel.update()
         return int(self.__sb_pdel.get_value() * 1000)
-
-
-def main():
-    """main function - debug code can go here"""
-    # dpw = DockPrefsWindow(Gtk.main_quit)
-    # Gtk.main()
-
-
-if __name__ == "__main__":
-    main()

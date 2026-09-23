@@ -1343,10 +1343,8 @@ class Dock(object):
             if self.panel_act_list:
 
                 df_shortcut_action = self.dock_action_group.get_action("df_shortcut_%d_action" % act_no)
-                # df_shortcut_1_action = self.dock_action_group.get_action("df_shortcut_1_action")
             else:
                 df_shortcut_action = self.popup_action_group.get_action("df_shortcut_%d_action" % act_no)
-                # df_shortcut_1_action = self.popup_action_group.get_action("df_shortcut_1_action")
 
             act_exists, act_name = app.get_rc_action(act_no)
             df_shortcut_action.set_visible(act_exists)
@@ -3661,7 +3659,6 @@ class Dock(object):
                         mx += self.scrolled_win.get_hadjustment().get_value()
                     else:
                         my += self.scrolled_win.get_vadjustment().get_value()
-                        # was this ...my += self.scroll_index * self.get_app_icon_size()
 
                 if (mx >= alloc.x) and (mx <= alloc.x + alloc.width):
                     if (my >= alloc.y) and \

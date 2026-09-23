@@ -309,19 +309,3 @@ class AboutWindow(Gtk.Window):
                 self.__nb.set_current_page(self.__pg_license)
             else:
                 self.__nb.set_current_page(self.__pg_dflt)
-
-
-def main():
-    """
-    main function - debugging code goes here
-    """
-
-    about_dlg = AboutDialog()
-    about_dlg.show_all()
-    Gtk.main()
-
-    return
-
-
-if __name__ == "__main__":
-    main()

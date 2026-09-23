@@ -432,20 +432,3 @@ class DockCLWindow(Gtk.Window):
         md.format_secondary_text(info_text)
         md.run()
         md.destroy()
-
-
-def main():
-    """main function - debug code can go here"""
-    dclw = DockCLWindow(Gtk.main_quit)
-    dclw.set_skip_taskbar_hint(False)
-    dclw.name = "My test launcher"
-    dclw.comment = "This is a comment"
-    dclw.icon_filename = "/usr/share/pixmaps/ericWeb.png"
-    dclw.command = "/usr/bin/gvim"
-    dclw.wm_class = "Dock_custom_launcher.py"
-    dclw.is_terminal_app = False
-    Gtk.main()
-
-
-if __name__ == "__main__":
-    main()

@@ -1635,9 +1635,6 @@ class DockedApp(object):
         if (var_name is not None) and (var_value is not None):
             alc.setenv(var_name, var_value)
 
-        file_list = GLib.List()
-
-        # app_info.launch(None, alc)
         self.startup_id = alc.get_startup_notify_id(app_info, [])
 
         throbber = PulseTimer(self)
@@ -1767,15 +1764,3 @@ class DockedApp(object):
         """
 
         self.scroll_dir = scroll_dir
-
-
-def main():
-    """Main function.
-
-    Debugging code can go here
-    """
-    pass
-
-
-if __name__ == "__main__":
-    main()
