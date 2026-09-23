@@ -26,18 +26,10 @@
 # Author:
 #     Robin Thompson
 
-# do not change the value of this variable - it will be set during build
-# according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
 
-if build_gtk2:
-    gi.require_version("Gtk", "2.0")
-    gi.require_version("Wnck", "1.0")
-else:
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("Wnck", "3.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("Wnck", "3.0")
 
 from gi.repository import Gtk, Wnck
 

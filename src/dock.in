@@ -39,18 +39,10 @@ respond to selections made in the applet right click menu, specifically
 # Author:
 #     Robin Thompson
 
-# do not change the value of this variable - it will be set during build
-# according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
 
-if build_gtk2:
-    gi.require_version("Gtk", "2.0")
-    gi.require_version("Wnck", "1.0")
-else:
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("Wnck", "3.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("Wnck", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
 gi.require_version("Notify", "0.7")
@@ -369,11 +361,9 @@ class Dock(object):
             app_list : the list of DockedApp objects. Will contain
                        running/non-running pinned apps and running unpinned
                        apps
-            box    : A Gtk2 HBox or VBox (depending on the applet orientation)
-                     or Gtk3 Grid containing the drawing areas of each of the
+            box    : A Gtk3 Grid containing the drawing areas of each of the
                      apps in app_list
-            scrolled_win : a scrolled window too hold self.box (gtk3 only, in gtk2
-                           self.box is added directly to the applet)
+            scrolled_win : a scrolled window too hold self.box
             sw_hadj : a Gtk.Adjustment - used when there isn't enough panel space to fully
                       display the dock and we need to horizontally scroll it
             sw_vadj : as above, but for vertically scrolling
@@ -393,7 +383,6 @@ class Dock(object):
             fallback_bar_col : a list of the r,g,b elements of the colour to be
                                used when drawing e,g, bar indicators and the
                                current theme highlight colour can't be determined
-                               (will be mainly of use in gtk2)
             active_bg : the type of background to use for the currently active app's
                         icon background (e.g. gradient fill or solid fill)
             theme     : the theme used by the dock. Can indicate a custom themes
@@ -501,10 +490,9 @@ class Dock(object):
         self.box = None
         self.sw_hadj = Gtk.Adjustment(0, 0, 1, 1, 1, 1)
         self.sw_vadj = Gtk.Adjustment(0, 0, 1, 1, 1, 1)
-        if not build_gtk2:
-            self.scrolled_win = Gtk.ScrolledWindow.new(self.sw_hadj, self.sw_vadj)
-            self.scrolled_win.set_policy(Gtk.PolicyType.EXTERNAL, Gtk.PolicyType.EXTERNAL)
-            self.scrolled_win.connect("scroll-event", self.window_scroll)
+        self.scrolled_win = Gtk.ScrolledWindow.new(self.sw_hadj, self.sw_vadj)
+        self.scrolled_win.set_policy(Gtk.PolicyType.EXTERNAL, Gtk.PolicyType.EXTERNAL)
+        self.scrolled_win.connect("scroll-event", self.window_scroll)
 
         self.icontheme = Gtk.IconTheme.get_default()
         self.icontheme.connect("changed", self.icon_theme_changed)
@@ -701,19 +689,18 @@ class Dock(object):
         self.get_panel_layout()
 
         # constrain the dock's size so that it does not overlap any other applets
-        if not build_gtk2:
-            if self.nice_sizing:
-                # set the applet's size hints
-                self.set_size_hints()
+        if self.nice_sizing:
+            # set the applet's size hints
+            self.set_size_hints()
 
-            elif self.panel_layout.upper() == "MUTINY":
-                self.dock_fixed_size = self.get_mutiny_fixed_size()
-                self.avail_panel_space = self.get_avail_panel_space()
-                self.set_dock_panel_size()
-                self.write_settings()
-            else:
-                self.avail_panel_space = self.get_avail_panel_space()
-                self.set_dock_panel_size()
+        elif self.panel_layout.upper() == "MUTINY":
+            self.dock_fixed_size = self.get_mutiny_fixed_size()
+            self.avail_panel_space = self.get_avail_panel_space()
+            self.set_dock_panel_size()
+            self.write_settings()
+        else:
+            self.avail_panel_space = self.get_avail_panel_space()
+            self.set_dock_panel_size()
 
         self.set_all_apps_minimise_targets()
 
@@ -726,10 +713,7 @@ class Dock(object):
 
         self.dds_done = True
 
-        if build_gtk2:
-            applet_win = self.applet.window
-        else:
-            applet_win = self.applet.get_window()
+        applet_win = self.applet.get_window()
         for app in self.app_list:
             app.applet_win = applet_win
 
@@ -890,10 +874,9 @@ class Dock(object):
             self.get_applet_panel_info()
             self.set_all_apps_minimise_targets()
 
-            if not build_gtk2:
-                if not self.nice_sizing:
-                    self.avail_panel_space = self.get_avail_panel_space()
-                    self.set_dock_panel_size()
+            if not self.nice_sizing:
+                self.avail_panel_space = self.get_avail_panel_space()
+                self.set_dock_panel_size()
 
         if key == "position":
             # we can get here during applet creation when we still might not
@@ -907,13 +890,12 @@ class Dock(object):
                 self.get_applet_panel_info()
                 self.set_all_apps_minimise_targets()
 
-                if not build_gtk2:
-                    if not self.nice_sizing:
-                        self.avail_panel_space = self.get_avail_panel_space()
-                        self.set_dock_panel_size()
+                if not self.nice_sizing:
+                    self.avail_panel_space = self.get_avail_panel_space()
+                    self.set_dock_panel_size()
 
-                        if self.scrolling:
-                            self.set_app_scroll_dirs(True)
+                    if self.scrolling:
+                        self.set_app_scroll_dirs(True)
 
     def panel_settings_changed(self, settings, key):
         """ Callback for the settings of the panel the applet is on changed
@@ -925,8 +907,7 @@ class Dock(object):
         if key in ["orientation", "size", "expand", "x", "x-centered", "y", "y-centered",
                    "x-right", "y-bottom"]:
             self.get_applet_panel_info()
-            if not build_gtk2:
-                self.set_dock_panel_size()
+            self.set_dock_panel_size()
             self.set_all_apps_minimise_targets()
             for app in self.app_list:
                 app.queue_draw()
@@ -1501,14 +1482,6 @@ class Dock(object):
 
         menu_xml += '<menuitem name="close_win" action="close_win_action"/>'
 
-        # we only need menu items for moving app icons for Gtk2
-        # (Gtk3 does it with drag and drop)
-        if build_gtk2:
-            menu_xml += '<separator/><menuitem name="move_up" action="move_up_action"/>'
-            menu_xml += '<menuitem name="move_down" action="move_down_action"/>'
-            menu_xml += '<menuitem name="move_left" action="move_left_action"/>'
-            menu_xml += '<menuitem name="move_right" action="move_right_action"/>'
-
         menu_xml += '<separator/><menuitem name="' + _("Pin") + '" action="pin_action"/>'
         menu_xml += '<menuitem name="' + _("Unpin") + '" action="unpin_action"/><separator/>'
 
@@ -1736,16 +1709,13 @@ class Dock(object):
         for app_da in self.box.get_children():
 
             if app_da == app.drawing_area:
-                if build_gtk2:
-                    return index
+                if self.box.orientation == Gtk.Orientation.HORIZONTAL:
+                    boxi = self.box.child_get_property(app_da,
+                                                       "left-attach")
                 else:
-                    if self.box.orientation == Gtk.Orientation.HORIZONTAL:
-                        boxi = self.box.child_get_property(app_da,
-                                                           "left-attach")
-                    else:
-                        boxi = self.box.child_get_property(app_da,
-                                                           "top_attach")
-                    return boxi
+                    boxi = self.box.child_get_property(app_da,
+                                                       "top_attach")
+                return boxi
 
             index += 1
 
@@ -1768,16 +1738,13 @@ class Dock(object):
 
                 app = self.app_list[index - 1]
                 # we need to move the app both in self.applist and self.box
-                if build_gtk2:
-                    self.box.reorder_child(self.right_clicked_app.drawing_area, index - 1)
+                if self.box.orientation == Gtk.Orientation.HORIZONTAL:
+                    prop = "left-attach"
                 else:
-                    if self.box.orientation == Gtk.Orientation.HORIZONTAL:
-                        prop = "left-attach"
-                    else:
-                        prop = "top-attach"
+                    prop = "top-attach"
 
-                    self.box.child_set_property(self.right_clicked_app.drawing_area, prop, index - 1)
-                    self.box.child_set_property(app.drawing_area, prop, index)
+                self.box.child_set_property(self.right_clicked_app.drawing_area, prop, index - 1)
+                self.box.child_set_property(app.drawing_area, prop, index)
 
                 self.app_list[index - 1] = self.app_list[index]
                 self.app_list[index] = app
@@ -1812,30 +1779,27 @@ class Dock(object):
             self.set_app_scroll_dirs(False)
 
         # first move the app's drawing area
-        if build_gtk2:
-            self.box.reorder_child(the_app.drawing_area, new_pos)
+        if self.box.orientation == Gtk.Orientation.HORIZONTAL:
+            prop = "left-attach"
         else:
-            if self.box.orientation == Gtk.Orientation.HORIZONTAL:
-                prop = "left-attach"
-            else:
-                prop = "top-attach"
+            prop = "top-attach"
 
-            if new_pos > old_pos:
-                step = 1
-            else:
-                step = -1
+        if new_pos > old_pos:
+            step = 1
+        else:
+            step = -1
 
-            i = old_pos + step
+        i = old_pos + step
 
-            # first, adjust the contents of the box containing the app drawing areas
-            while i != new_pos + step:
-                app_to_move = self.app_list[i]
-                self.box.child_set_property(app_to_move.drawing_area,
-                                            prop, i - step)
-                i += step
+        # first, adjust the contents of the box containing the app drawing areas
+        while i != new_pos + step:
+            app_to_move = self.app_list[i]
+            self.box.child_set_property(app_to_move.drawing_area,
+                                        prop, i - step)
+            i += step
 
-            # move the desired app's drawing area
-            self.box.child_set_property(the_app.drawing_area, prop, new_pos)
+        # move the desired app's drawing area
+        self.box.child_set_property(the_app.drawing_area, prop, new_pos)
 
         # now move things around in the app list to match
         self.app_list.remove(the_app)
@@ -1890,11 +1854,7 @@ class Dock(object):
         if win is None:
             return 0, 0
 
-        if build_gtk2:
-            # win.get_origin doesn't work on gtk2, so...
-            dock_x, dock_y = win.get_root_coords(0, 0)
-        else:
-            thing, dock_x, dock_y = win.get_origin()
+        thing, dock_x, dock_y = win.get_origin()
 
         return dock_x, dock_y
 
@@ -1947,18 +1907,14 @@ class Dock(object):
                 app = self.app_list[index + 1]
 
                 # we need to move the app both in self.applist and self.box
-                if build_gtk2:
-                    self.box.reorder_child(self.right_clicked_app.drawing_area,
-                                           index + 1)
+                if self.box.orientation == Gtk.Orientation.HORIZONTAL:
+                    prop = "left-attach"
                 else:
-                    if self.box.orientation == Gtk.Orientation.HORIZONTAL:
-                        prop = "left-attach"
-                    else:
-                        prop = "top-attach"
+                    prop = "top-attach"
 
-                    self.box.child_set_property(self.right_clicked_app.drawing_area,
-                                                prop, index + 1)
-                    self.box.child_set_property(app.drawing_area, prop, index)
+                self.box.child_set_property(self.right_clicked_app.drawing_area,
+                                            prop, index + 1)
+                self.box.child_set_property(app.drawing_area, prop, index)
 
                 self.app_list[index + 1] = self.app_list[index]
                 self.app_list[index] = app
@@ -2004,7 +1960,7 @@ class Dock(object):
             self.prefs_win.set_show_pinned_apps_on_all_ws(self.pa_on_all_ws)
             self.prefs_win.set_theme(self.theme)
             self.prefs_win.set_keyboard_shortcuts(self.keyboard_shortcuts)
-            if not build_gtk2 and not self.nice_sizing:
+            if not self.nice_sizing:
                 self.prefs_win.set_fixed_size(self.dock_fixed_size != -1, self.dock_fixed_size,
                                               self.panel_layout.upper() == "MUTINY")
         else:
@@ -2037,16 +1993,13 @@ class Dock(object):
             widget - the button the caused the event
             event - the event args
         """
-        if not build_gtk2:
-            if self.panel_layout.upper() == "MUTINY":
-                fixed_size_changes = False
-            else:
-                prefs_fixed_size, prefs_num_icons = self.prefs_win.get_fixed_size()
-                if not prefs_fixed_size:
-                    prefs_num_icons = -1  # indicate a varaible size
-                fixed_size_changes = prefs_num_icons != self.dock_fixed_size
-        else:
+        if self.panel_layout.upper() == "MUTINY":
             fixed_size_changes = False
+        else:
+            prefs_fixed_size, prefs_num_icons = self.prefs_win.get_fixed_size()
+            if not prefs_fixed_size:
+                prefs_num_icons = -1  # indicate a varaible size
+            fixed_size_changes = prefs_num_icons != self.dock_fixed_size
 
         if (self.indicator != self.prefs_win.get_indicator_type()) or \
            (self.multi_ind != self.prefs_win.get_multi_ind()) or \
@@ -2136,11 +2089,8 @@ class Dock(object):
 
             # redraw everything here
 
-            if build_gtk2:
-                self.box.set_spacing(self.app_spacing + 2)
-            else:
-                self.box.set_row_spacing(self.app_spacing + 2)
-                self.box.set_column_spacing(self.app_spacing + 2)
+            self.box.set_row_spacing(self.app_spacing + 2)
+            self.box.set_column_spacing(self.app_spacing + 2)
 
             if old_ind != self.indicator:
                 # if the new indicator requires a different amount of space than the
@@ -2280,10 +2230,7 @@ class Dock(object):
             dock_app.read_info_from_desktop_file()
             dock_app.is_pinned = True
 
-            if build_gtk2:
-                dock_app.applet_win = self.applet.window
-            else:
-                dock_app.applet_win = self.applet.window.get_window()
+            dock_app.applet_win = self.applet.window.get_window()
 
             dock_app.applet = self.applet
 
@@ -2317,10 +2264,7 @@ class Dock(object):
         dock_app = docked_app.DockedApp()
         dock_app.desktop_file = desktop_file
         if dock_app.read_info_from_desktop_file():
-            if build_gtk2:
-                dock_app.applet_win = self.applet.window
-            else:
-                dock_app.applet_win = self.applet.get_window()
+            dock_app.applet_win = self.applet.get_window()
 
             dock_app.applet = self.applet
             dock_app.applet_orient = self.applet.get_orient()
@@ -2347,10 +2291,7 @@ class Dock(object):
             self.write_settings()
             return
 
-        if build_gtk2:
-            dock_app.applet_win = self.applet.window
-        else:
-            dock_app.applet_win = self.applet.get_window()
+        dock_app.applet_win = self.applet.get_window()
 
         dock_app.applet = self.applet
 
@@ -2728,10 +2669,7 @@ class Dock(object):
                 dock_app.setup_from_bamf(self.app_match)
 
             if add_to_dock:
-                if build_gtk2:
-                    dock_app.applet_win = self.applet.window
-                else:
-                    dock_app.applet_win = self.applet.get_window()
+                dock_app.applet_win = self.applet.get_window()
 
                 self.set_bamf_app_handlers(b_app)
 
@@ -3147,88 +3085,83 @@ class Dock(object):
         """
 
         app_pos = None
-        if not build_gtk2:
-            if self.scrolling:
-                # clear the scroll indicators
-                self.set_app_scroll_dirs(False)
-                app_pos = self.get_visible_app_index(app)
+        if self.scrolling:
+            # clear the scroll indicators
+            self.set_app_scroll_dirs(False)
+            app_pos = self.get_visible_app_index(app)
 
         self.app_list.remove(app)
 
-        if not build_gtk2:
-            if self.dock_fixed_size == -1:
-                self.set_dock_panel_size()
+        if self.dock_fixed_size == -1:
+            self.set_dock_panel_size()
 
         num_apps = len(self.box.get_children())
 
-        if build_gtk2:
-            self.box.remove(app.drawing_area)
-        else:
-            # the row/column which contains the app needs to be
-            # removed, so get the app's position in the grid
-            pos = 0
-            while pos < num_apps:
+        # the row/column which contains the app needs to be
+        # removed, so get the app's position in the grid
+        pos = 0
+        while pos < num_apps:
+            if self.box.orientation == Gtk.Orientation.VERTICAL:
+                left = 0
+                top = pos
+            else:
+                left = pos
+                top = 0
+
+            if self.box.get_child_at(left, top) == app.drawing_area:
+                # we've found the app
                 if self.box.orientation == Gtk.Orientation.VERTICAL:
-                    left = 0
-                    top = pos
+                    self.box.remove_row(pos)
                 else:
-                    left = pos
-                    top = 0
+                    self.box.remove_column(pos)
 
-                if self.box.get_child_at(left, top) == app.drawing_area:
-                    # we've found the app
-                    if self.box.orientation == Gtk.Orientation.VERTICAL:
-                        self.box.remove_row(pos)
-                    else:
-                        self.box.remove_column(pos)
+            pos += 1
 
-                pos += 1
+        app = None
 
-            app = None
+        # if we're scrolling things get a bit complicated now...
+        # (if nice_sizing then we handle things in fit_to_alloc)
+        if self.nice_sizing:
+            self.ns_app_removed = app_pos
+            self.set_size_hints()
 
-            # if we're scrolling things get a bit complicated now...
-            # (if nice_sizing then we handle things in fit_to_alloc)
-            if self.nice_sizing:
-                self.ns_app_removed = app_pos
-                self.set_size_hints()
+        elif self.scrolling:
 
-            elif self.scrolling:
+            # do we now have enough space to show all visible apps?
+            if self.get_total_num_visible_apps() < self.dock_fixed_size:
+                self.scrolling = False
+                if self.panel_orient in ["top", "bottom"]:
+                    self.scrolled_win.get_hadjustment().set_value(0)
+                else:
+                    self.scrolled_win.get_vadjustment().set_value(0)
 
-                # do we now have enough space to show all visible apps?
-                if self.get_total_num_visible_apps() < self.dock_fixed_size:
-                    self.scrolling = False
+            else:
+                do_scroll = False
+                if (app_pos is not None) and app_pos < self.scroll_index:
+
+                    do_scroll = True
+
+                do_scroll = do_scroll or \
+                    (self.scroll_index + self.dock_fixed_size >= self.get_total_num_visible_apps())
+
+                if do_scroll:
+                    # if the app we deleted is before the current scroll index, or if we are left with an
+                    # empty space at the end of the dock, we need to scroll
+                    self.scroll_index -= 1
+                    new_pos = self.scroll_index * self.get_app_icon_size()
                     if self.panel_orient in ["top", "bottom"]:
-                        self.scrolled_win.get_hadjustment().set_value(0)
+                        self.scrolled_win.get_hadjustment().set_value(new_pos)
                     else:
-                        self.scrolled_win.get_vadjustment().set_value(0)
+                        self.scrolled_win.get_vadjustment().set_value(new_pos)
 
-                else:
-                    do_scroll = False
-                    if (app_pos is not None) and app_pos < self.scroll_index:
+                self.set_app_scroll_dirs(True)
 
-                        do_scroll = True
-
-                    do_scroll = do_scroll or \
-                        (self.scroll_index + self.dock_fixed_size >= self.get_total_num_visible_apps())
-
-                    if do_scroll:
-                        # if the app we deleted is before the current scroll index, or if we are left with an
-                        # empty space at the end of the dock, we need to scroll
-                        self.scroll_index -= 1
-                        new_pos = self.scroll_index * self.get_app_icon_size()
-                        if self.panel_orient in ["top", "bottom"]:
-                            self.scrolled_win.get_hadjustment().set_value(new_pos)
-                        else:
-                            self.scrolled_win.get_vadjustment().set_value(new_pos)
-
-                    self.set_app_scroll_dirs(True)
-
-                #  sort out the app under the mouse
-                app = self.get_app_under_mouse()
-                self.app_with_mouse = app
-                if app is not None:
-                    app.has_mouse = True
-                    app.queue_draw()
+            #  sort out the app under the mouse
+            app = self.get_app_under_mouse()
+            self.app_with_mouse = app
+            if app is not None:
+                app.has_mouse = True
+                app.queue_draw()
 
         app = None
 
@@ -3504,50 +3437,47 @@ class Dock(object):
                                   app into view
         """
 
-        if build_gtk2:
-            self.box.add(dock_app.drawing_area)
+        if not self.nice_sizing:
+            # enabling/disabling scolling etc will be handled in fit_to_alloc
+            # when nice_sizing
+            overflow = False
+            if self.dock_fixed_size == -1:
+                self.set_dock_panel_size()
+            elif not self.scrolling:
+                overflow = self.will_overflow(self.get_app_icon_size())
+
+            if overflow:
+                self.enable_app_scrolling()
+            else:
+                self.set_app_scroll_dirs(False)
         else:
-            if not self.nice_sizing:
-                # enabling/disabling scolling etc will be handled in fit_to_alloc
-                # when nice_sizing
-                overflow = False
-                if self.dock_fixed_size == -1:
-                    self.set_dock_panel_size()
-                elif not self.scrolling:
-                    overflow = self.will_overflow(self.get_app_icon_size())
+            # we only indicate new apps after delayed setup is done
+            # so that we don't scroll the dock during startup
+            self.ns_new_app = self.dds_done
+            self.set_size_hints()
 
-                if overflow:
-                    self.enable_app_scrolling()
-                else:
-                    self.set_app_scroll_dirs(False)
+        pos = len(self.box.get_children())
+
+        # use .attach instead of .add with Gtk.Grid - .add doesn't seem
+        # to work properly with vertical orientation...
+        if self.box.orientation == Gtk.Orientation.VERTICAL:
+            self.box.attach(dock_app.drawing_area, 0, pos, 1, 1)
+        else:
+            self.box.attach(dock_app.drawing_area, pos, 0, 1, 1)
+
+        if not self.nice_sizing and (self.scrolling and do_scroll):
+            # scroll to bring the new app into view
+            self.scroll_index = self.get_total_num_visible_apps() - self.dock_fixed_size
+
+            if self.panel_orient in ["top", "bottom"]:
+                startpos = self.scrolled_win.get_hadjustment().get_value()
             else:
-                # we only indicate new apps after delayed setup is done
-                # so that we don't scroll the dock during startup
-                self.ns_new_app = self.dds_done
-                self.set_size_hints()
+                startpos = self.scrolled_win.get_vadjustment().get_value()
 
-            pos = len(self.box.get_children())
+            endpos = startpos + (self.scroll_index * self.get_app_icon_size())
 
-            # use .attach instead of .add with Gtk.Grid - .add doesn't seem
-            # to work properly with vertical orientation...
-            if self.box.orientation == Gtk.Orientation.VERTICAL:
-                self.box.attach(dock_app.drawing_area, 0, pos, 1, 1)
-            else:
-                self.box.attach(dock_app.drawing_area, pos, 0, 1, 1)
-
-            if not self.nice_sizing and (self.scrolling and do_scroll):
-                # scroll to bring the new app into view
-                self.scroll_index = self.get_total_num_visible_apps() - self.dock_fixed_size
-
-                if self.panel_orient in ["top", "bottom"]:
-                    startpos = self.scrolled_win.get_hadjustment().get_value()
-                else:
-                    startpos = self.scrolled_win.get_vadjustment().get_value()
-
-                endpos = startpos + (self.scroll_index * self.get_app_icon_size())
-
-                ScrollAnimator(self.scrolled_win, startpos, endpos,
-                               self.panel_orient, 16, 5, self.scroll_anim_finished_cb)
+            ScrollAnimator(self.scrolled_win, startpos, endpos,
+                           self.panel_orient, 16, 5, self.scroll_anim_finished_cb)
 
     def get_app_by_pos(self, position):
         """
@@ -3586,25 +3516,16 @@ class Dock(object):
 
         if orientation == MatePanelApplet.AppletOrient.LEFT or \
            orientation == MatePanelApplet.AppletOrient.RIGHT:
-            if build_gtk2:
-                self.box = Gtk.VBox()
-            else:
-                self.box = Gtk.Grid()
-                self.box.orientation = Gtk.Orientation.VERTICAL
+            self.box = Gtk.Grid()
+            self.box.orientation = Gtk.Orientation.VERTICAL
 
         else:
-            if build_gtk2:
-                self.box = Gtk.HBox()
-            else:
-                self.box = Gtk.Grid()
-                self.box.orientation = Gtk.Orientation.HORIZONTAL
-                self.box.set_hexpand(False)
+            self.box = Gtk.Grid()
+            self.box.orientation = Gtk.Orientation.HORIZONTAL
+            self.box.set_hexpand(False)
 
-        if build_gtk2:
-            self.box.set_spacing(self.app_spacing + 2)
-        else:
-            self.box.set_row_spacing(self.app_spacing + 2)
-            self.box.set_column_spacing(self.app_spacing + 2)
+        self.box.set_row_spacing(self.app_spacing + 2)
+        self.box.set_column_spacing(self.app_spacing + 2)
 
     def setup_dock(self):
         """Setup the dock."
@@ -3622,8 +3543,7 @@ class Dock(object):
         # make sure the applet is correctly oriented
         orientation = self.applet.get_orient()
         self.create_box(orientation)
-        if not build_gtk2:
-            self.scrolled_win.add(self.box)
+        self.scrolled_win.add(self.box)
 
         # setup up pinned and non-pinned running apps
         self.setup_app_list()
@@ -3648,9 +3568,6 @@ class Dock(object):
 
          Request the 'natural' size of the dock, according to the applet orientation"""
 
-        if build_gtk2:
-            return
-
         if self.panel_orient in ["top", "bottom"]:
             self.scrolled_win.set_size_request(-1, self.panel_size)
         else:
@@ -3668,10 +3585,7 @@ class Dock(object):
 
             dock_app.applet = self.applet
 
-            if build_gtk2:
-                dock_app.applet_win = self.applet.window
-            else:
-                dock_app.applet_win = self.applet.get_window()
+            dock_app.applet_win = self.applet.get_window()
 
             dock_app.set_indicator(self.indicator)
             self.set_app_icon(dock_app, applet_size)
@@ -3688,16 +3602,7 @@ class Dock(object):
     def set_new_orientation(self, new_orient):
         """Change the dock applet to a new applet orientation
 
-        For Gtk2:
-            Remove all app's drawing areas from the V/HBox
-
-            Remove the V/HBox and create a new one according to the new
-            orientation
-
-            Add all of the app's drawing areas to the new V/HBox
-
-        For Gtk3:
-            Change the orientation of the Gtk.Grid
+        Change the orientation of the Gtk.Grid
 
             Swap the 'left-attach' and 'top-attach' properties of the grid's
             children
@@ -3710,40 +3615,25 @@ class Dock(object):
         self.get_panel_id()
         self.get_applet_panel_info()
 
-        if build_gtk2:
-            for dock_app in self.app_list:
-                self.box.remove(dock_app.drawing_area)
+        old_orient = self.box.orientation
 
-            self.applet.remove(self.box)
-            self.box = None
-
-            self.create_box(new_orient)
-
-            for dock_app in self.app_list:
-                self.box.add(dock_app.drawing_area)
-                dock_app.applet_orient = new_orient
-
-            self.applet.add(self.box)
+        if (new_orient == MatePanelApplet.AppletOrient.RIGHT) or \
+           (new_orient == MatePanelApplet.AppletOrient.LEFT):
+            self.box.orientation = Gtk.Orientation.VERTICAL
         else:
-            old_orient = self.box.orientation
+            self.box.orientation = Gtk.Orientation.HORIZONTAL
 
-            if (new_orient == MatePanelApplet.AppletOrient.RIGHT) or \
-               (new_orient == MatePanelApplet.AppletOrient.LEFT):
-                self.box.orientation = Gtk.Orientation.VERTICAL
-            else:
-                self.box.orientation = Gtk.Orientation.HORIZONTAL
+        for child in self.box.get_children():
+            ol = self.box.child_get_property(child, "left-attach")
 
-            for child in self.box.get_children():
-                ol = self.box.child_get_property(child, "left-attach")
+            # if we've switched orientations then realign the grid contents
+            if old_orient != self.box.orientation:
+                ot = self.box.child_get_property(child, "top-attach")
+                self.box.child_set_property(child, "left-attach", ot)
+                self.box.child_set_property(child, "top-attach", ol)
 
-                # if we've switched orientations then realign the grid contents
-                if old_orient != self.box.orientation:
-                    ot = self.box.child_get_property(child, "top-attach")
-                    self.box.child_set_property(child, "left-attach", ot)
-                    self.box.child_set_property(child, "top-attach", ol)
-
-            for dock_app in self.app_list:
-                dock_app.applet_orient = new_orient
+        for dock_app in self.app_list:
+            dock_app.applet_orient = new_orient
 
     def get_app_at_mouse(self, mouse_x, mouse_y):
         """
@@ -3967,7 +3857,7 @@ class Dock(object):
 
         # if we're scrolling we need to pass the current scroll position to the
         # action list
-        if not self.scrolling or build_gtk2:
+        if not self.scrolling:
             scroll_adj = 0
         else:
             if self.panel_orient in ["top", "bottom"]:
@@ -4045,14 +3935,7 @@ class Dock(object):
         elif self.click_action == dock_prefs.ClickActionType.COMPIZ:
 
             # get root window id
-            if build_gtk2:
-                # get_xid is non introspectable on gtk2, so use xwininfo
-                # instead...
-                rw_inf = subprocess.check_output(["xwininfo", "-root"])
-                rw_inf = rw_inf.split()
-                rwin = int(rw_inf[3], 16)
-            else:
-                rwin = Gdk.Screen.get_default().get_root_window().get_xid()
+            rwin = Gdk.Screen.get_default().get_root_window().get_xid()
 
             try:
                 compiz_service = self.session_bus.get_object('org.freedesktop.compiz',
@@ -4093,10 +3976,7 @@ class Dock(object):
         screen areas where the mouse must remain or the window list will hide
         """
 
-        if build_gtk2:
-            highlighted_app = self.app_with_mouse
-        else:
-            highlighted_app = self.get_app_under_mouse()
+        highlighted_app = self.get_app_under_mouse()
 
         self.right_clicked_app = highlighted_app
         # abive is needed so that actions invoked from the window list work correctly
@@ -4117,13 +3997,10 @@ class Dock(object):
 
         self.set_actions_for_app(highlighted_app)
 
-        if build_gtk2:
-            scroll_adj = 0
+        if self.panel_orient in ["top", "bottom"]:
+            scroll_adj = self.scrolled_win.get_hadjustment().get_value()
         else:
-            if self.panel_orient in ["top", "bottom"]:
-                scroll_adj = self.scrolled_win.get_hadjustment().get_value()
-            else:
-                scroll_adj = self.scrolled_win.get_vadjustment().get_value()
+            scroll_adj = self.scrolled_win.get_vadjustment().get_value()
 
         self.app_win_list = dock_win_list.DockWinList(self.wnck_screen,
                                                       self.applet.get_orient(),

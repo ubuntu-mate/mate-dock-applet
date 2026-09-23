@@ -24,16 +24,9 @@
 # Author:
 #     Robin Thompson
 
-# do not change the value of this variable - it will be set during build
-# according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
 
-if build_gtk2:
-    gi.require_version("Gtk", "2.0")
-else:
-    gi.require_version("Gtk", "3.0")
+gi.require_version("Gtk", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
 
@@ -137,18 +130,12 @@ class DockPrefsWindow(Gtk.Window):
 
         # setup the window contents
         self.set_border_width(5)
-        if build_gtk2:
-            self.__hbox = Gtk.HBox()
-        else:
-            self.__hbox = Gtk.Box()
-            self.__hbox.set_orientation(Gtk.Orientation.HORIZONTAL)
+        self.__hbox = Gtk.Box()
+        self.__hbox.set_orientation(Gtk.Orientation.HORIZONTAL)
         self.__hbox.set_spacing(2)
 
-        if build_gtk2:
-            self.__hbox1 = Gtk.HBox()
-        else:
-            self.__hbox1 = Gtk.Box()
-            self.__hbox1.set_orientation(Gtk.Orientation.HORIZONTAL)
+        self.__hbox1 = Gtk.Box()
+        self.__hbox1.set_orientation(Gtk.Orientation.HORIZONTAL)
         self.__hbox1.set_spacing(2)
 
         self.__vbox = self.create_vbox()
@@ -161,11 +148,8 @@ class DockPrefsWindow(Gtk.Window):
         self.__ok_btn = Gtk.Button(label=_("Ok"), stock=Gtk.STOCK_OK)
         self.__ok_btn.connect("button-press-event", ok_callback)
 
-        if build_gtk2:
-            self.__hbbx = Gtk.HButtonBox()
-        else:
-            self.__hbbx = Gtk.ButtonBox()
-            self.__hbbx.set_orientation(Gtk.Orientation.HORIZONTAL)
+        self.__hbbx = Gtk.ButtonBox()
+        self.__hbbx.set_orientation(Gtk.Orientation.HORIZONTAL)
         self.__hbbx.set_spacing(4)
         self.__hbbx.set_layout(Gtk.ButtonBoxStyle.END)
 
@@ -173,14 +157,10 @@ class DockPrefsWindow(Gtk.Window):
         self.__hbbx.pack_start(self.__cancel_btn, False, False, 4)
         self.__notebook = Gtk.Notebook()
 
-        if build_gtk2:
-            self.__appearance_tbl = Gtk.Table(rows=4, columns=1,
-                                              homogeneous=False)
-        else:
-            self.__appearance_tbl = Gtk.Grid()
-            self.__appearance_tbl.set_column_spacing(4)
-            self.__appearance_tbl.set_row_spacing(4)
-            self.__appearance_tbl.set_row_homogeneous(False)
+        self.__appearance_tbl = Gtk.Grid()
+        self.__appearance_tbl.set_column_spacing(4)
+        self.__appearance_tbl.set_row_spacing(4)
+        self.__appearance_tbl.set_row_homogeneous(False)
 
         self.__frame_theme = create_frame(_("Theme"))
         self.__frame_theme_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
@@ -220,30 +200,17 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_preview.add(self.__vbox_preview)
 
         # connect an event handler to draw the dark indicator
-        if build_gtk2:
-            self.__da_preview.connect("expose-event", self.draw_preview)
-        else:
-            self.__da_preview.connect("draw", self.draw_preview)
+        self.__da_preview.connect("draw", self.draw_preview)
 
         # create ui elements for multiple indicators for open windows
         self.__cb_multi_ind = Gtk.CheckButton(label=_("Display an indicator for each open window"))
         self.__cb_multi_ind.set_tooltip_text(_("Display an indicator (max 4) for each open window"))
         self.__cb_multi_ind.connect("toggled", self.setting_toggled)
 
-        if build_gtk2:
-            self.__tbl_ind_type = Gtk.Table(rows=1, columns=2,
-                                            homogeneous=False)
-            self.__tbl_ind_type.attach(self.__cbt_ind_type,
-                                       0, 1, 0, 1,
-                                       Gtk.AttachOptions.FILL,
-                                       Gtk.AttachOptions.SHRINK,
-                                       2, 2)
-
-        else:
-            self.__tbl_ind_type = Gtk.Grid()
-            self.__tbl_ind_type.set_row_spacing(2)
-            self.__tbl_ind_type.set_column_spacing(2)
-            self.__tbl_ind_type.attach(self.__cbt_ind_type, 0, 0, 1, 1)
+        self.__tbl_ind_type = Gtk.Grid()
+        self.__tbl_ind_type.set_row_spacing(2)
+        self.__tbl_ind_type.set_column_spacing(2)
+        self.__tbl_ind_type.attach(self.__cbt_ind_type, 0, 0, 1, 1)
 
         self.__frame_ind_type_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                                     xscale=1.0, yscale=1.0)
@@ -262,59 +229,26 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_bg_align.add(self.__cbt_icon_bg)
         self.__frame_bg.add(self.__frame_bg_align)
 
-        if build_gtk2:
-            self.__appearance_tbl.attach(self.__frame_preview, 0, 1, 0, 1,
-                                         Gtk.AttachOptions.FILL,
-                                         Gtk.AttachOptions.SHRINK,
-                                         2, 2)
-            self.__appearance_tbl.attach(self.__frame_ind_type, 0, 1, 1, 2,
-                                         Gtk.AttachOptions.FILL,
-                                         Gtk.AttachOptions.SHRINK,
-                                         2, 2)
-            self.__appearance_tbl.attach(self.__cb_multi_ind, 0, 1, 2, 3,
-                                         Gtk.AttachOptions.FILL,
-                                         Gtk.AttachOptions.SHRINK,
-                                         2, 2)
-            self.__appearance_tbl.attach(self.__frame_bg, 0, 1, 3, 4,
-                                         Gtk.AttachOptions.FILL,
-                                         Gtk.AttachOptions.SHRINK,
-                                         2, 2)
+        self.__appearance_tbl.attach(self.__frame_preview, 0, 0, 1, 1)
+        self.__appearance_tbl.attach(self.__frame_theme, 0, 1, 1, 1)
 
-        else:
-            self.__appearance_tbl.attach(self.__frame_preview, 0, 0, 1, 1)
-            self.__appearance_tbl.attach(self.__frame_theme, 0, 1, 1, 1)
-
-            #self.__appearance_tbl.attach(self.__frame_them_fb_bar_col, 0, 1, 1, 1)
-            self.__appearance_tbl.attach(self.__frame_ind_type, 0, 2, 1, 1)
-            self.__appearance_tbl.attach(self.__cb_multi_ind, 0, 3, 1, 1)
-            self.__appearance_tbl.attach(self.__frame_bg, 0, 4, 1, 1)
+        #self.__appearance_tbl.attach(self.__frame_them_fb_bar_col, 0, 1, 1, 1)
+        self.__appearance_tbl.attach(self.__frame_ind_type, 0, 2, 1, 1)
+        self.__appearance_tbl.attach(self.__cb_multi_ind, 0, 3, 1, 1)
+        self.__appearance_tbl.attach(self.__frame_bg, 0, 4, 1, 1)
 
         self.__frame_pinned_apps = create_frame(_("Pinned application dock icons"))
         self.__rb_pinned_all_ws = Gtk.RadioButton(label=_("Display on all workspaces"))
         self.__rb_pinned_pin_ws = Gtk.RadioButton(label=_("Display only on the workspace the app was pinned"),
                                                   group=self.__rb_pinned_all_ws)
 
-        if build_gtk2:
-            self.__table_pinned_apps = Gtk.Table(rows=2, columns=1,
-                                                 homogeneous=False)
-            self.__table_pinned_apps.attach(self.__rb_pinned_all_ws,
-                                            0, 1, 0, 1,
-                                            Gtk.AttachOptions.FILL,
-                                            Gtk.AttachOptions.SHRINK,
-                                            2, 2)
-            self.__table_pinned_apps.attach(self.__rb_pinned_pin_ws,
-                                            0, 1, 1, 2,
-                                            Gtk.AttachOptions.FILL,
-                                            Gtk.AttachOptions.SHRINK,
-                                            2, 2)
-        else:
-            self.__table_pinned_apps = Gtk.Grid()
-            self.__table_pinned_apps.set_row_spacing(2)
-            self.__table_pinned_apps.set_column_spacing(2)
-            self.__table_pinned_apps.attach(self.__rb_pinned_all_ws,
-                                            0, 0, 1, 1)
-            self.__table_pinned_apps.attach(self.__rb_pinned_pin_ws,
-                                            0, 1, 1, 1)
+        self.__table_pinned_apps = Gtk.Grid()
+        self.__table_pinned_apps.set_row_spacing(2)
+        self.__table_pinned_apps.set_column_spacing(2)
+        self.__table_pinned_apps.attach(self.__rb_pinned_all_ws,
+                                        0, 0, 1, 1)
+        self.__table_pinned_apps.attach(self.__rb_pinned_pin_ws,
+                                        0, 1, 1, 1)
 
         self.__frame_pinned_apps_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                                        xscale=1.0, yscale=1.0)
@@ -327,27 +261,13 @@ class DockPrefsWindow(Gtk.Window):
         self.__rb_unpinned_cur_ws = Gtk.RadioButton(group=self.__rb_unpinned_all_ws,
                                                     label=_("Display unpinned apps only from current workspace"))
 
-        if build_gtk2:
-            self.__table_unpinned_apps = Gtk.Table(rows=2, columns=1,
-                                                   homogeneous=False)
-            self.__table_unpinned_apps.attach(self.__rb_unpinned_all_ws,
-                                              0, 1, 0, 1,
-                                              Gtk.AttachOptions.FILL,
-                                              Gtk.AttachOptions.SHRINK,
-                                              2, 2)
-            self.__table_unpinned_apps.attach(self.__rb_unpinned_cur_ws,
-                                              0, 1, 1, 2,
-                                              Gtk.AttachOptions.FILL,
-                                              Gtk.AttachOptions.SHRINK,
-                                              2, 2)
-        else:
-            self.__table_unpinned_apps = Gtk.Grid()
-            self.__table_unpinned_apps.set_row_spacing(2)
-            self.__table_unpinned_apps.set_column_spacing(2)
-            self.__table_unpinned_apps.attach(self.__rb_unpinned_all_ws,
-                                              0, 0, 1, 1)
-            self.__table_unpinned_apps.attach(self.__rb_unpinned_cur_ws,
-                                              0, 1, 1, 1)
+        self.__table_unpinned_apps = Gtk.Grid()
+        self.__table_unpinned_apps.set_row_spacing(2)
+        self.__table_unpinned_apps.set_column_spacing(2)
+        self.__table_unpinned_apps.attach(self.__rb_unpinned_all_ws,
+                                          0, 0, 1, 1)
+        self.__table_unpinned_apps.attach(self.__rb_unpinned_cur_ws,
+                                          0, 1, 1, 1)
 
         self.__frame_unpinned_apps_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                                          xscale=1.0, yscale=1.0)
@@ -441,11 +361,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__behaviour_vbox.pack_start(self.__notes_behaviour_tv, False, False, 4)
 
         self.__frame_spc = create_frame(_("App spacing"))
-        if build_gtk2:
-            self.__sb_spc = Gtk.SpinButton()
-            self.__sb_spc.set_adjustment(Gtk.Adjustment(0, 0, 7, 1, 4))
-        else:
-            self.__sb_spc = Gtk.SpinButton.new_with_range(0, 7, 1)
+        self.__sb_spc = Gtk.SpinButton.new_with_range(0, 7, 1)
 
         self.__sb_spc.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
         self.__sb_spc.set_numeric(True)
@@ -463,29 +379,14 @@ class DockPrefsWindow(Gtk.Window):
         self.__cb_panel_color_change.connect("toggled", self.color_change_toggled)
         self.__cb_dock_panel_only = Gtk.CheckButton(label=_("Change colour of dock's panel only"))
 
-        if build_gtk2:
-            self.__table_color_change = Gtk.Table(rows=3, columns=1,
-                                                  homogeneous=False)
-            self.__table_color_change.attach(self.__cb_panel_color_change,
-                                             0, 1, 0, 1,
-                                             Gtk.AttachOptions.FILL,
-                                             Gtk.AttachOptions.SHRINK,
-                                             2, 2)
-            self.__table_color_change.attach(self.__cb_dock_panel_only,
-                                             0, 1, 1, 2,
-                                             Gtk.AttachOptions.FILL,
-                                             Gtk.AttachOptions.SHRINK,
-                                             2, 2)
+        self.__table_color_change = Gtk.Grid()
+        self.__table_color_change.set_row_spacing(2)
+        self.__table_color_change.set_column_spacing(2)
 
-        else:
-            self.__table_color_change = Gtk.Grid()
-            self.__table_color_change.set_row_spacing(2)
-            self.__table_color_change.set_column_spacing(2)
-
-            self.__table_color_change.attach(self.__cb_panel_color_change,
-                                             0, 0, 1, 1)
-            self.__table_color_change.attach(self.__cb_dock_panel_only,
-                                             0, 1, 1, 1)
+        self.__table_color_change.attach(self.__cb_panel_color_change,
+                                         0, 0, 1, 1)
+        self.__table_color_change.attach(self.__cb_dock_panel_only,
+                                         0, 1, 1, 1)
 
         self.__frame_color_change_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                                         xscale=1.0, yscale=1.0)
@@ -493,58 +394,56 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_color_change_align.add(self.__table_color_change)
         self.__frame_color_change.add(self.__frame_color_change_align)
 
-        if not build_gtk2:
-            self.__frame_dock_size = create_frame(_("Dock size"))
-            self.__rb_variable_ds = Gtk.RadioButton(label=_("Variable - expand or contract as necessary"))
-            self.__rb_fixed_ds = Gtk.RadioButton(group=self.__rb_variable_ds,
-                                                 label=_("Fixed"))
+        self.__frame_dock_size = create_frame(_("Dock size"))
+        self.__rb_variable_ds = Gtk.RadioButton(label=_("Variable - expand or contract as necessary"))
+        self.__rb_fixed_ds = Gtk.RadioButton(group=self.__rb_variable_ds,
+                                             label=_("Fixed"))
 
-            self.__lbl_fixed_size = Gtk.Label(_("Display up to "))
+        self.__lbl_fixed_size = Gtk.Label(_("Display up to "))
 
-            self.__sb_fixed_size = Gtk.SpinButton.new_with_range(2, 64, 1)
-            self.__sb_fixed_size.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
-            self.__sb_fixed_size.set_numeric(True)
-            self.__sb_fixed_size.set_max_length(2)
-            self.__sb_fixed_size.set_snap_to_ticks(True)
+        self.__sb_fixed_size = Gtk.SpinButton.new_with_range(2, 64, 1)
+        self.__sb_fixed_size.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
+        self.__sb_fixed_size.set_numeric(True)
+        self.__sb_fixed_size.set_max_length(2)
+        self.__sb_fixed_size.set_snap_to_ticks(True)
 
-            self.__lbl_fixed_size1 = Gtk.Label(_(" app icons"))
+        self.__lbl_fixed_size1 = Gtk.Label(_(" app icons"))
 
-            self.__hbox_fixed_size = self.create_hbox()
-            self.__hbox_fixed_size.set_spacing(2)
-            self.__hbox_fixed_size.pack_start(self.__lbl_fixed_size, False, False, 4)
-            self.__hbox_fixed_size.pack_start(self.__sb_fixed_size, False, False, 4)
-            self.__hbox_fixed_size.pack_start(self.__lbl_fixed_size1, False, False, 4)
+        self.__hbox_fixed_size = self.create_hbox()
+        self.__hbox_fixed_size.set_spacing(2)
+        self.__hbox_fixed_size.pack_start(self.__lbl_fixed_size, False, False, 4)
+        self.__hbox_fixed_size.pack_start(self.__sb_fixed_size, False, False, 4)
+        self.__hbox_fixed_size.pack_start(self.__lbl_fixed_size1, False, False, 4)
 
-            self.__table_dock_size = Gtk.Grid()
-            self.__table_dock_size.set_row_spacing(2)
-            self.__table_dock_size.set_column_spacing(2)
+        self.__table_dock_size = Gtk.Grid()
+        self.__table_dock_size.set_row_spacing(2)
+        self.__table_dock_size.set_column_spacing(2)
 
-            self.__table_dock_size.attach(self.__rb_variable_ds,
-                                          0, 0, 1, 1)
-            self.__table_dock_size.attach(self.__rb_fixed_ds,
-                                          0, 1, 1, 1)
-            self.__table_dock_size.attach(self.__hbox_fixed_size, 0, 2, 1, 1)
+        self.__table_dock_size.attach(self.__rb_variable_ds,
+                                      0, 0, 1, 1)
+        self.__table_dock_size.attach(self.__rb_fixed_ds,
+                                      0, 1, 1, 1)
+        self.__table_dock_size.attach(self.__hbox_fixed_size, 0, 2, 1, 1)
 
-            self.__frame_dock_size_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                         xscale=1.0, yscale=1.0)
-            self.__frame_dock_size_align.set_padding(0, 0, 12, 0)
-            self.__frame_dock_size_align.add(self.__table_dock_size)
-            self.__frame_dock_size.add(self.__frame_dock_size_align)
+        self.__frame_dock_size_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                     xscale=1.0, yscale=1.0)
+        self.__frame_dock_size_align.set_padding(0, 0, 12, 0)
+        self.__frame_dock_size_align.add(self.__table_dock_size)
+        self.__frame_dock_size.add(self.__frame_dock_size_align)
 
         self.__panel_vbox = self.create_vbox()
         self.__panel_vbox.set_spacing(2)
         self.__panel_vbox.pack_start(self.__frame_spc, False, False, 4)
         self.__panel_vbox.pack_start(self.__frame_color_change,
                                      False, False, 4)
-        if not build_gtk2:
-            self.__panel_vbox.pack_start(self.__frame_dock_size,
-                                         False, False, 4)
+        self.__panel_vbox.pack_start(self.__frame_dock_size,
+                                     False, False, 4)
 
         self.__frame_fb_bar_col = create_frame(_("Fallback bar indicator colour"))
         self.__lbl_fb_bar_col = Gtk.Label(_("Colour"))
         self.__cbtn_fb_bar_col = Gtk.ColorButton()
         self.__cbtn_fb_bar_col.set_tooltip_text(_("Colour used for drawing bar indicators when theme colour " +
-                                                "cannot be determined or when using Gtk2"))
+                                                "cannot be determined"))
 
         self.__fb_bar_col_hbox = self.create_hbox()
         self.__fb_bar_col_hbox.set_spacing(2)
@@ -560,29 +459,14 @@ class DockPrefsWindow(Gtk.Window):
         self.__rb_attention_badge = Gtk.RadioButton(label=_("Show a badge on the app icon"),
                                                     group=self.__rb_attention_blink)
 
-        if build_gtk2:
-            self.__table_attention_type = Gtk.Table(rows=2, columns=1,
-                                                    homogeneous=False)
-            self.__table_attention_type.attach(self.__rb_attention_blink,
-                                               0, 1, 0, 1,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK,
-                                               2, 2)
-            self.__table_attention_type.attach(self.__rb_attention_badge,
-                                               0, 1, 1, 2,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK,
-                                               2, 2)
+        self.__table_attention_type = Gtk.Grid()
+        self.__table_attention_type.set_row_spacing(2)
+        self.__table_attention_type.set_column_spacing(2)
 
-        else:
-            self.__table_attention_type = Gtk.Grid()
-            self.__table_attention_type.set_row_spacing(2)
-            self.__table_attention_type.set_column_spacing(2)
-
-            self.__table_attention_type.attach(self.__rb_attention_blink,
-                                               0, 0, 1, 1)
-            self.__table_attention_type.attach(self.__rb_attention_badge,
-                                               0, 1, 1, 1)
+        self.__table_attention_type.attach(self.__rb_attention_blink,
+                                           0, 0, 1, 1)
+        self.__table_attention_type.attach(self.__rb_attention_badge,
+                                           0, 1, 1, 1)
 
         self.__frame_attention_type_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
                                                           xscale=1.0, yscale=1.0)
@@ -591,11 +475,7 @@ class DockPrefsWindow(Gtk.Window):
         self.__frame_attention_type.add(self.__frame_attention_type_align)
 
         self.__frame_pdel = create_frame(_("Popup Delay(s)"))
-        if build_gtk2:
-            self.__sb_pdel = Gtk.SpinButton()
-            self.__sb_pdel.set_adjustment(Gtk.Adjustment(1.0, 0.1, 5.0, 0.1, 1))
-        else:
-            self.__sb_pdel = Gtk.SpinButton.new_with_range(0.1, 5, 0.1)
+        self.__sb_pdel = Gtk.SpinButton.new_with_range(0.1, 5, 0.1)
 
         self.__sb_pdel.set_digits(1)
 
@@ -666,35 +546,29 @@ class DockPrefsWindow(Gtk.Window):
 
     def create_vbox(self):
         """
-            Convenience function to create a Gtk2 VBox or a Gtk3 Box
+            Convenience function to create a Gtk.Box
             oriented vertically
 
         Returns:
             the vbox/box we created
         """
 
-        if build_gtk2:
-            vbox = Gtk.VBox()
-        else:
-            vbox = Gtk.Box()
-            vbox.set_orientation(Gtk.Orientation.VERTICAL)
+        vbox = Gtk.Box()
+        vbox.set_orientation(Gtk.Orientation.VERTICAL)
 
         return vbox
 
     def create_hbox(self):
         """
-            Convenience function to create a Gtk2 HBox or a Gtk3 Box
+            Convenience function to create a Gtk.Box
             oriented horizontally
 
         Returns:
             the hbox/box we created
         """
 
-        if build_gtk2:
-            hbox = Gtk.HBox()
-        else:
-            hbox = Gtk.Box()
-            hbox.set_orientation(Gtk.Orientation.HORIZONTAL)
+        hbox = Gtk.Box()
+        hbox.set_orientation(Gtk.Orientation.HORIZONTAL)
 
         return hbox
 
@@ -731,10 +605,7 @@ class DockPrefsWindow(Gtk.Window):
             event        : the event parameters
         """
 
-        if build_gtk2:
-            tgt_ctx = self.__da_preview.window.cairo_create()
-        else:
-            tgt_ctx = event
+        tgt_ctx = event
 
         # if a dark indicator is set, we draw a light background, otherwise a
         # dark background
@@ -830,19 +701,8 @@ class DockPrefsWindow(Gtk.Window):
                 ind.draw()
 
             # now draw to the screen
-            if build_gtk2:
-                tgt_ctx = drawing_area.window.cairo_create()
-                tgt_ctx.rectangle(event.area.x, event.area.y,
-                                  event.area.width, event.area.height)
-                tgt_ctx.clip()
-
-                tgt_ctx.set_source_surface(surface, self.PREVIEW_SIZE, 0)
-
-                tgt_ctx.paint()
-                tgt_ctx = None
-            else:
-                tgt_ctx.set_source_surface(surface, self.PREVIEW_SIZE, 0)
-                tgt_ctx.paint()
+            tgt_ctx.set_source_surface(surface, self.PREVIEW_SIZE, 0)
+            tgt_ctx.paint()
 
             ctx = None
 
@@ -1316,13 +1176,9 @@ class DockPrefsWindow(Gtk.Window):
 
         colstr = "#%0.2X%0.2X%0.2X" % (int(colrgb[0]), int(colrgb[1]), int(colrgb[2]))
 
-        if build_gtk2:
-            cbrgba = Gdk.color_parse(colstr)
-            self.__cbtn_fb_bar_col.set_color(color=cbrgba)
-        else:
-            cbrgba = Gdk.RGBA()
-            cbrgba.parse(colstr)
-            self.__cbtn_fb_bar_col.set_rgba(cbrgba)
+        cbrgba = Gdk.RGBA()
+        cbrgba.parse(colstr)
+        self.__cbtn_fb_bar_col.set_rgba(cbrgba)
 
         self.__cbtn_fb_bar_col.set_use_alpha(False)
 
@@ -1334,10 +1190,7 @@ class DockPrefsWindow(Gtk.Window):
             a list containing the r, g, and b colour components(0-255)
         """
 
-        if build_gtk2:
-            cbrgba = self.__cbtn_fb_bar_col.get_color()
-        else:
-            cbrgba = self.__cbtn_fb_bar_col.get_rgba().to_color()
+        cbrgba = self.__cbtn_fb_bar_col.get_rgba().to_color()
 
         return ["%s" % int(cbrgba.red / 256), "%s" % int(cbrgba.green / 256), "%s" % int(cbrgba.blue / 256)]
 

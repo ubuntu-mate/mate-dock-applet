@@ -3,7 +3,7 @@
 ### Mate dock applet V0.88 on Ubuntu MATE 18.10
 ![V0.88 on Ubuntu MATE 18.10](https://github.com/robint99/screenshots/blob/master/dock%20applet%20V0.88.png)
 
-The applet works with both GTK2 and GTK3 versions of MATE and allows you to:
+The applet works with MATE and allows you to:
 
 * Place a dock on any MATE panel, of any size, on any side of the desktop you desire.
 * Pin and unpin apps to the dock. Pinned apps can be shown in the dock on all workspaces or only the workspace where they were pinned (allowing the dock to be customised for each particular workspace).
@@ -20,7 +20,7 @@ The applet works with both GTK2 and GTK3 versions of MATE and allows you to:
 
 ### Debian
 
-The applet is available in Debian testing (currently GTK2 only):
+The applet is available in Debian:
 
 `apt-get install mate-dock-applet`
 
@@ -36,17 +36,17 @@ The applet is not installed by default - `apt-get install mate-dock-applet` will
 
 ### Linux Mint 18.2 and 18.3
 
-The applet is included in the repositories but is compiled for Gtk2, rather than Gtk3. Therefore it will not work with the version of MATE desktop supplied with Linux Mint. Currently, the only solution is to manually compile and install the applet from source - instructions are further below. Note: the latest version of the applet which will work with the version of Gtk3 used in Linux Mint is V0.80 - souce code available [here](https://github.com/robint99/mate-dock-applet/archive/V0.81.tar.gz).
+The applet is included in the repositories but may have been compiled for an older version of GTK. Therefore it might not work with the version of MATE desktop supplied with Linux Mint. In that case, manually compile and install the applet from source - instructions are further below.
 
 ### Ubuntu MATE 15.10 and Linux Mint 18.1
 
 Users of Ubuntu MATE 15.10 and earlier, or of Linux Mint 18.1 or earlier, can install the applet from the PPA kindly provided by [webupd8](http://www.webupd8.org/2015/05/dock-applet-icon-only-window-list-for.html)
 
-Note: this is currently GTK2 only
+Note: this comes from an older PPA - its packages may not be current
 
 ### Arch Linux
 
-For Arch users the GTK 3 version is available as a [package in the repositories](https://archlinux.org/packages/community/any/mate-applet-dock/).
+For Arch users the applet is available as a [package in the repositories](https://archlinux.org/packages/community/any/mate-applet-dock/).
 
 ### Gentoo based distributions
 
@@ -57,7 +57,7 @@ An ebuild is available via the [mate-de-gentoo](https://github.com/oz123/mate-de
 Users of other distros will need to install from source, so first install the required dependencies. Note, the package names below are for Ubuntu/Linux Mint/Debian - the name of the packages will vary on other distros.
 
 * Python3
-* Python wnck bindings (gir1.2-wnck-1.0 for Gtk2 versions of the applet, gir1.2-wnck-3.0 for Gtk3) (`gnome-python2-libwnck` in Fedora)
+* Python wnck bindings (gir1.2-wnck-3.0) (`libwnck3` in Fedora)
 * Python implementation of Xlib - python-xlib (python3-xlib in Ubuntu based distributions and Fedora)
 * GLib development files (libglib2.0-dev) (`glib2-devel` in Fedora)
 * Python Imaging Library (python3-pil) (`python3-pillow` in Fedora)
@@ -73,14 +73,8 @@ then cd to the directory containing all of the development files and run:
 autoreconf --install
 ```
 
-To build a GTK2 version of the applet:
 ```
 ./configure --prefix=/usr
-```
-
-To build a GTK3 version:
-```
-./configure --prefix=/usr --with-gtk3
 ```
 
 Then enter the following commands:
@@ -92,7 +86,7 @@ sudo make install
 
 ### Installation on Ubuntu MATE on a Pi 2
 
-This is a little more involved. First download gir1.2-wnck-1.0 for arm architechure from [here](http://launchpadlibrarian.net/160438738/gir1.2-wnck-1.0_2.30.7-0ubuntu4_armhf.deb) and install it with sudo dpkg -i. Then install other dependencies - sudo apt-get install git autoreconf libglib2.0-dev
+This is a little more involved. First download the wnck-3 gir bindings for arm architecture and install it with sudo dpkg -i. Then install other dependencies - sudo apt-get install git autoreconf libglib2.0-dev
 
 From this point the instructions above for compiling from source should be followed.
 
@@ -106,9 +100,9 @@ V0.76 of the applet running on Ubuntu MATE 16.10, showing the new indicator styl
 
 ![New indicators and icon backgrounds](https://github.com/robint99/screenshots/raw/master/new%20indicators%20and%20icon%20background.png)
 
-GTK3 version of the applet running on Ubuntu MATE 16.10 Alpha 1
+The applet running on Ubuntu MATE 16.10 Alpha 1
 
-![GTK3 Ubunbtu Mate](https://github.com/robint99/screenshots/raw/master/16.10%20win-list.png)
+![Ubunbtu Mate](https://github.com/robint99/screenshots/raw/master/16.10%20win-list.png)
 
 Running on Arch with a Unity style layout
 

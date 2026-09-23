@@ -30,16 +30,9 @@ The dialog displays the following:
 #     Robin Thompson
 #
 
-# do not change the value of this variable - it will be set during build
-# according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
 
-if build_gtk2:
-    gi.require_version("Gtk", "2.0")
-else:
-    gi.require_version("Gtk", "3.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk, Pango
 
@@ -76,31 +69,20 @@ class AboutWindow(Gtk.Window):
         self.__nb.set_show_border(False)
 
         # create a container for the dialog and others for the pages of the notebook
-        if build_gtk2:
-            self.__vbox = Gtk.VBox()
-            self.__vbox.set_spacing(2)
-            self.__vbox_dflt = Gtk.VBox()
-            self.__vbox_dflt.set_spacing(8)
-            self.__vbox_license = Gtk.VBox()
-            self.__vbox_license.set_spacing(8)
-        else:
-            self.__vbox = Gtk.Box()
-            self.__vbox.set_orientation(Gtk.Orientation.VERTICAL)
-            self.__vbox.set_spacing(4)
+        self.__vbox = Gtk.Box()
+        self.__vbox.set_orientation(Gtk.Orientation.VERTICAL)
+        self.__vbox.set_spacing(4)
 
-            self.__vbox_dflt = Gtk.Box()
-            self.__vbox_dflt.set_orientation(Gtk.Orientation.VERTICAL)
-            self.__vbox_dflt.set_spacing(8)
+        self.__vbox_dflt = Gtk.Box()
+        self.__vbox_dflt.set_orientation(Gtk.Orientation.VERTICAL)
+        self.__vbox_dflt.set_spacing(8)
 
-            self.__vbox_license = Gtk.Box()
-            self.__vbox_license.set_orientation(Gtk.Orientation.VERTICAL)
-            self.__vbox_license.set_spacing(8)
+        self.__vbox_license = Gtk.Box()
+        self.__vbox_license.set_orientation(Gtk.Orientation.VERTICAL)
+        self.__vbox_license.set_spacing(8)
 
-        if build_gtk2:
-            self.__hbx = Gtk.HButtonBox()
-        else:
-            self.__hbx = Gtk.ButtonBox()
-            self.__hbx.orientation = Gtk.Orientation.HORIZONTAL
+        self.__hbx = Gtk.ButtonBox()
+        self.__hbx.orientation = Gtk.Orientation.HORIZONTAL
 
         self.__hbx.set_layout(Gtk.ButtonBoxStyle.END)
         self.__hbx.set_spacing(4)
@@ -113,10 +95,7 @@ class AboutWindow(Gtk.Window):
         self.__image.set_from_stock(Gtk.STOCK_ABOUT, Gtk.IconSize.DIALOG)
         self.__lbl_title = Gtk.Label()
         self.__lbl_title.set_use_markup(True)
-        if build_gtk2:
-            gtk_ver = "GTK2"
-        else:
-            gtk_ver = "GTK3"
+        gtk_ver = "GTK3"
 
         self.__lbl_title.set_markup("<b>" + _("MATE Dock Applet") + "</b>")
         self.__lbl_ver = Gtk.Label("V" + "@VERSION@ (" + gtk_ver + ")")
@@ -154,12 +133,9 @@ class AboutWindow(Gtk.Window):
         self.__lbl_blurb3 = Gtk.Label(_("and is distributed under the GNU General"))
         self.__lbl_blurb4 = Gtk.Label(_("Public License, version 3 or later"))
 
-        if build_gtk2:
-            self.__hbx_gpl = Gtk.HBox()
-        else:
-            self.__hbx_gpl = Gtk.Box()
-            self.__hbx_gpl.set_orientation(Gtk.Orientation.HORIZONTAL)
-            self.__hbx_gpl.set_spacing(0)
+        self.__hbx_gpl = Gtk.Box()
+        self.__hbx_gpl.set_orientation(Gtk.Orientation.HORIZONTAL)
+        self.__hbx_gpl.set_spacing(0)
 
         self.__lbl_gpl1 = Gtk.Label(_("For details click"))
         self.__lb_gpl = \
@@ -169,11 +145,8 @@ class AboutWindow(Gtk.Window):
         self.__hbx_gpl.pack_start(self.__lbl_gpl1, False, False, 0)
         self.__hbx_gpl.pack_start(self.__lb_gpl, False, False, 0)
 
-        if build_gtk2:
-            self.__vbox_hints = Gtk.VBox()
-        else:
-            self.__vbox_hints = Gtk.Box()
-            self.__vbox_hints.set_orientation(Gtk.Orientation.VERTICAL)
+        self.__vbox_hints = Gtk.Box()
+        self.__vbox_hints.set_orientation(Gtk.Orientation.VERTICAL)
 
         # create widgets where where the hints text can be displayed...
         self.__hints_scrolled_win = Gtk.ScrolledWindow()
@@ -220,23 +193,22 @@ class AboutWindow(Gtk.Window):
 
         the_iter = self.__hints_text_buf.get_end_iter()
 
-        if not build_gtk2:
-            self.__hints_text_buf.insert_with_tags(the_iter,
-                                                   _("Drag and drop data between applications") + "\n",
-                                                   self.__tag_hint_bold)
-            self.__hints_text_buf.insert_with_tags(the_iter, "\n" + _("To easily drag and drop data from one application " +
-                                                   "to another, drag the data from the first application onto the dock " +
-                                                   "icon of the second application. The dock will activate the second " +
-                                                   "application's window, allowing the data to be dragged onto it. " +
-                                                   "Note: the second application must already be running.") + "\n\n",
-                                                   self.__tag_hint_normal)
-            self.__hints_text_buf.insert_with_tags(the_iter,
-                                                   _("Adding new applications to the dock") + "\n",
-                                                   self.__tag_hint_bold)
-            self.__hints_text_buf.insert_with_tags(the_iter, "\n" + _("Applications can be dragged and dropped from any menu " +
-                                                   "applet (i.e. the Main Menu, Menu Bar, Advanced Menu, or Brisk Menu) " +
-                                                   "directly onto the dock.") + "\n\n",
-                                                   self.__tag_hint_normal)
+        self.__hints_text_buf.insert_with_tags(the_iter,
+                                               _("Drag and drop data between applications") + "\n",
+                                               self.__tag_hint_bold)
+        self.__hints_text_buf.insert_with_tags(the_iter, "\n" + _("To easily drag and drop data from one application " +
+                                               "to another, drag the data from the first application onto the dock " +
+                                               "icon of the second application. The dock will activate the second " +
+                                               "application's window, allowing the data to be dragged onto it. " +
+                                               "Note: the second application must already be running.") + "\n\n",
+                                               self.__tag_hint_normal)
+        self.__hints_text_buf.insert_with_tags(the_iter,
+                                               _("Adding new applications to the dock") + "\n",
+                                               self.__tag_hint_bold)
+        self.__hints_text_buf.insert_with_tags(the_iter, "\n" + _("Applications can be dragged and dropped from any menu " +
+                                               "applet (i.e. the Main Menu, Menu Bar, Advanced Menu, or Brisk Menu) " +
+                                               "directly onto the dock.") + "\n\n",
+                                               self.__tag_hint_normal)
 
         self.__hints_text_buf.insert_with_tags(the_iter,
                                                _("Activating apps with keyboard shortcuts") + "\n",

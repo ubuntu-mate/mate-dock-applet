@@ -43,18 +43,10 @@
 # Author:
 #     Robin Thompson
 
-# do not change the value of this variable - it will be set during build
-# according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
 
-if build_gtk2:
-    gi.require_version("Gtk", "2.0")
-    gi.require_version("Wnck", "1.0")
-else:
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("Wnck", "3.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("Wnck", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
 gi.require_version("Bamf", "3")
@@ -488,10 +480,7 @@ class DockedApp(object):
         self.last_active_win = None
 
         # set up event handler for the draw/expose event
-        if build_gtk2:
-            self.drawing_area.connect("expose-event", self.do_expose_event)
-        else:
-            self.drawing_area.connect("draw", self.do_expose_event)
+        self.drawing_area.connect("draw", self.do_expose_event)
 
         self.is_dragee = False
 
@@ -999,7 +988,7 @@ class DockedApp(object):
         Args:
             drawing_area : the drawing area that related to the event. Will
                            always be the same as self.drawing area
-            event        : in Gtk2 the event arguments, in Gtk3 a cairo context
+            event        : a cairo context
                            to draw on
 
         """
@@ -1152,34 +1141,17 @@ class DockedApp(object):
         if self.needs_attention and self.attention_type == dock_prefs.AttentionType.SHOW_BADGE:
             self.draw_attention_badge(ctx)
 
-        if not build_gtk2:
-            # scrolling only available in GTK3
-            if self.has_mouse and (self.scroll_dir != ScrollType.SCROLL_NONE):
-                if self.scroll_dir == ScrollType.SCROLL_UP:
-                    self.draw_scroll_up(ctx)
-                elif self.scroll_dir == ScrollType.SCROLL_DOWN:
-                    self.draw_scroll_down(ctx)
+        # scrolling only available in GTK3
+        if self.has_mouse and (self.scroll_dir != ScrollType.SCROLL_NONE):
+            if self.scroll_dir == ScrollType.SCROLL_UP:
+                self.draw_scroll_up(ctx)
+            elif self.scroll_dir == ScrollType.SCROLL_DOWN:
+                self.draw_scroll_down(ctx)
 
         # now draw to the screen
-        if build_gtk2:
-            screen_ctx = self.drawing_area.window.cairo_create()
-            screen_ctx.rectangle(event.area.x, event.area.y,
-                                 event.area.width, event.area.height)
-            screen_ctx.clip()
-
-            alloc = self.drawing_area.get_allocation()
-            if (self.applet_orient == MatePanelApplet.AppletOrient.UP) or \
-               (self.applet_orient == MatePanelApplet.AppletOrient.DOWN):
-                screen_ctx.set_source_surface(offscreen_surface, alloc.x, 0)
-            else:
-                screen_ctx.set_source_surface(offscreen_surface, 0, alloc.y)
-
-            screen_ctx.paint()
-            screen_ctx = None
-        else:
-            event.set_source_surface(offscreen_surface, 0, 0)
-            event.paint()
-            alloc = self.drawing_area.get_allocation()
+        event.set_source_surface(offscreen_surface, 0, 0)
+        event.paint()
+        alloc = self.drawing_area.get_allocation()
 
         ctx = None
 
@@ -1554,10 +1526,7 @@ class DockedApp(object):
             gdai = None
 
         disp = Gdk.Display.get_default()
-        if build_gtk2:
-            alc = Gdk.AppLaunchContext()
-        else:
-            alc = disp.get_app_launch_context()
+        alc = disp.get_app_launch_context()
 
         alc.set_desktop(-1)  # use default screen & desktop
         if timestamp is not None:
@@ -1590,11 +1559,8 @@ class DockedApp(object):
             Cancel any startup notification
         """
 
-        if build_gtk2:
-            Gdk.notify_startup_complete_with_id(self.startup_id)
-        else:
-            display = Gdk.Display.get_default()
-            display.notify_startup_complete(self.startup_id)
+        display = Gdk.Display.get_default()
+        display.notify_startup_complete(self.startup_id)
 
         self.startup_id = None
 
@@ -1684,11 +1650,8 @@ class DockedApp(object):
         """
 
         if len(self.rc_actions) >= act_no:
-            if build_gtk2:
-                alc = Gdk.AppLaunchContext()
-            else:
-                disp = Gdk.Display.get_default()
-                alc = disp.get_app_launch_context()
+            disp = Gdk.Display.get_default()
+            alc = disp.get_app_launch_context()
 
             alc.set_desktop(-1)  # use default screen & desktop
             alc.set_timestamp(Gtk.get_current_event_time())

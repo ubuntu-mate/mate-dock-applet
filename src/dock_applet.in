@@ -31,18 +31,10 @@ Note: Functionality for docked apps is provided in docked_app.py
 # Author:
 #     Robin Thompson
 
-# do not change the value of this variable - it will be set during build
-# according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
 
-if build_gtk2:
-    gi.require_version("Gtk", "2.0")
-    gi.require_version("Wnck", "1.0")
-else:
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("Wnck", "3.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("Wnck", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
 
@@ -633,10 +625,7 @@ def applet_fill(applet):
     else:
         applet.set_flags(AppletFlags.FLAGS_NONE)
 
-    if build_gtk2:
-        applet.add(the_dock.box)
-    else:
-        applet.add(the_dock.scrolled_win)
+    applet.add(the_dock.scrolled_win)
 
     applet.show_all()
 
@@ -654,31 +643,30 @@ def applet_fill(applet):
     applet.connect("scroll-event", applet_scroll_event, the_dock)
     applet.connect("size-allocate", applet_size_allocate, the_dock)
 
-    if not build_gtk2:
-        # set up drag and drop - gtk3 only
-        # NOTE: we don't get drag-motion events when dragging app icons within the
-        # dock, making it difficult to tell where the mouse pointer is.....
-        # To get around this, dock.py now contains a timer to monitor the
-        # mouse x.y during these sorts of drag and drops.
-        # drag-motion events do fire when dropping from other apps (e.g. caja)
-        # and the drag-motion event is used in these cases
+    # set up drag and drop
+    # NOTE: we don't get drag-motion events when dragging app icons within the
+    # dock, making it difficult to tell where the mouse pointer is.....
+    # To get around this, dock.py now contains a timer to monitor the
+    # mouse x.y during these sorts of drag and drops.
+    # drag-motion events do fire when dropping from other apps (e.g. caja)
+    # and the drag-motion event is used in these cases
 
-        # we allow .desktop files to be dropped on the applet, so....
-        drag_tgts = [Gtk.TargetEntry.new("text/uri-list", 0, 0)]
-        applet.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, drag_tgts,
-                               Gdk.DragAction.MOVE)
+    # we allow .desktop files to be dropped on the applet, so....
+    drag_tgts = [Gtk.TargetEntry.new("text/uri-list", 0, 0)]
+    applet.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, drag_tgts,
+                           Gdk.DragAction.MOVE)
 
-        drag_tgts = [Gtk.TargetEntry.new("text/uri-list", 0, 0)]
-        applet.drag_dest_set(Gtk.DestDefaults.MOTION, None, Gdk.DragAction.COPY)
-        applet.drag_dest_add_image_targets()
-        applet.drag_dest_add_text_targets()
-        applet.drag_dest_add_uri_targets()
+    drag_tgts = [Gtk.TargetEntry.new("text/uri-list", 0, 0)]
+    applet.drag_dest_set(Gtk.DestDefaults.MOTION, None, Gdk.DragAction.COPY)
+    applet.drag_dest_add_image_targets()
+    applet.drag_dest_add_text_targets()
+    applet.drag_dest_add_uri_targets()
 
-        applet.connect("drag-data-get", applet_drag_data_get)
-        applet.connect("drag-drop", applet_drag_drop, the_dock)
-        applet.connect("drag-end", applet_drag_end, the_dock)
-        applet.connect("drag-motion", applet_drag_motion, the_dock)
-        applet.connect("drag-data-received", applet_drag_data_received, the_dock)
+    applet.connect("drag-data-get", applet_drag_data_get)
+    applet.connect("drag-drop", applet_drag_drop, the_dock)
+    applet.connect("drag-end", applet_drag_end, the_dock)
+    applet.connect("drag-motion", applet_drag_motion, the_dock)
+    applet.connect("drag-data-received", applet_drag_data_received, the_dock)
 
     # set up keyboard shortcuts used to activate apps in the dock
     keybinder = GlobalKeyBinding()

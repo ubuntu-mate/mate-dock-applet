@@ -69,7 +69,7 @@
     <key type="as" name="fallback-bar-col">
       <default>["128","128","128"]</default>
       <summary>The rgb elements of the fallback color of bar and other types of indicators</summary>
-      <description>A colour to be when drawing bar and other types of indicators and the highlight colour of the current theme cannot be determind. Mainly intended for use with Gtk2.</description>
+      <description>A colour to be used when drawing bar and other types of indicators and the highlight colour of the current theme cannot be determined.</description>
     </key>
     <key type="i" name="app-spacing">
       <default>0</default>
