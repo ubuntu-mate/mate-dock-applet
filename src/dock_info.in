@@ -147,17 +147,4 @@ class InfoWindow(Gtk.Window):
         self.destroy()
 
 
-def main():
-    """
-    main function - debugging code goes here
-    """
 
-    info_win = InfoWindow(True)
-    info_win.show_all()
-    Gtk.main()
-
-    return
-
-
-if __name__ == "__main__":
-    main()

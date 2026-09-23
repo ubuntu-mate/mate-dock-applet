@@ -240,10 +240,6 @@ class DockActionList(DockPopup):
 
         self.__list_store.clear()
 
-    def win_button_press(self, widget, event):
-        """ this is for debug puposes only"""
-        Gtk.main_quit()
-
     def check_sep(self, model, iter, data=None):
         """ Check to see if the current row is to be displayed as a separator
 
@@ -258,31 +254,3 @@ class DockActionList(DockPopup):
 
         title = model.get_value(iter, 0)
         return title == CONST_SEP
-
-
-def main():
-    """
-    main function - debugging code goes here
-    """
-
-#    thewin = DockWinList()
-#    thewin.set_app_name("Testing....")
-#    thewin.add_to_list(None, False, "Win 1")
-#    thewin.add_to_list(None, True, "Win 2 is active")
-#    thewin.add_to_list(None, False, "Win 3")
-#    thewin.show_all()
-
-#    thewin.move(100, 110)
-#    pos = thewin.get_position()
-#    size = thewin.get_size()
-#    print("pos %d %d" %(pos[0], pos[1]))
-#    print("size %d %d" %(size[0], size[1]))
-#    thewin.add_mouse_area(Gdk.Rectangle(pos[0]-15, pos[1]-15, size[0]+30, size[1]+30))
-#    thewin.add_mouse_area(Gdk.Rectangle(0, 0, 48, 500))
-#    thewin.add_mouse_area(Gdk.Rectangle(48, 110, 100, size[1]))
-#    Gtk.main()
-    return
-
-
-if __name__ == "__main__":
-    main()

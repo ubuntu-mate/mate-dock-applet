@@ -195,19 +195,11 @@ class DockWinList(DockPopup):
         ctx.paint()
 
         # we now need to copy the cairo surface to a pixbuf. The best way to do
-        # this would be by calling GdkPixbuf.Pixbuf.new_from_data as in these
-        #                                                 64)
-        # comments. Unfortunately this function does not seem to be
-        # introspectable and therefore
-        # doesn't work.
-        #
-        # self.__pb_close = GdkPixbuf.Pixbuf.new_from_data(surface.get_data(),
-        #                                                 GdkPixbuf.Colorspace.RGB,
-        #                                                 True, 8, pb_close.get_width(),
-        #                                                 pb_close.get_height(),
-
-        # Therefore we have to resort to writing the surface to a temporary
-        # .png file and then loading it into our pixbuf ...
+        # this would be by calling GdkPixbuf.Pixbuf.new_from_data.
+        # Unfortunately this function does not seem to be introspectable and
+        # therefore doesn't work. Therefore we have to resort to writing the
+        # surface to a temporary .png file and then loading it into our
+        # pixbuf...
 
         handle, tempfn = tempfile.mkstemp()
         surface.write_to_png(tempfn)
@@ -301,18 +293,6 @@ class DockWinList(DockPopup):
             return False
 
         return False
-#        path, col, xrel, yrel = self.__tree_view.get_path_at_pos(x, y)
-
-#        if col == self.__col_close:
-#            cell_area = self.__tree_view.get_cell_area(path, col)
-#            if (x >= cell_area.x + cell_area.width  - CONST_CLOSE_ICON_SIZE) and \
-#               (y <= cell_area.y + CONST_CLOSE_ICON_SIZE):
-#                tooltip.set_text(_("Close window"))
-#                return True
-#            else:
-#                return False
-#        else:
-#            return False
 
     def button_release(self, widget, event):
         """ Handler for the button release event
@@ -437,10 +417,6 @@ class DockWinList(DockPopup):
 
         self.__list_store.clear()
 
-    def win_button_press(self, widget, event):
-        """ this is for debug puposes only"""
-        Gtk.main_quit()
-
     def setup_list(self, win_on_cur_ws_only):
         """ Setup the app list
 
@@ -484,18 +460,6 @@ class DockWinList(DockPopup):
 
                     self.add_to_list(is_active, win.get_name(), win)
 
-    def mbutton_press(self, widget, event):
-        """ this is for debug purposes only and demonstrates that menu.popup does
-            not work with Gtk 2
-        """
-
-        self.menu = Gtk.Menu()
-        menu_item = Gtk.MenuItem("A menu item")
-        self.menu.append(menu_item)
-        menu_item.show()
-
-        self.menu.popup(None, None, None, event.button, event.time)
-
     def draw_title(self, column, cell_renderer, tree_model, tree_iter, data):
         title = tree_model.get_value(tree_iter, 1)
         if tree_model.get_value(tree_iter, 0) == CONST__ACTIVE_TEXT:
@@ -524,31 +488,3 @@ class DockWinList(DockPopup):
 
         title = model.get_value(iter, 1)
         return title == CONST_SEP
-
-
-def main():
-    """
-    main function - debugging code goes here
-    """
-
-#    thewin = DockWinList()
-#    thewin.set_app_name("Testing....")
-#    thewin.add_to_list(None, False, "Win 1")
-#    thewin.add_to_list(None, True, "Win 2 is active")
-#    thewin.add_to_list(None, False, "Win 3")
-#    thewin.show_all()
-
-#    thewin.move(100, 110)
-#    pos = thewin.get_position()
-#    size = thewin.get_size()
-#    print("pos %d %d" %(pos[0], pos[1]))
-#    print("size %d %d" %(size[0], size[1]))
-#    thewin.add_mouse_area(Gdk.Rectangle(pos[0]-15, pos[1]-15, size[0]+30, size[1]+30))
-#    thewin.add_mouse_area(Gdk.Rectangle(0, 0, 48, 500))
-#    thewin.add_mouse_area(Gdk.Rectangle(48, 110, 100, size[1]))
-#    Gtk.main()
-    return
-
-
-if __name__ == "__main__":
-    main()

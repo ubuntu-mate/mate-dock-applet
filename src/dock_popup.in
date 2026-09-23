@@ -225,7 +225,6 @@ class DockPopup(Gtk.Window):
         self.connect("show", self.win_shown)
         self.connect("hide", self.win_hidden)
 
-        self.connect("configure-event", self.win_configure)
         self.connect("size-allocate", self.size_allocate)
 
     def set_main_widget(self, widget):
@@ -338,15 +337,6 @@ class DockPopup(Gtk.Window):
             self.__fgr = self.__fgg = self.__fgb = 0  # dark fg colour
         else:
             self.__fgr = self.__fgg = self.__fgb = 255  # light fg color
-
-    def set_fg_col(self, fgr, fgg, fgb):
-        """
-        Put some stuff here...
-        """
-
-        self.__fgr = fgr
-        self.__fgg = fgg
-        self.__fgb = fgb
 
     def win_shown(self, widget):
         """ Event handler for the window's show event
@@ -521,21 +511,6 @@ class DockPopup(Gtk.Window):
         if self.__timer_id is not None:
             GObject.source_remove(self.__timer_id)
             self.__timer_id = None
-
-    def win_configure(self, widget, event):
-        """ Event handler for the window's configure event
-
-        Stores the new width and height of the window
-
-        Args:
-            widget : the widget that caused the event (i.e. self)
-            event  : the event parameters
-        """
-
-        # if the new size of the window isn't the same as the old one, we need
-        # to recaclulate the window position and mouse areas
-
-        return
 
     def size_allocate(self, widget, event):
 
@@ -967,16 +942,6 @@ class DockPopup(Gtk.Window):
         self.__icontheme = the_icontheme
 
     icontheme = property(get_icontheme, set_icontheme)
-
-    def da_pointer_draw(self, drawing_area, event):
-
-        ctx = event
-        alloc = drawing_area.get_allocation()
-
-        ctx.rectangle(0, 0, alloc.width, alloc.height)
-        ctx.set_source_rgb(self.__bgr / 255, self.__bgg / 255,
-                           self.__bgb / 255)
-        ctx.fill()
 
     def set_app_root_coords(self, x, y):
         """ Sets the x and y root coords of the app

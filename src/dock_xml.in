@@ -40,8 +40,6 @@ files and which specifies the .desktop file to use
 #     Robin Thompson
 
 import xml.etree.ElementTree as ET
-import sys
-import os
 import distro as distribution
 
 
@@ -470,40 +468,3 @@ def read_app_xml(filename):
                             entry.find("class").text,
                             entry.find("desktop").text])
     return [True, app_list]
-
-
-def main():
-    """Main function.
-
-    Debugging code can go here
-    """
-
-    print(os.path.dirname(sys.argv[0]))
-    results = read_app_xml("src/app_match.xml")
-    if results[0]:
-        for app in results[1]:
-            print("App name = %s" % app[0])
-            print("App class = %s" % app[1])
-            print("App desktop = %s" % app[2])
-    else:
-        print("could not read app_match.xml")
-
-#    write_xml ("/home/robin/tmp/text.xml", ["thing.desktop","blah.desktop"], 99, False, True, False, False, True, False)
-#    results = read_xml ("/home/robin/tmp/text.xml")
-#    if results[0] == True:
-#        for df in results[1]:
-#            print ("Desktop file found: %s" %df)
-
-#        print ("Use light ind = %d" %results[2])
-#        print ("Show unpinned on all = %s" %results[3])
-#        print ("Multi ind = %s" %results[4])
-#        print ("Click restore all = %s" %results[5])
-#        print ("pinned on all = %s" %results[6])
-#        print ("panel change color = %s" %results[7])
-#        print ("dock panel only = %s" %results[8])
-#    else:
-#        print ("Error reading file....")
-
-
-if __name__ == "__main__":
-    main()
