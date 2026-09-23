@@ -7,9 +7,15 @@
 __pycache__
 *.valid
 autom4te.cache
+aclocal.m4
 configure
-configure.ac
-INSTALL
+config.guess
+config.log
+config.rpath
+config.status
+config.sub
+compile
+install-sh
 install.sh
 Makefile
 Makefile.in
@@ -19,6 +25,10 @@ py-compile
 .tags
 .tags1
 .vscode
+
+# generated applet/service definitions
+src/org.mate.panel.DockApplet.mate-panel-applet
+src/org.mate.panel.applet.DockAppletFactory.service
 
 ABOUT-NLS
 po/Makefile.in.in
