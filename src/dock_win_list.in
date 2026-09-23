@@ -35,18 +35,10 @@
 # Author:
 #     Robin Thompson
 
-# do not change the value of this variable - it will be set during build
-# according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
 
-if build_gtk2:
-    gi.require_version("Gtk", "2.0")
-    gi.require_version("Wnck", "1.0")
-else:
-    gi.require_version("Gtk", "3.0")
-    gi.require_version("Wnck", "3.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("Wnck", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
 gi.require_version("Bamf", "3")
@@ -104,11 +96,10 @@ class DockWinList(DockPopup):
         # liststore
         self.__tree_view = Gtk.TreeView()
 
-        if not build_gtk2:
-            self.__tree_view.set_valign(Gtk.Align.START)
-            self.__tree_view.set_halign(Gtk.Align.START)
-            self.__tree_view.hexpand = True
-            self.__tree_view.vexpand = True
+        self.__tree_view.set_valign(Gtk.Align.START)
+        self.__tree_view.set_halign(Gtk.Align.START)
+        self.__tree_view.hexpand = True
+        self.__tree_view.vexpand = True
 
         self.__tree_view.set_headers_visible(False)
 
@@ -207,7 +198,7 @@ class DockWinList(DockPopup):
         # this would be by calling GdkPixbuf.Pixbuf.new_from_data as in these
         #                                                 64)
         # comments. Unfortunately this function does not seem to be
-        # introspectable (Gtk2) or not implemented yet (Gtk3) and therefore
+        # introspectable and therefore
         # doesn't work.
         #
         # self.__pb_close = GdkPixbuf.Pixbuf.new_from_data(surface.get_data(),
@@ -470,13 +461,6 @@ class DockWinList(DockPopup):
 
         self.create_close_pixbuf()
         self.create_active_pixbuf()
-
-        # reduce the size of the window - it will autosize to fit the contents
-        if build_gtk2:
-            self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            self.__col_title.set_fixed_width(150)
-            self.resize(100, 10)
-            self.__col_title.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
 
         win_list = self.the_app.get_windows()
 

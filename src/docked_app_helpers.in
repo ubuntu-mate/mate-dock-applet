@@ -32,17 +32,9 @@
 # Author:
 #     Robin Thompson
 
-# do not change the value of this variable - it will be set during build
-# according to the value of the --with-gtk3 option used with .configure
-build_gtk2 = False
-
 import gi
 
-if build_gtk2:
-    gi.require_version("Gtk", "2.0")
-    gi.require_version("Wnck", "1.0")
-else:
-    gi.require_version("Gtk", "3.0")
+gi.require_version("Gtk", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
 
@@ -77,15 +69,14 @@ class IconBgType:
 
 
 # static list to hold the rgb colour elements to use when drawing
-# and indicator and we can't get the theme highlight colour i.e. when
-# using gtk2
+# and indicator and we can't get the theme highlight colour
 fallback_ind_col = [0.9, 0.9, 0.9]
 
 
 def get_theme_highlight_col(applet):
     """
-        get the current theme's highlight colour (Gtk3) or the fallback colour
-        (Gtk2)
+        get the current theme's highlight colour, or the fallback colour
+        if it can't be determined
 
     Args:
         applet : the dock applet
@@ -94,29 +85,25 @@ def get_theme_highlight_col(applet):
 
     """
 
-    if build_gtk2:
-        return fallback_ind_col
+    context = applet.get_style_context()
+
+    sel_bg = context.lookup_color("theme_selected_bg_color")
+    if sel_bg[0]:
+        hcol = sel_bg[1]
+        return [hcol.red, hcol.green, hcol.blue]
     else:
-
-        context = applet.get_style_context()
-
-        sel_bg = context.lookup_color("theme_selected_bg_color")
-        if sel_bg[0]:
-            hcol = sel_bg[1]
-            return [hcol.red, hcol.green, hcol.blue]
+        # assume what is hopefully a decent looking highlight
+        # colour - something a bit brighter (or maybe a lot darker)
+        # than the background
+        c_info = context.lookup_color("dark_bg_color")
+        if c_info[0]:
+            bgcol = c_info[1]
+            return [(bgcol.red + 0.25) % 1,
+                    (bgcol.green + 0.25) % 1,
+                    (bgcol.blue + 0.25) % 1]
         else:
-            # assume what is hopefully a decent looking highlight
-            # colour - something a bit brighter (or maybe a lot darker)
-            # than the background
-            c_info = context.lookup_color("dark_bg_color")
-            if c_info[0]:
-                bgcol = c_info[1]
-                return [(bgcol.red + 0.25) % 1,
-                        (bgcol.green + 0.25) % 1,
-                        (bgcol.blue + 0.25) % 1]
-            else:
-                # we don't even have a background colour, so....
-                return fallback_ind_col
+            # we don't even have a background colour, so....
+            return fallback_ind_col
 
 
 class IndicatorDrawer(object):
@@ -326,8 +313,9 @@ class BarInd(IndicatorDrawer):
 
 class ThemeBarInd(BarInd):
     """
-        A bar indicator in which the bar is drawn in the current theme's
-        highlight colour (Gtk3) or using a fallback colour (Gtk2)
+    A bar indicator in which the bar is drawn in the current theme's
+    highlight colour, or using a fallback colour if the theme highlight
+    colour can't be determined
     """
 
     def __init__(self, context, size, orient, applet):
