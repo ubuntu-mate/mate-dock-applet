@@ -63,7 +63,6 @@ import os
 import os.path
 import xdg.BaseDirectory as BaseDirectory
 import subprocess
-from time import sleep
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 
@@ -610,20 +609,17 @@ class Dock(object):
                                              signal_name="Update")
 
         # we need a Bamf.Matcher for matching windows to running apps
-        self.matcher = None
-        # wait for max 10s to ensure bamf is available
-        # (bamf is not always immediately available after login on Linux Mint
+        # bamf is not always immediately available after login on Linux Mint
         # 19 - e.g. https://forums.linuxmint.com/viewtopic.php?t=272747 and
-        # issue #158)
-        i = 0
-        while i < 10:
-            if (not self.session_bus.name_has_owner("org.ayatana.bamf")):
-                i += 1
-                sleep(1)
-            else:
-                break
-
-        self.matcher = Bamf.Matcher()
+        # issue #158. Poll the bus for its availability instead of blocking
+        # applet startup - the dock is fully set up in wait_for_bamf as soon
+        # as bamf appears
+        if self.session_bus.name_has_owner("org.ayatana.bamf"):
+            self.matcher = Bamf.Matcher()
+        else:
+            self.matcher = None
+            self.bamf_retries = 10
+            GLib.timeout_add(1000, self.wait_for_bamf)
 
         # can we resize nicely on the panel?
         try:
@@ -639,9 +635,11 @@ class Dock(object):
 
         self.hidden_views = []
 
-        # instantiate a timer to perform further setup once the applet has been
-        # fully created
-        GObject.timeout_add(1000, self.do_delayed_setup)
+        # we only need the second stage of setup if bamf is available - if
+        # it isn't, both setup_dock and this timer are scheduled by
+        # wait_for_bamf
+        if self.matcher is not None:
+            GObject.timeout_add(1000, self.do_delayed_setup)
 
     def __del__(self):
         """ Clean up ...
@@ -1746,18 +1744,28 @@ class Dock(object):
                 self.app_list[index - 1] = self.app_list[index]
                 self.app_list[index] = app
 
-                # allow Gtk to perform the move
-                while Gtk.events_pending():
-                    Gtk.main_iteration()
+                # defer recalcs/saving until gtk has processed the move
+                GLib.idle_add(self.finish_move_app,
+                              self.app_list[index - 1], self.app_list[index])
 
-                # recalculate the minimize targets for each app
-                self.set_minimise_target(self.app_list[index - 1])
-                self.set_minimise_target(self.app_list[index])
+    def finish_move_app(self, moved_app, other_app):
+        """ Complete an app move (up or down) after gtk has processed it
 
-                if not self.pa_on_all_ws:
-                    self.update_pinned_app_config()
+        Args:
+            moved_app : the app that was moved
+            other_app : the app that swapped positions with it
+        """
 
-                self.write_settings()
+        # recalculate the minimize targets for each app
+        self.set_minimise_target(moved_app)
+        self.set_minimise_target(other_app)
+
+        if not self.pa_on_all_ws:
+            self.update_pinned_app_config()
+
+        self.write_settings()
+
+        return False
 
     def move_app(self, the_app, new_pos):
         """ Move a docked app to a new position in the dock, adjusting the
@@ -1802,9 +1810,13 @@ class Dock(object):
         self.app_list.remove(the_app)
         self.app_list.insert(new_pos, the_app)
 
-        # allow Gtk toperform the move
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        # defer scrolling/redraws/saving until gtk has processed the move
+        GLib.idle_add(self.finish_move_app_drag)
+
+    def finish_move_app_drag(self):
+        """ Complete a full app move (e.g. drag and drop) after gtk has
+            processed it
+        """
 
         if self.scrolling:
             self.set_app_scroll_dirs(True)
@@ -1819,6 +1831,8 @@ class Dock(object):
         if not self.pa_on_all_ws:
             self.update_pinned_app_config()
         self.write_settings()
+
+        return False
 
     def get_app_root_coords(self, app):
         """ Calculate and return the root x and y co-ordinates of the top left
@@ -2681,18 +2695,9 @@ class Dock(object):
                     self.show_or_hide_app_icons()
                     self.show_or_hide_indicators()
 
-                # make sure the dock_app has been fully realised
-                while Gtk.events_pending():
-                    Gtk.main_iteration()
-
-                self.set_all_apps_minimise_targets()
-
-                dock_app.applet_orient = self.applet.get_orient()
-                dock_app.set_indicator(self.indicator)
-                dock_app.set_multi_ind(self.multi_ind)
-                dock_app.set_active_bg(self.active_bg)
-                dock_app.set_attention_type(self.attention_type)
-                self.set_all_apps_minimise_targets()
+                # defer the remaining configuration until gtk has fully
+                # realised the app
+                GLib.idle_add(self.finish_add_docked_app, dock_app)
 
             else:
                 if dock_app.startup_id is not None:
@@ -2703,6 +2708,27 @@ class Dock(object):
 
                     # redraw the app's dock icon
                     dock_app.queue_draw()
+
+        return dock_app
+
+    def finish_add_docked_app(self, dock_app):
+        """ Complete the setup of a newly added docked app after gtk has
+            processed it
+
+        Args:
+            dock_app : the docked app that was just added to the dock
+        """
+
+        self.set_all_apps_minimise_targets()
+
+        dock_app.applet_orient = self.applet.get_orient()
+        dock_app.set_indicator(self.indicator)
+        dock_app.set_multi_ind(self.multi_ind)
+        dock_app.set_active_bg(self.active_bg)
+        dock_app.set_attention_type(self.attention_type)
+        self.set_all_apps_minimise_targets()
+
+        return False
 
         return dock_app
 
@@ -3523,6 +3549,36 @@ class Dock(object):
         self.box.set_row_spacing(self.app_spacing + 2)
         self.box.set_column_spacing(self.app_spacing + 2)
 
+    def wait_for_bamf(self):
+        """ Poll for the availability of the bamf service
+
+        Called via a timer while bamf is starting up, instead of blocking
+        applet startup. Creates the bamf matcher, completes the dock setup
+        and schedules the delayed setup once bamf is available
+
+        Returns: False (to stop the timer) once the dock is set up, or True
+                 to keep polling
+        """
+
+        if self.session_bus.name_has_owner("org.ayatana.bamf"):
+            self.matcher = Bamf.Matcher()
+            self.setup_dock()
+            GLib.timeout_add(1000, self.do_delayed_setup)
+            return False
+
+        self.bamf_retries -= 1
+
+        if self.bamf_retries <= 0:
+            # waited long enough - create the matcher anyway. If bamf is
+            # really missing the dock will not match windows, but the panel
+            # still starts up
+            self.matcher = Bamf.Matcher()
+            self.setup_dock()
+            GLib.timeout_add(1000, self.do_delayed_setup)
+            return False
+
+        return True
+
     def setup_dock(self):
         """Setup the dock."
 
@@ -4093,7 +4149,6 @@ class Dock(object):
                     if (win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or
                         win.is_user_visible()) and (win != last_active_win):
                         window_control.activate_win(win)
-                        sleep(0.01)
 
             app.last_active_win = last_active_win
 
@@ -4112,7 +4167,6 @@ class Dock(object):
                     if wnck_aws is not None and wnck_ws is not None and \
                        (wnck_aws != wnck_ws):
                         wnck_ws.activate(0)
-                        sleep(0.01)
 
             # rarely, the last active win does not end up as the active window
             # if we activate here, so instead a workaround which seems to do
@@ -4133,13 +4187,11 @@ class Dock(object):
                 if (win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or
                     win.is_user_visible()) and (win != last_active_win):
                     window_control.minimise_win(win)
-                    sleep(0.01)
 
             app.last_active_win = last_active_win
 
             if last_active_win is not None:
                 window_control.minimise_win(last_active_win)
-                sleep(0.01)
 
     def activate_window(self, win):
         """ Activate a Bamf window, switching workspace as necessary
@@ -4162,7 +4214,6 @@ class Dock(object):
                 if (wnck_aws is not None) and (wnck_ws is not None) and \
                    (wnck_aws != wnck_ws):
                     wnck_ws.activate(0)
-                    sleep(0.01)
 
             window_control.activate_win(win)
 
@@ -4262,7 +4313,6 @@ class Dock(object):
             if wnck_aws is not None and wnck_ws is not None and \
                (wnck_aws != wnck_ws):
                 wnck_ws.activate(0)
-                sleep(0.01)
 
         # activate the new window
         window_control.activate_win(windows[new_index])
@@ -4730,5 +4780,4 @@ def win_activation_timer(args):
     """
 
     window_control.activate_win(args[0], args[1])
-    sleep(0.01)
     return False

@@ -615,7 +615,11 @@ def applet_fill(applet):
                       Gdk.EventMask.STRUCTURE_MASK)
 
     the_dock = dock.Dock(applet)
-    the_dock.setup_dock()
+
+    # setup_dock needs the bamf matcher - if bamf is still starting up the
+    # dock is set up later, see dock.wait_for_bamf
+    if the_dock.matcher is not None:
+        the_dock.setup_dock()
 
     if the_dock.nice_sizing:
         applet.set_flags(MatePanelApplet.AppletFlags.EXPAND_MAJOR |

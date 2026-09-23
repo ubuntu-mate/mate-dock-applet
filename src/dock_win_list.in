@@ -53,7 +53,6 @@ from gi.repository import Bamf
 import os
 import cairo
 import tempfile
-from time import sleep
 
 from dock_popup import DockPopup
 import window_control
@@ -357,7 +356,6 @@ class DockWinList(DockPopup):
             if (wnck_aws is not None) and (wnck_ws is not None) and \
                (wnck_aws != wnck_ws):
                     wnck_ws.activate(0)
-                    sleep(0.01)
             wnck_win.activate(0)
 
             # set the active indicator on the newly activated window
