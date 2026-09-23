@@ -319,11 +319,15 @@ class DockWinList(DockPopup):
         if event.button != 1:
             return False  # let other handlers run
 
-        path, col, xrel, yrel = self.__tree_view.get_path_at_pos(event.x, event.y)
+        item = self.__tree_view.get_path_at_pos(event.x, event.y)
+        if item is None:
+            return False  # click wasn't on a row
+        path, col, xrel, yrel = item
         sel_iter = self.__list_store.get_iter(path)
 
         win = self.__list_store.get_value(sel_iter, 3)
-        if (win is None) and (action is None):
+        app_icon = self.__list_store.get_value(sel_iter, 4)
+        if (win is None) and (app_icon is None):
             # this will allow e.g. an item to be added which just contains
             # the name of app, which can then be clicked to launch the app
             self.hide()

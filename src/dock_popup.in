@@ -48,6 +48,7 @@ from gi.repository import GdkPixbuf
 from gi.repository import Gio
 from gi.repository import Gdk
 from gi.repository import GObject
+from gi.repository import GLib
 from gi.repository import MatePanelApplet
 
 import cairo
@@ -918,7 +919,7 @@ class DockPopup(Gtk.Window):
         self.__icon_size = size_in_pixels
         if (self.__the_app is not None) and \
            (self.__icontheme is not None):
-            self.__get_app_icon()
+            self.get_app_icon()
 
     @property
     def app_pb(self):

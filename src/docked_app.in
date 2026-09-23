@@ -909,7 +909,7 @@ class DockedApp(object):
         """
 
         cl_start = os.path.expanduser("~/.local/share/applications/mda_")
-        return os.path.expanduser(self.desktop_file).beginswith(cl_start)
+        return os.path.expanduser(self.desktop_file).startswith(cl_start)
 
     def win_state_changed(self, wnck_win, changed_mask, new_state):
         """Handler for the wnck_window state-changed event

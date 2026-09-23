@@ -127,8 +127,8 @@ class DragMotionTimer(object):
 
         # get the mouse device
         display = Gdk.Display.get_default()
-        manager = display.get_device_manager()
-        self.mouse = manager.get_client_pointer()
+        seat = display.get_default_seat()
+        self.mouse = seat.get_pointer()
 
     def do_timer(self):
         """The timer function.
@@ -491,7 +491,7 @@ class Dock(object):
         self.sw_hadj = Gtk.Adjustment(0, 0, 1, 1, 1, 1)
         self.sw_vadj = Gtk.Adjustment(0, 0, 1, 1, 1, 1)
         self.scrolled_win = Gtk.ScrolledWindow.new(self.sw_hadj, self.sw_vadj)
-        self.scrolled_win.set_policy(Gtk.PolicyType.EXTERNAL, Gtk.PolicyType.EXTERNAL)
+        self.scrolled_win.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
         self.scrolled_win.connect("scroll-event", self.window_scroll)
 
         self.icontheme = Gtk.IconTheme.get_default()
@@ -2899,7 +2899,7 @@ class Dock(object):
 
                 elif (dock_app.is_running() and (dock_app.get_num_windows() > 0)):
                     if self.show_all_apps:
-                        dock_app.queue_redraw()
+                        dock_app.queue_draw()
                     else:
                         self.show_or_hide_app_icons()
                         self.show_or_hide_indicators()
@@ -2910,7 +2910,7 @@ class Dock(object):
                     self.remove_bamf_app_handlers(object)
 
                     self.set_all_apps_minimise_targets()
-        elif type(object is Bamf.Window):
+        elif type(object) is Bamf.Window:
             the_app = matcher.get_application_for_window(object)
             # fix for #174
             if the_app is not None:
@@ -4176,7 +4176,7 @@ class Dock(object):
         if app is None:
             return
 
-        win = app.get_first_window()
+        win = app.get_first_normal_win()
         if win is None:
             return
         self.activate_window(win)
@@ -4331,8 +4331,8 @@ class Dock(object):
         # get the mouse device so we can obtain the root coordinates of the
         # the cursor
         display = Gdk.Display.get_default()
-        manager = display.get_device_manager()
-        mouse = manager.get_client_pointer()
+        seat = display.get_default_seat()
+        mouse = seat.get_pointer()
         none, x, y = mouse.get_position()
         dx, dy = self.get_dock_root_coords()
 
@@ -4368,7 +4368,7 @@ class Dock(object):
 
         num_vis = 0
         for app in self.app_list:
-            if app.is_visible:
+            if app.is_visible():
                 num_vis += 1
 
         return num_vis
@@ -4386,7 +4386,7 @@ class Dock(object):
 
         count = 0
         for app in self.app_list:
-            if app.is_visible:
+            if app.is_visible():
                 if count == app_no:
                     return app
                 else:
