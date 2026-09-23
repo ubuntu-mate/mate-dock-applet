@@ -1336,15 +1336,10 @@ class Dock(object):
             act_no += 1
 
         # now do pin and unpin actions
-        act = self.dock_action_group.get_action("pin_action")
-        set_vis(act, panel_act_visible)
-        act = self.dock_action_group.get_action("unpin_action")
-        set_vis(act, panel_act_visible)
-
-        act = self.popup_action_group.get_action("pin_action")
-        set_vis(act, popup_act_visible)
-        act = self.popup_action_group.get_action("unpin_action")
-        set_vis(act, popup_act_visible)
+        pin_action = self.dock_action_group.get_action("pin_action")
+        unpin_action = self.dock_action_group.get_action("unpin_action")
+        popup_pin_action = self.popup_action_group.get_action("pin_action")
+        popup_unpin_action = self.popup_action_group.get_action("unpin_action")
 
         close_win_action = self.dock_action_group.get_action("close_win_action")
         close_win_action.set_visible(False)
@@ -1354,6 +1349,11 @@ class Dock(object):
         ccl_action.set_visible(False)
 
         if app is None:
+            # with no app, nothing can be pinned or unpinned
+            pin_action.set_visible(False)
+            unpin_action.set_visible(False)
+            popup_pin_action.set_visible(False)
+            popup_unpin_action.set_visible(False)
             return
 
         # now setup the relevant actions panel/action list items
@@ -1375,25 +1375,22 @@ class Dock(object):
 
             act_no += 1
 
-        if self.panel_act_list:
-            pin_action = self.dock_action_group.get_action("pin_action")
-            unpin_action = self.dock_action_group.get_action("unpin_action")
-        else:
-            pin_action = self.popup_action_group.get_action("pin_action")
-            unpin_action = self.popup_action_group.get_action("unpin_action")
-
         # pin/unpin actions don't appear when we don't have a .desktop file...
-        if not app.has_desktop_file():
-            pin_action.set_visible(False)
-            unpin_action.set_visible(False)
-        else:
+        if app.has_desktop_file():
             pin_action.set_visible(not app.is_pinned)
             unpin_action.set_visible(app.is_pinned)
-
-        if pin_action.is_visible():
-            pin_action.set_label(_("Pin %s") % app.app_name)
+            popup_pin_action.set_visible(not app.is_pinned)
+            popup_unpin_action.set_visible(app.is_pinned)
         else:
-            unpin_action.set_label(_("Unpin %s") % app.app_name)
+            pin_action.set_visible(False)
+            unpin_action.set_visible(False)
+            popup_pin_action.set_visible(False)
+            popup_unpin_action.set_visible(False)
+
+        pin_action.set_label(_("Pin %s") % app.app_name)
+        unpin_action.set_label(_("Unpin %s") % app.app_name)
+        popup_pin_action.set_label(_("Pin %s") % app.app_name)
+        popup_unpin_action.set_label(_("Unpin %s") % app.app_name)
 
         move_up_action = self.dock_action_group.get_action("move_up_action")
         move_down_action = self.dock_action_group.get_action("move_down_action")
