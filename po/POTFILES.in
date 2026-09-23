@@ -13,5 +13,4 @@ src/dock_xml.py
 src/docked_app.py
 src/docked_app_helpers.py
 src/dom_color.py
-src/log_it.py
 src/window_control.py
