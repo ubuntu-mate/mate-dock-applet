@@ -1520,8 +1520,24 @@ class DockedApp(object):
             # home directory, which is the behaviour they'll probably be
             # expecting....
             if run_it == "/usr/bin/startcaja":
-                run_it = "caja"
-                self.run_cmd_line(run_it)
+                # a mint caja .desktop file has been clicked which starts
+                # the desktop as well as caja; run plain caja instead so
+                # that a new file browser window opens
+                app_info = Gio.AppInfo.create_from_commandline(
+                    "caja", None,
+                    Gio.AppInfoCreateFlags.SUPPORTS_STARTUP_NOTIFICATION)
+                disp = Gdk.Display.get_default()
+                alc = disp.get_app_launch_context()
+                alc.set_desktop(-1)  # use default screen & desktop
+                alc.set_timestamp(Gtk.get_current_event_time())
+                self.startup_id = alc.get_startup_notify_id(app_info, [])
+                app_info.launch_uris_as_manager(
+                    [], alc,
+                    GLib.SpawnFlags.SEARCH_PATH |
+                    GLib.SpawnFlags.STDOUT_TO_DEV_NULL |
+                    GLib.SpawnFlags.STDERR_TO_DEV_NULL,
+                    None, None, None, None)
+                throbber = PulseTimer(self)
                 return
 
         if self.desktop_file is not None:
@@ -1582,66 +1598,6 @@ class DockedApp(object):
 
         display = Gdk.Display.get_default()
         display.notify_startup_complete(startup_id)
-
-    def run_cmd_line(self, cmd_line):
-        """Run a command line.
-
-            Args:
-                cmd_line - the command to run
-        """
-
-        # TODO: this is old code and needs to be removed
-
-        # the command line may contain escape sequences, so unescape them....
-        cmd_line = bytearray(cmd_line, "UTF-8")
-        cmd_line = cmd_line.decode("unicode-escape")
-
-        # if an environment variable is specified, extract its name an value
-        # Note: the .desktop file specification at
-        # https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
-        # does not mention this. Both Ubuntu
-        # https://help.ubuntu.com/community/EnvironmentVariables#Launching_desktop_application_with_an_environment_variable
-        # and Arch linux
-        # https://wiki.archlinux.org/index.php/Desktop_entries#Modify_environment_variables
-        # seem to indicate that only a single variable can be set and that
-        # there are no spaces between the variable name, the '=' character and
-        # variable's value .....
-
-        # so, if cmd_line begins with "env" it specifies an environment variable
-        # to set, follwed by the app e.g. env LANG=he_IL.UTF-8 /usr/bin/pluma
-        #
-        if cmd_line.startswith("env"):
-            cmd_parts = cmd_line.split(" ", 2)
-            var_parts = cmd_parts[1].split("=")
-            var_name = var_parts[0]
-            var_value = var_parts[1]
-
-            # now we need to get the app path and args and carry on...
-            cmd_line = cmd_parts[2]
-        else:
-            var_name = None
-            var_value = None
-
-        # if any of the directories in cmd_line contain a " ", they need to be
-        # escaped
-        head, tail = os.path.split(cmd_line)
-        if " " in head:
-            head = head.replace(" ", "\\ ")
-            cmd_line = head + "/" + tail
-        app_info = Gio.AppInfo.create_from_commandline(cmd_line,
-                                                       None,
-                                                       Gio.AppInfoCreateFlags.SUPPORTS_STARTUP_NOTIFICATION)
-        alc = Gdk.AppLaunchContext()
-        alc.set_desktop(-1)                   # use default screen & desktop
-        alc.set_timestamp(Gtk.get_current_event_time())
-
-        # if the .desktop specfied an environment variable, set it
-        if (var_name is not None) and (var_value is not None):
-            alc.setenv(var_name, var_value)
-
-        self.startup_id = alc.get_startup_notify_id(app_info, [])
-
-        throbber = PulseTimer(self)
 
     def run_rc_action(self, act_no):
         """ run the right click action specified by act_no
