@@ -288,7 +288,7 @@ class BarInd(IndicatorDrawer):
                     [2.5, self._size - 0.5], [0.5, self._size - 0.5]]
 
         elif self._orient == MatePanelApplet.AppletOrient.LEFT:
-            rect = [[self._size - 2.5, 0.5], [self._size - 0.5, 0, 5],
+            rect = [[self._size - 2.5, 0.5], [self._size - 0.5, 0.5],
                     [self._size - 0.5, self._size - 0.5], [self._size - 2.5, self._size - 0.5]]
 
         elif self._orient == MatePanelApplet.AppletOrient.DOWN:

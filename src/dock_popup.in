@@ -515,15 +515,15 @@ class DockPopup(Gtk.Window):
 
     def size_allocate(self, widget, event):
 
-        def draw_rounded(cr, area, radius):
+        def draw_rounded(cr, x, y, w, h, radius):
             """ draws rectangles with rounded (circular arc) corners """
             # Attribution: https://gist.github.com/kamiller/3013605
+            # ( funkity adapted to take x, y, width, height parameters )
 
-            a, b, c, d = area
-            cr.arc(a + radius, c + radius, radius, 2 * (pi / 2), 3 * (pi / 2))
-            cr.arc(b - radius, c + radius, radius, 3 * (pi / 2), 4 * (pi / 2))
-            cr.arc(b - radius, d - radius, radius, 0 * (pi / 2), 1 * (pi / 2))  # ;o)
-            cr.arc(a + radius, d - radius, radius, 1 * (pi / 2), 2 * (pi / 2))
+            cr.arc(x + radius, y + radius, radius, 2 * (pi / 2), 3 * (pi / 2))
+            cr.arc(x + w - radius, y + radius, radius, 3 * (pi / 2), 4 * (pi / 2))
+            cr.arc(x + w - radius, y + h - radius, radius, 0 * (pi / 2), 1 * (pi / 2))  # ;o)
+            cr.arc(x + radius, y + h - radius, radius, 1 * (pi / 2), 2 * (pi / 2))
             cr.close_path()
 
             cr.stroke_preserve()
@@ -547,18 +547,25 @@ class DockPopup(Gtk.Window):
         ctx = cairo.Context(surface)
 
         if self.__panel_orient == MatePanelApplet.AppletOrient.UP:
-            draw_rounded(ctx, [allocation.x, allocation.width,
-                               allocation.y, allocation.height - self.__pointer_size], 10)
+            draw_rounded(ctx, allocation.x,
+                         allocation.y,
+                         allocation.width,
+                         allocation.height - self.__pointer_size, 10)
         elif self.__panel_orient == MatePanelApplet.AppletOrient.DOWN:
-            draw_rounded(ctx, [allocation.x, allocation.width,
-                               allocation.y + self.__pointer_size,
-                               allocation.height], 10)
+            draw_rounded(ctx, allocation.x,
+                         allocation.y + self.__pointer_size,
+                         allocation.width,
+                         allocation.height - self.__pointer_size, 10)
         elif self.__panel_orient == MatePanelApplet.AppletOrient.RIGHT:
-            draw_rounded(ctx, [self.__pointer_size + 1, allocation.width,
-                               allocation.y, allocation.height], 10)
+            draw_rounded(ctx, self.__pointer_size + 1,
+                         allocation.y,
+                         allocation.width - self.__pointer_size - 1,
+                         allocation.height, 10)
         else:
-            draw_rounded(ctx, [allocation.x, allocation.width - self.__pointer_size,
-                               allocation.y, allocation.height], 10)
+            draw_rounded(ctx, allocation.x,
+                         allocation.y,
+                         allocation.width - self.__pointer_size,
+                         allocation.height, 10)
 
         ctx.set_source_rgba(1, 1, 1, 1)
 

@@ -752,7 +752,11 @@ class Dock(object):
             colstr = psettings.get_string("color")
 
             if (colstr.startswith("rgba")) or (colstr.startswith("rgb")):
-                colstrip = colstr.strip("rgba()")
+                colstrip = colstr.strip()
+                if colstrip.startswith("rgba"):
+                    colstrip = colstrip[5:-1]
+                else:
+                    colstrip = colstrip[4:-1]
                 cols = colstrip.split(",")
                 pr = int(cols[0])
                 pg = int(cols[1])
@@ -2043,7 +2047,6 @@ class Dock(object):
             if self.panel_act_list != self.prefs_win.get_pan_act():
                 self.panel_act_list = self.prefs_win.get_pan_act()
 
-            old_bg = self.active_bg
             self.active_bg = self.prefs_win.get_bg()
             self.theme = self.prefs_win.get_theme()
 
@@ -2200,7 +2203,7 @@ class Dock(object):
             if not os.path.exists(local_apps):
                 # ~/.local/share/applications doesn't exist, so create it
                 os.mkdir(local_apps)
-            dfname = os.path.expanduser("%s/mda-%s.desktop" % (local_apps, dfname))
+            dfname = os.path.expanduser("%s/mda_%s.desktop" % (local_apps, dfname))
 
             dfile = open(dfname, "w")
             dfile.write("[Desktop Entry]\n")
@@ -4682,7 +4685,11 @@ class Dock(object):
         """
 
         # remove the leading part of the app uri
-        df = app_uri.split("://")[1]
+        parts = app_uri.split("://")
+        if len(parts) < 2:
+            return
+
+        df = parts[1]
 
         # search for the an app which has the same desktop file name
         for app in self.app_list:
