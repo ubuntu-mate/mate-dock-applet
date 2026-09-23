@@ -77,8 +77,6 @@ import dock_prefs
 from docked_app_helpers import *
 import window_control
 
-from log_it import log_it as log_it
-
 ColorTup = namedtuple('ColorTup', ['r', 'g', 'b'])
 
 
@@ -149,70 +147,6 @@ def get_backlight_color(pixbuf):
     gr, gg, gb = colorsys.hsv_to_rgb(h, s, v)
 
     return int(br * 255), int(bg * 255), int(bb * 255)
-
-
-def get_avg_color(pixbuf):
-    """calculate the average colour of a pixbuf.
-
-    Read all of the pixel values in a pixbuf (excluding those which are below a
-    certain alpha value) and calculate the average colour of all the contained
-    colours
-
-    Args:
-        pixbuf  : a pixbuf object containing the image
-
-    Returns:
-        a tuple of r,g,b values (0-255)
-    """
-
-    width = pixbuf.props.width
-    rowstride = pixbuf.props.rowstride
-    height = pixbuf.props.height
-    has_alpha = pixbuf.get_has_alpha()
-    pixels = pixbuf.get_pixels()
-    nchannels = pixbuf.get_n_channels()
-    # convert the pixels into an rgb array with alpha channel
-    data = []
-    for y_count in range(height - 1):
-        x_count = 0
-        while x_count < (width * nchannels):
-            pix_red = pixels[x_count + (rowstride * y_count)]
-            pix_green = pixels[x_count + 1 + (rowstride * y_count)]
-            pix_blue = pixels[x_count + 2 + (rowstride * y_count)]
-            if has_alpha:
-                pix_alpha = pixels[x_count + 3 + (rowstride * y_count)]
-            else:
-                pix_alpha = 255
-
-            data.append([pix_red, pix_green, pix_blue, pix_alpha])
-
-            x_count += nchannels
-
-    red = 0
-    green = 0
-    blue = 0
-    num_counted = 0
-
-    for pixels in range(len(data)):
-        if data[pixels][3] > 200:       # only count pixel if alpha above this
-                                        # level
-            red += data[pixels][0]
-            green += data[pixels][1]
-            blue += data[pixels][2]
-            num_counted += 1
-
-    if num_counted > 0:
-        ravg = int(red / num_counted)
-        gavg = int(green / num_counted)
-        bavg = int(blue / num_counted)
-    else:
-        # in case of a bad icon assume a grey average colour
-        # this should fix a division by zero error that occurred at this point
-        # in the code, but which I've only seen once and never been able to
-        # duplicate
-        ravg = gavg = bavg = 128
-
-    return ravg, gavg, bavg
 
 
 CONST_PULSE_STEPS = 20
@@ -434,7 +368,6 @@ class DockedApp(object):
         super().__init__()
 
         self.bamf_app = None
-        self.app_info = []
         self.app_name = ""
         self.rc_actions = []
         self.cmd_line = ""
@@ -442,7 +375,6 @@ class DockedApp(object):
         self.icon_filename = ""
         self.desktop_file = ""
         self.desktop_ai = None
-        self.icon_geometry_set = False
         self.applet_win = None
         self.applet_orient = None
         self.ind_ws = None
@@ -546,20 +478,6 @@ class DockedApp(object):
                     return win
 
         return None
-
-    def has_wnck_app(self, wnck_app):
-        """ see if this app has a process with the specified wnck_app
-
-        Returns True if the wnck_app is found, False otherwise
-        """
-
-        ret_val = False
-        for aai in self.app_info:
-            if aai.app == wnck_app:
-                ret_val = True
-                break
-
-        return ret_val
 
     def has_bamf_window(self, win):
         """
@@ -1186,7 +1104,6 @@ class DockedApp(object):
             extents = ctx.text_extents(ctext)
 
             if extents[3] < reqd_font_height:
-                font_size = fsize
                 break
 
         # work out an appropriate width for the counter
@@ -1354,7 +1271,6 @@ class DockedApp(object):
             extents = ctx.text_extents(ctext)
 
             if extents[3] < reqd_font_height:
-                font_size = fsize
                 break
 
         # work out an appropriate width for the badge

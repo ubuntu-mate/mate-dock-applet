@@ -34,7 +34,6 @@ Note: Functionality for docked apps is provided in docked_app.py
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Wnck", "3.0")
 
 gi.require_version("MatePanelApplet", "4.0")
 
@@ -48,18 +47,14 @@ from Xlib import X, error
 from gi.repository import Gtk
 from gi.repository import MatePanelApplet
 from gi.repository import Gdk
-from gi.repository import Gio
 from gi.repository import GObject
 from gi.repository import GLib
-from gi.repository import Wnck
 
 import xdg.DesktopEntry as DesktopEntry
 from urllib.parse import urlparse
 
 import docked_app
 import dock
-
-from log_it import log_it as log_it
 
 drag_dropped = False   # nasty global var used to keep track of whether or not a drag-drop event has occurred
 

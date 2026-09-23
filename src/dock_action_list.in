@@ -51,8 +51,6 @@ from gi.repository import Pango
 
 from dock_popup import DockPopup
 
-from log_it import log_it as log_it
-
 CONST_MAX_TITLE_WIDTH = 300         # Max width of the action text
 CONST_SEP = "--------------------"  # text which denotes tree view item is a separator
 

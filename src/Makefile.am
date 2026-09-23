@@ -1,7 +1,7 @@
 
 SUBDIRS =
 
-applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.py log_it.py dock_custom_launcher.py dock_win_list.py \
+applet_SCRIPTS = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.py dock_custom_launcher.py dock_win_list.py \
 		 dock_action_list.py dock_xml.py dock_color_changer.py dom_color.py dock_info.py dock_popup.py docked_app_helpers.py window_control.py
 
 appletdir = $(libdir)/mate-applets/mate-dock-applet/
@@ -102,10 +102,6 @@ docked_app.py: docked_app.in Makefile
 	$(do_substitution) < $(srcdir)/docked_app.in > docked_app.py
 	chmod +x docked_app.py
 
-log_it.py: log_it.in Makefile
-	$(do_substitution) < $(srcdir)/log_it.in > log_it.py
-	chmod +x log_it.py
-
 dock_win_list.py: dock_win_list.in Makefile
 	$(do_substitution) < $(srcdir)/dock_win_list.in > dock_win_list.py
 	chmod +x dock_win_list.py
@@ -149,7 +145,6 @@ applet_PYTHON = \
 		     dock.py \
 		     docked_app.py \
 		     dock_custom_launcher.py \
-		     log_it.py \
 		     dock_win_list.py \
 			 dock_action_list.py \
 		     dock_xml.py \
@@ -170,7 +165,6 @@ EXTRA_DIST = dock_applet.in \
 	     dock.in \
 	     docked_app.in \
 	     dock_custom_launcher.in \
-	     log_it.in \
 	     dock_win_list.in \
 		 dock_action_list.in \
 	     dock_xml.in \

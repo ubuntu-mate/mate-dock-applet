@@ -58,8 +58,6 @@ from time import sleep
 from dock_popup import DockPopup
 import window_control
 
-from log_it import log_it as log_it
-
 CONST_CLOSE_ICON_SIZE = 16
 CONST_SEP = "--------------------"  # text which denotes tree view item is a separator
 CONST_MAX_TITLE_WIDTH = 400         # max width of the title column in pixels
