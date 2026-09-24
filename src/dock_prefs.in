@@ -163,10 +163,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__appearance_tbl.set_row_homogeneous(False)
 
         self.__frame_theme = create_frame(_("Theme"))
-        self.__frame_theme_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                 xscale=1.0, yscale=1.0)
-        self.__frame_theme_align.set_padding(0, 0, 12, 0)
-        self.__frame_theme_align.set_padding(0, 0, 12, 0)
+        self.__frame_theme_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_theme_align.set_margin_top(0)
+        self.__frame_theme_align.set_margin_bottom(0)
+        self.__frame_theme_align.set_margin_start(12)
+        self.__frame_theme_align.set_margin_end(0)
 
         self.__theme_options = [_("Default"), _("Unity"), _("Unity Flat"), _("Subway"), _("Custom")]
         self.__cbt_theme = self.create_textcombo(self.__theme_options)
@@ -189,9 +190,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__da_preview = Gtk.DrawingArea()
         self.__da_preview.set_size_request(self.PREVIEW_SIZE * 3, self.PREVIEW_SIZE)
 
-        self.__frame_preview_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                   xscale=1.0, yscale=1.0)
-        self.__frame_preview_align.set_padding(0, 0, 12, 0)
+        self.__frame_preview_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_preview_align.set_margin_top(0)
+        self.__frame_preview_align.set_margin_bottom(0)
+        self.__frame_preview_align.set_margin_start(12)
+        self.__frame_preview_align.set_margin_end(0)
         self.__hbox_preview.pack_start(self.__da_preview, False, False, 0)
         self.__frame_preview_align.add(self.__hbox_preview)
         self.__vbox_preview = self.create_vbox()
@@ -212,9 +215,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__tbl_ind_type.set_column_spacing(2)
         self.__tbl_ind_type.attach(self.__cbt_ind_type, 0, 0, 1, 1)
 
-        self.__frame_ind_type_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                    xscale=1.0, yscale=1.0)
-        self.__frame_ind_type_align.set_padding(0, 0, 12, 0)
+        self.__frame_ind_type_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_ind_type_align.set_margin_top(0)
+        self.__frame_ind_type_align.set_margin_bottom(0)
+        self.__frame_ind_type_align.set_margin_start(12)
+        self.__frame_ind_type_align.set_margin_end(0)
         self.__frame_ind_type_align.add(self.__tbl_ind_type)
         self.__frame_ind_type.add(self.__frame_ind_type_align)
 
@@ -223,9 +228,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__cbt_icon_bg = self.create_textcombo(self.__bg_options)
         self.__cbt_icon_bg.connect("changed", self.setting_toggled)
 
-        self.__frame_bg_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                              xscale=1.0, yscale=1.0)
-        self.__frame_bg_align.set_padding(0, 0, 12, 0)
+        self.__frame_bg_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_bg_align.set_margin_top(0)
+        self.__frame_bg_align.set_margin_bottom(0)
+        self.__frame_bg_align.set_margin_start(12)
+        self.__frame_bg_align.set_margin_end(0)
         self.__frame_bg_align.add(self.__cbt_icon_bg)
         self.__frame_bg.add(self.__frame_bg_align)
 
@@ -250,9 +257,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__table_pinned_apps.attach(self.__rb_pinned_pin_ws,
                                         0, 1, 1, 1)
 
-        self.__frame_pinned_apps_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                       xscale=1.0, yscale=1.0)
-        self.__frame_pinned_apps_align.set_padding(0, 0, 12, 0)
+        self.__frame_pinned_apps_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_pinned_apps_align.set_margin_top(0)
+        self.__frame_pinned_apps_align.set_margin_bottom(0)
+        self.__frame_pinned_apps_align.set_margin_start(12)
+        self.__frame_pinned_apps_align.set_margin_end(0)
         self.__frame_pinned_apps_align.add(self.__table_pinned_apps)
         self.__frame_pinned_apps.add(self.__frame_pinned_apps_align)
 
@@ -269,9 +278,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__table_unpinned_apps.attach(self.__rb_unpinned_cur_ws,
                                           0, 1, 1, 1)
 
-        self.__frame_unpinned_apps_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                         xscale=1.0, yscale=1.0)
-        self.__frame_unpinned_apps_align.set_padding(0, 0, 12, 0)
+        self.__frame_unpinned_apps_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_unpinned_apps_align.set_margin_top(0)
+        self.__frame_unpinned_apps_align.set_margin_bottom(0)
+        self.__frame_unpinned_apps_align.set_margin_start(12)
+        self.__frame_unpinned_apps_align.set_margin_end(0)
         self.__frame_unpinned_apps_align.add(self.__table_unpinned_apps)
         self.__frame_unpinned_apps.add(self.__frame_unpinned_apps_align)
 
@@ -344,9 +355,11 @@ class DockPrefsWindow(Gtk.Window):
                                          _("\nNotes:\nIf an app has only a single window open, a window list will not be " +
                                          "displayed. Instead the window will be minimized/restored.\n" +
                                          "Window thumbnail previews require Compiz"))
-        self.__frame_behaviour_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                     xscale=1.0, yscale=1.0)
-        self.__frame_behaviour_align.set_padding(0, 0, 12, 0)
+        self.__frame_behaviour_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_behaviour_align.set_margin_top(0)
+        self.__frame_behaviour_align.set_margin_bottom(0)
+        self.__frame_behaviour_align.set_margin_start(12)
+        self.__frame_behaviour_align.set_margin_end(0)
         self.__frame_behaviour_align.add(self.__table_behaviour)
 
         self.__frame_behaviour.add(self.__frame_behaviour_align)
@@ -368,9 +381,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__sb_spc.set_max_length(1)
         self.__sb_spc.set_snap_to_ticks(True)
 
-        self.__frame_spc_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                               xscale=1.0, yscale=1.0)
-        self.__frame_spc_align.set_padding(0, 0, 12, 300)
+        self.__frame_spc_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_spc_align.set_margin_top(0)
+        self.__frame_spc_align.set_margin_bottom(0)
+        self.__frame_spc_align.set_margin_start(12)
+        self.__frame_spc_align.set_margin_end(300)
         self.__frame_spc_align.add(self.__sb_spc)
         self.__frame_spc.add(self.__frame_spc_align)
 
@@ -388,9 +403,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__table_color_change.attach(self.__cb_dock_panel_only,
                                          0, 1, 1, 1)
 
-        self.__frame_color_change_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                        xscale=1.0, yscale=1.0)
-        self.__frame_color_change_align.set_padding(0, 0, 12, 0)
+        self.__frame_color_change_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_color_change_align.set_margin_top(0)
+        self.__frame_color_change_align.set_margin_bottom(0)
+        self.__frame_color_change_align.set_margin_start(12)
+        self.__frame_color_change_align.set_margin_end(0)
         self.__frame_color_change_align.add(self.__table_color_change)
         self.__frame_color_change.add(self.__frame_color_change_align)
 
@@ -425,9 +442,11 @@ class DockPrefsWindow(Gtk.Window):
                                       0, 1, 1, 1)
         self.__table_dock_size.attach(self.__hbox_fixed_size, 0, 2, 1, 1)
 
-        self.__frame_dock_size_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                     xscale=1.0, yscale=1.0)
-        self.__frame_dock_size_align.set_padding(0, 0, 12, 0)
+        self.__frame_dock_size_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_dock_size_align.set_margin_top(0)
+        self.__frame_dock_size_align.set_margin_bottom(0)
+        self.__frame_dock_size_align.set_margin_start(12)
+        self.__frame_dock_size_align.set_margin_end(0)
         self.__frame_dock_size_align.add(self.__table_dock_size)
         self.__frame_dock_size.add(self.__frame_dock_size_align)
 
@@ -468,9 +487,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__table_attention_type.attach(self.__rb_attention_badge,
                                            0, 1, 1, 1)
 
-        self.__frame_attention_type_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                          xscale=1.0, yscale=1.0)
-        self.__frame_attention_type_align.set_padding(0, 0, 12, 0)
+        self.__frame_attention_type_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_attention_type_align.set_margin_top(0)
+        self.__frame_attention_type_align.set_margin_bottom(0)
+        self.__frame_attention_type_align.set_margin_start(12)
+        self.__frame_attention_type_align.set_margin_end(0)
         self.__frame_attention_type_align.add(self.__table_attention_type)
         self.__frame_attention_type.add(self.__frame_attention_type_align)
 
@@ -484,9 +505,11 @@ class DockPrefsWindow(Gtk.Window):
         self.__sb_pdel.set_max_length(3)
         self.__sb_pdel.set_snap_to_ticks(True)
 
-        self.__frame_pdel_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                xscale=1.0, yscale=1.0)
-        self.__frame_pdel_align.set_padding(0, 0, 12, 300)
+        self.__frame_pdel_align = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.__frame_pdel_align.set_margin_top(0)
+        self.__frame_pdel_align.set_margin_bottom(0)
+        self.__frame_pdel_align.set_margin_start(12)
+        self.__frame_pdel_align.set_margin_end(300)
         self.__frame_pdel_align.add(self.__sb_pdel)
         self.__frame_pdel.add(self.__frame_pdel_align)
 
