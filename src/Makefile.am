@@ -13,7 +13,7 @@ MODULE_SOURCES = dock_applet.py dock.py docked_app.py dock_prefs.py dock_about.p
 applet_SCRIPTS = $(MODULE_SOURCES)
 
 # the .in template sources are only distributed, not built or installed
-dist_noinst_DATA = $(TEMPLATE_SOURCES)
+dist_noinst_DATA = $(MODULE_SOURCES:.py=.in)
 
 appletsdir       = $(datadir)/mate-panel/applets
 applets_in_files = org.mate.panel.DockApplet.mate-panel-applet
@@ -63,6 +63,7 @@ CLEANFILES = $(MODULE_SOURCES) \
 	     $(service_DATA)
 
 EXTRA_DIST = $(applets_in_files).in \
+	     $(service_in_files) \
 	     $(gsettings_SCHEMAS) \
 	     $(xml_DATA) \
 	     $(data_assets_DATA)
