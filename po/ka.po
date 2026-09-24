@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: dock-applet 20.04.0\n"
 "Report-Msgid-Bugs-To: https://github.com/ubuntu-mate/mate-dock-applet/"
 "issues\n"
-"POT-Creation-Date: 2021-08-31 17:34+0200\n"
+"POT-Creation-Date: 2026-09-24 13:39-0400\n"
 "PO-Revision-Date: 2026-05-16 18:23+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: \n"
@@ -18,448 +18,336 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 3.9\n"
 
-#: src/dock.py:496
+#: src/dock.in:482
 msgid "Mate Dock Applet"
 msgstr "MATE-ის დოკის აპლეტი"
 
-#: src/dock.py:1353
-#, python-format
+#: src/dock.in:1353
+#, c-format
 msgid "Pin %s"
 msgstr "%s-ის ამაგრება"
 
-#: src/dock.py:1355
-#, python-format
+#: src/dock.in:1354
+#, c-format
 msgid "Unpin %s"
 msgstr "%s-ის მოხსნა"
 
-#: src/dock.py:1372
-#, python-format
+#: src/dock.in:1371
+#, c-format
 msgid "Move %s up the dock"
 msgstr "%s-ის აწევა დოკზე"
 
-#: src/dock.py:1373
-#, python-format
+#: src/dock.in:1372
+#, c-format
 msgid "Move %s down the dock"
 msgstr "%s-ის დაწევა დოკზე"
 
-#: src/dock.py:1379
-#, python-format
+#: src/dock.in:1378
+#, c-format
 msgid "Move %s to the left on the dock"
 msgstr "%s-ის მარცხნივ გაწევა დოკზე"
 
-#: src/dock.py:1380
-#, python-format
+#: src/dock.in:1379
+#, c-format
 msgid "Move %s to the right on the dock"
 msgstr "%s-ის მარჯვნივ გაწევა დოკზე"
 
-#: src/dock.py:1386
-#, python-format
+#: src/dock.in:1385
+#, c-format
 msgid "Close %s"
 msgstr "%s-ის დახურვა"
 
-#: src/dock.py:1388
+#: src/dock.in:1387
 msgid "Close all windows"
 msgstr "ყველა ფანჯრის დახურვა"
 
-#: src/dock.py:1427
+#: src/dock.in:1426
 msgid "_Pin app to the dock"
 msgstr "ა_პის ამაგრება დოკზე"
 
-#: src/dock.py:1427 src/dock.py:1496
+#: src/dock.in:1426 src/dock.in:3951
 msgid "Pin app to the dock"
 msgstr "აპის ამაგრება დოკზე"
 
-#: src/dock.py:1430 src/dock.py:1499
+#: src/dock.in:1429
 msgid "_Unpin app from the dock"
 msgstr "აპის ჩამო_ხსნა დოკიდან"
 
-#: src/dock.py:1430 src/dock.py:1499
+#: src/dock.in:1429 src/dock.in:3948
 msgid "Unpin app from the dock"
 msgstr "აპის ჩამოხსნა დოკიდან"
 
-#: src/dock.py:1433
+#: src/dock.in:1432
 msgid "Move app _up the dock"
 msgstr "აპის ა_წევა დოკზე"
 
-#: src/dock.py:1433
+#: src/dock.in:1432
 msgid "Move app up the dock"
 msgstr "აპის აწევა დოკზე"
 
-#: src/dock.py:1436
+#: src/dock.in:1435
 msgid "Move app _down the dock"
 msgstr "აპის ჩამოწევა _დოკზე"
 
-#: src/dock.py:1436
+#: src/dock.in:1435
 msgid "Move app down the dock"
 msgstr "აპის ჩამოწევა დოკზე"
 
-#: src/dock.py:1439
+#: src/dock.in:1438
 msgid "Move app _left in the dock"
 msgstr "აპის გაწევა მარ_ცხნივ დოკზე"
 
-#: src/dock.py:1439
+#: src/dock.in:1438
 msgid "Move app left in the dock"
 msgstr "აპის გაწევა მარცხნივ დოკზე"
 
-#: src/dock.py:1442
+#: src/dock.in:1441
 msgid "Move app _right in the dock"
 msgstr "აპის გაწევა მა_რჯვნივ დოკზე"
 
-#: src/dock.py:1442
+#: src/dock.in:1441
 msgid "Move app right in the dock"
 msgstr "აპის გაწევა მარჯვნივ დოკზე"
 
-#: src/dock.py:1445
+#: src/dock.in:1444
 msgid "Dock P_references"
 msgstr "დოკის მო_რგება"
 
-#: src/dock.py:1445
+#: src/dock.in:1444
 msgid "Dock Preferences"
 msgstr "დოკის მორგება"
 
-#: src/dock.py:1448
+#: src/dock.in:1447
 msgid "Create custo_m launcher for this app"
 msgstr "_მორგებული გამშვების შექმნა ამ აპისთვის"
 
-#: src/dock.py:1448
+#: src/dock.in:1447
 msgid "Create custom launcher for this app"
 msgstr "მორგებული გამშვების შექმნა ამ აპისთვის"
 
-#: src/dock.py:1451
+#: src/dock.in:1450
 msgid "About..."
 msgstr "შესახებ..."
 
-#: src/dock.py:1454
+#: src/dock.in:1453
 msgid "_Close"
 msgstr "და_ხურვა"
 
-#: src/dock.py:1454 src/dock_about.py:63 src/dock_color_changer.py:316
-#: src/dock_info.py:70
+#: src/dock.in:1453 src/dock_about.in:56 src/dock_info.in:63
 msgid "Close"
 msgstr "დახურვა"
 
-#: src/dock.py:1474
+#: src/dock.in:1465
 msgid "Pin"
 msgstr "მიმაგრება"
 
-#: src/dock.py:1475
+#: src/dock.in:1466
 msgid "Unpin"
 msgstr "მოხსნა"
 
-#: src/dock.py:1477 src/dock_prefs.py:123
+#: src/dock.in:1468 src/dock_prefs.in:116
 msgid "Preferences"
 msgstr "მორგება"
 
-#: src/dock.py:1478
+#: src/dock.in:1469
 msgid "Create custom launcher"
 msgstr "მორგებული გამშვების შექმნა"
 
-#: src/dock.py:1479
+#: src/dock.in:1470
 msgid "About"
 msgstr "შესახებ"
 
-#: src/dock.py:1614
-#, python-format
+#: src/dock.in:1620
+#, c-format
 msgid "%s unpinned"
 msgstr "%s მოხსნილია"
 
-#: src/dock.py:1616
+#: src/dock.in:1622
 msgid "Undo"
 msgstr "გაუქმება"
 
-#: src/dock.py:1654
-#, python-format
+#: src/dock.in:1660
+#, c-format
 msgid "%s re-pinned"
 msgstr "%s თავიდან ამაგრებულია"
 
-#: src/dock.py:2175
+#: src/dock.in:2184
 msgid "The name of the launcher has not been set"
 msgstr "გამშვების სახელი დაყენებული არაა"
 
-#: src/dock.py:2177
+#: src/dock.in:2186
 msgid "The command of the launcher has not been set"
 msgstr "გამშვებისთვის ბრძანება დაყენებული არაა"
 
-#: src/dock.py:2179
+#: src/dock.in:2188
 msgid "The icon of the launcher has not been set"
 msgstr "გამშვებისთვის ხატულა დაყენებული არაა"
 
-#: src/dock.py:2188
+#: src/dock.in:2197
 msgid "Cannot create launcher"
 msgstr "გამშვების შექმნა შეუძლებელია"
 
-#: src/dock_about.py:58
+#: src/dock_about.in:51
 msgid "About Dock Applet"
 msgstr "დოკის აპლეტის შესახებ"
 
-#: src/dock_about.py:65
+#: src/dock_about.in:58
 msgid "Hints & Tips"
 msgstr "მინიშნებები"
 
-#: src/dock_about.py:67
+#: src/dock_about.in:60
 msgid "License"
 msgstr "ლიცენზია"
 
-#: src/dock_about.py:121
+#: src/dock_about.in:100
 msgid "MATE Dock Applet"
 msgstr "MATE-ის დოკის აპლეტი"
 
-#: src/dock_about.py:131
+#: src/dock_about.in:110
 msgid ""
 "MATE Dock Applet is free software; you can redistribute it and/or modify it "
-"under the terms of the GNU General Public Licence as published by the Free "
-"Software Foundation; either version 3 of the Licence, or (at your option) "
-"any later version. \n"
-"\n"
-"MATE Dock Applet is distributed in the hope that it will be useful, but "
-"WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY "
-"or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public Licence for "
-"more details.\n"
-"\n"
-"You should have received a copy of the GNU General Public Licence along with "
-"the applet; if not, write to the Free Software Foundation, Inc., 51 Franklin "
-"St, Fifth Floor, Boston, MA 02110-1301 USA\n"
 msgstr ""
-"MATE Dock Applet is free software; you can redistribute it and/or modify it "
-"under the terms of the GNU General Public Licence as published by the Free "
-"Software Foundation; either version 3 of the Licence, or (at your option) "
-"any later version. \n"
-"\n"
-"MATE Dock Applet is distributed in the hope that it will be useful, but "
-"WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY "
-"or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public Licence for "
-"more details.\n"
-"\n"
-"You should have received a copy of the GNU General Public Licence along with "
-"the applet; if not, write to the Free Software Foundation, Inc., 51 Franklin "
-"St, Fifth Floor, Boston, MA 02110-1301 USA\n"
 
-#: src/dock_about.py:151
+#: src/dock_about.in:130
 msgid "A dock applet for the MATE desktop"
 msgstr "დოკის აპლეტი სამუშაო მაგიდისთვის MATE"
 
-#: src/dock_about.py:153
+#: src/dock_about.in:132
 msgid "This program comes with ABSOLUTELY NO WARRANTY"
 msgstr "პროგრამას ყოველგვარი გარანტიების გარეშე იღებთ"
 
-#: src/dock_about.py:154
+#: src/dock_about.in:133
 msgid "and is distributed under the GNU General"
 msgstr "and is distributed under the GNU General"
 
-#: src/dock_about.py:155
+#: src/dock_about.in:134
 msgid "Public License, version 3 or later"
 msgstr "Public License, version 3 or later"
 
-#: src/dock_about.py:164
+#: src/dock_about.in:140
 msgid "For details click"
 msgstr "დეტალებისთვის დააწკაპუნეთ"
 
-#: src/dock_about.py:167
+#: src/dock_about.in:143
 msgid "here"
 msgstr "აქ"
 
-#: src/dock_about.py:225
+#: src/dock_about.in:197
 msgid "Drag and drop data between applications"
 msgstr "გადაათრიეთ და დააგდეთ მონაცემები აპლიკაციებს შორის"
 
-#: src/dock_about.py:227
-msgid ""
-"To easily drag and drop data from one application to another, drag the data "
-"from the first application onto the dock icon of the second application. The "
-"dock will activate the second application's window, allowing the data to be "
-"dragged onto it. Note: the second application must already be running."
-msgstr ""
-"იმისათვის, რომ მონაცემები ადვილად გადაიტანოთ ერთი აპლიკაციიდან მეორეში, "
-"გადაათრიეთ მონაცემები პირველი აპლიკაციიდან მეორე აპლიკაციის დოკის ხატულაზე. "
-"დოკი გაააქტიურებს მეორე აპლიკაციის ფანჯარას და საშუალებას მოგცემთ, "
-"მონაცემები ზედ დაყაროთ. შენიშვნა: მეორე აპლიკაცია უკვე გაშვებული უნდა იყოს."
+#: src/dock_about.in:199
+#, fuzzy
+msgid "To easily drag and drop data from one application "
+msgstr "გადაათრიეთ და დააგდეთ მონაცემები აპლიკაციებს შორის"
 
-#: src/dock_about.py:234
+#: src/dock_about.in:206
 msgid "Adding new applications to the dock"
 msgstr "ახალი აპლიკაციების დამატება დოკზე"
 
-#: src/dock_about.py:236
-msgid ""
-"Applications can be dragged and dropped from any menu applet (i.e. the Main "
-"Menu, Menu Bar, Advanced Menu, or Brisk Menu) directly onto the dock."
+#: src/dock_about.in:208
+msgid "Applications can be dragged and dropped from any menu "
 msgstr ""
-"აპლიკაციის გადათრევა და დაგდება ნებისმიერი მენიუდან (ანუ: მთავარი მენიუდან, "
-"მენიუს ზოლიდან, დამატებითი მენიუდან, სწრაფი მენიუდან), პირდაპირ დოკზე "
-"შეგიძლიათ."
 
-#: src/dock_about.py:242
+#: src/dock_about.in:214
 msgid "Activating apps with keyboard shortcuts"
 msgstr "აპების გააქტიურება კლავიატურის მალსახმობებით"
 
-#: src/dock_about.py:244
-msgid ""
-"Holding down the <Super> (i.e. Windows) key and pressing a number key will "
-"activate an app in the dock. For example, pressing 1 will activate the first "
-"app, 2 the second etc. Pressing 0 will activate the tenth app. To activate "
-"apps 11 to 20, hold down the <Alt> key as well as <Super>."
+#: src/dock_about.in:216
+msgid "Holding down the <Super> (i.e. Windows) key and pressing "
 msgstr ""
-"<Super> (მაგ: Windows-ის) ღილაკზე დაჭერა და ციფრის ღილაკის დაჭერა დოკში "
-"არსებულ აპლიკაციას გაააქტიურებს. მაგალითად, ღილაკი 1 გაააქტიურებს პირველ "
-"აპს, 2 მეორეს და ა.შ. 0 გაააქტიურებს მეათე აპს. 11-დან 20-ე აპების "
-"გასახსნელად <Super>-თან ერთად გეჭიროთ ღილაკზე <Alt>."
 
-#: src/dock_about.py:252
+#: src/dock_about.in:224
 msgid "Opening a new instance of a running application"
 msgstr "გაშვებული აპლიკაციის ახალი გაშვებული ასლის გახსნა"
 
-#: src/dock_about.py:254 src/dock_info.py:123
-msgid ""
-"To quickly open a new instance of a running application either hold down the "
-"<shift> key while clicking the application's dock icon, or middle click on "
-"the icon.\n"
-"\n"
-"Note: this works for most, but not all, apps."
-msgstr ""
-"იმისათვის, რომ გაუშვათ უკვე გაშვებული აპლიკაციის კიდევ ერთი ასლი, ან გეჭიროთ "
-"ღილაკზე <shift> დოკზე აპლიკაციის ხატულაზე დაწკაპუნებისას, ან დააწკაპუნეთ "
-"აპლიკაციის ხატულაზე თაგუნას შუა ღილაკით.\n"
-"\n"
-"შენიშვნა: ეს აპების უმეტესობაზე მუშაობს, თუმცა არა ყველაზე."
+#: src/dock_about.in:226 src/dock_info.in:110
+#, fuzzy
+msgid "To quickly open a new instance of a running "
+msgstr "გაშვებული აპლიკაციის ახალი გაშვებული ასლის გახსნა"
 
-#: src/dock_about.py:261 src/dock_info.py:129
+#: src/dock_about.in:233 src/dock_info.in:116
 msgid "Window switching using the mouse wheel"
 msgstr "ფანჯრების გადართვა თაგუნას ბორბლით"
 
-#: src/dock_about.py:264 src/dock_info.py:132
-msgid ""
-"To quickly switch between an application's open windows, move the mouse "
-"cursor over the apps's dock icon and use the mouse scroll wheel. This will "
-"activate and display each window in turn, changing workspaces as necessary."
+#: src/dock_about.in:236 src/dock_info.in:119
+msgid "To quickly switch between an application's open windows, move "
 msgstr ""
-"იმისათვის, რომ სწრაფად გადაერთოთ აპლიკაციის ღია ფანჯრებს შორის, გადაიტანეთ "
-"თაგუნას ღილაკი აპის დოკზე და გამოიყენეთ თაგუნას ბორბალი. ეს გაააქტიურებს და "
-"რიგრიგობით აჩვენებს აპის ყველა ფანჯარას და შეცვლის სამუშაო სივრცეს, თუ ეს "
-"საჭიროა."
 
-#: src/dock_about.py:271 src/dock_info.py:138
+#: src/dock_about.in:243 src/dock_info.in:125
 msgid "Panel colour changing"
 msgstr "პანელის ფერის ცვლილება"
 
-#: src/dock_about.py:273 src/dock_info.py:140
-msgid ""
-"When the applet sets the panel colour for the first time, the result may not "
-"look exactly as expected. This is because the default opacity of custom "
-"coloured MATE panels is set extremely low, so that the panel appears almost "
-"transparent.\n"
-"\n"
-"To remedy this, simply right click the panel, select Properties and adjust "
-"the panel opacity as required."
+#: src/dock_about.in:245 src/dock_info.in:127
+msgid "When the applet sets the panel colour for the "
 msgstr ""
-"როცა აპლეტი პირველად აყენებს პანელის ფერს, შედეგი, შეიძლება, ისეთი არ იყოს, "
-"როგორსაც მოელით. ეს იმიტომ ხდება, რომ ხელით გაფერადებული MATE-ის პანელების "
-"ნაგულისხმევი გაუმჭვირვალობა ძალიან მცირეა, ასე რომ, ეს პანელები თითქმის "
-"გამჭვირვალედაა ნაჩვენები.\n"
-"\n"
-"ამის თავიდან ასაცილებლად უბრალოდ დააწკაპუნეთ პანელზე მარჯვენა ღილაკით, "
-"აირჩიეთ თვისებები და გაასწორეთ პანელის გაუმჭვირვალობა სურვილის მიხედვით."
 
-#: src/dock_color_changer.py:314
-msgid "Dock color changer test"
-msgstr "დოკის ფერის შემცვლელის შემოწმება"
-
-#: src/dock_color_changer.py:343 src/dock_color_changer.py:372
-msgid "red:"
-msgstr "წითელი:"
-
-#: src/dock_color_changer.py:344 src/dock_color_changer.py:373
-msgid "green:"
-msgstr "მწვანე:"
-
-#: src/dock_color_changer.py:345 src/dock_color_changer.py:374
-msgid "blue:"
-msgstr "ლურჯი:"
-
-#: src/dock_custom_launcher.py:79
+#: src/dock_custom_launcher.in:72
 msgid "Create Launcher"
 msgstr "გამშვების შექმნა"
 
-#: src/dock_custom_launcher.py:101
+#: src/dock_custom_launcher.in:90
 msgid "Help"
 msgstr "დახმარება"
 
-#: src/dock_custom_launcher.py:104 src/dock_prefs.py:157
+#: src/dock_custom_launcher.in:93 src/dock_prefs.in:144
 msgid "Cancel"
 msgstr "გაუქმება"
 
-#: src/dock_custom_launcher.py:107 src/dock_prefs.py:161
+#: src/dock_custom_launcher.in:96 src/dock_prefs.in:148
 msgid "Ok"
 msgstr "დიახ"
 
-#: src/dock_custom_launcher.py:141
+#: src/dock_custom_launcher.in:123
 msgid "Click to select an icon"
 msgstr "დააწკაპუნეთ ხატულას ასარჩევად"
 
-#: src/dock_custom_launcher.py:163
+#: src/dock_custom_launcher.in:138
 msgid "Name:"
 msgstr "სახელი:"
 
-#: src/dock_custom_launcher.py:178
+#: src/dock_custom_launcher.in:150
 msgid "Command:"
 msgstr "ბრძანება:"
 
-#: src/dock_custom_launcher.py:183
+#: src/dock_custom_launcher.in:155
 msgid "Browse..."
 msgstr "პოვნა..."
 
-#: src/dock_custom_launcher.py:190
+#: src/dock_custom_launcher.in:162
 msgid "Run in terminal:"
 msgstr "ტერმინალში გაშვება:"
 
-#: src/dock_custom_launcher.py:198
+#: src/dock_custom_launcher.in:170
 msgid "Comment:"
 msgstr "კომენტარი:"
 
-#: src/dock_custom_launcher.py:204
+#: src/dock_custom_launcher.in:176
 msgid "Window Class"
 msgstr "ფანჯრის კლასი"
 
-#: src/dock_custom_launcher.py:337 src/dock_custom_launcher.py:387
+#: src/dock_custom_launcher.in:258 src/dock_custom_launcher.in:308
 msgid "Choose an application..."
 msgstr "აირჩიეთ აპლიკაცია..."
 
-#: src/dock_custom_launcher.py:391
+#: src/dock_custom_launcher.in:312
 msgid "Image files"
 msgstr "გამოსახულების ფაილები"
 
-#: src/dock_custom_launcher.py:502
+#: src/dock_custom_launcher.in:423
 msgid "Custom Launchers"
 msgstr "მორგებული გამშვებები"
 
-#: src/dock_custom_launcher.py:503
+#: src/dock_custom_launcher.in:424
 msgid ""
 "Custom launchers are an advanced feature meant to be used only with apps "
-"that the dock does not recognise (i.e. they display the wrong name or "
-"icon). \n"
-"\n"
-"Normally, this will only happen when the apps have been installed to a non "
-"standard location within the file system, so for the vast majority of apps "
-"this feature is not needed.\n"
-"\n"
-"Note: if an app is running when a custom launcher is created for it, the app "
-"will need to be closed and restarted for the dock to recognise it."
 msgstr ""
-"მორგებული გამშვებები დამატებითი ფუნქციაა, რომელიც განკუთვნილია, მხოლოდ, იმ "
-"აპებთან ერთად გამოსაყენებლად, რომლებსაც დოკი ვერ სცნობს (ანუ, ისინი არასწორ "
-"სახელს, ან ხატულას აჩვენებენ).\n"
-"\n"
-"ჩვეულებრივ, ეს, მხოლოდ, მაშინ ხდება, როცა აპები არასტანდარტულ ადგილასაა "
-"დაყენებული ფაილურ სისტემაში. ასე რომ, აპლიკაციის უმრავლესობისთვის ეგ ფუნქცია "
-"საჭირო არაა.\n"
-"\n"
-"სენისვნა: თუ აპი გაშვებული იყო მაშინ, როცა მისთვის მორგებული გამშვები "
-"შეიქმნა, იმისთვის რომ დოკმა ის იცნოს, აპლიკაციას დახურვა და თავიდან გახსნაა "
-"საჭირო."
 
-#: src/dock_info.py:66
+#: src/dock_info.in:59
 msgid "Dock Applet hints, tips, and information"
 msgstr "დოკის აპლეტის მინიშნებები და ინფორმაცია"
 
-#: src/dock_info.py:149
+#: src/dock_info.in:136
 msgid ""
 "Click the 'Hints & Tips' button on the applet 'About' dialog box to see this "
 "information again."
@@ -467,170 +355,168 @@ msgstr ""
 "დააწკაპუნეთ ღილაკზე 'მინიშნებები' აპლეტზე 'შესახებ', რომ ეს ინფორმაცია ისევ "
 "იხილოთ."
 
-#: src/dock_prefs.py:185
+#: src/dock_prefs.in:165
 msgid "Theme"
 msgstr "თემა"
 
-#: src/dock_prefs.py:191 src/dock_prefs.py:1024 src/dock_prefs.py:1041
+#: src/dock_prefs.in:172 src/dock_prefs.in:911 src/dock_prefs.in:928
 msgid "Default"
 msgstr "ნაგულისხმევი"
 
-#: src/dock_prefs.py:191 src/dock_prefs.py:255 src/dock_prefs.py:995
-#: src/dock_prefs.py:1011 src/dock_prefs.py:1026 src/dock_prefs.py:1043
+#: src/dock_prefs.in:172 src/dock_prefs.in:227 src/dock_prefs.in:882
+#: src/dock_prefs.in:898 src/dock_prefs.in:913 src/dock_prefs.in:930
 msgid "Unity"
 msgstr "Unity"
 
-#: src/dock_prefs.py:191 src/dock_prefs.py:255 src/dock_prefs.py:997
-#: src/dock_prefs.py:1028 src/dock_prefs.py:1045
+#: src/dock_prefs.in:172 src/dock_prefs.in:227 src/dock_prefs.in:884
+#: src/dock_prefs.in:915 src/dock_prefs.in:932
 msgid "Unity Flat"
 msgstr "Unity Flat"
 
-#: src/dock_prefs.py:191 src/dock_prefs.py:200 src/dock_prefs.py:936
-#: src/dock_prefs.py:969 src/dock_prefs.py:1030 src/dock_prefs.py:1047
+#: src/dock_prefs.in:172 src/dock_prefs.in:181 src/dock_prefs.in:823
+#: src/dock_prefs.in:856 src/dock_prefs.in:917 src/dock_prefs.in:934
 msgid "Subway"
 msgstr "მიწისქვეშა გადასასვლელი"
 
-#: src/dock_prefs.py:191 src/dock_prefs.py:1032
+#: src/dock_prefs.in:172 src/dock_prefs.in:919
 msgid "Custom"
 msgstr "ხელით"
 
-#: src/dock_prefs.py:197
+#: src/dock_prefs.in:178
 msgid "Indicator Type"
 msgstr "მაჩვენებლის ტიპი"
 
-#: src/dock_prefs.py:198 src/dock_prefs.py:922 src/dock_prefs.py:948
+#: src/dock_prefs.in:179 src/dock_prefs.in:809 src/dock_prefs.in:835
 msgid "Default light"
 msgstr "ნაგულისხმევი ღია"
 
-#: src/dock_prefs.py:198 src/dock_prefs.py:924 src/dock_prefs.py:951
+#: src/dock_prefs.in:179 src/dock_prefs.in:811 src/dock_prefs.in:838
 msgid "Default dark"
 msgstr "ნაგულისხმევი მუქი"
 
-#: src/dock_prefs.py:198 src/dock_prefs.py:926 src/dock_prefs.py:954
+#: src/dock_prefs.in:179 src/dock_prefs.in:813 src/dock_prefs.in:841
 msgid "Single bar"
 msgstr "ერთი პანელი"
 
-#: src/dock_prefs.py:199 src/dock_prefs.py:928 src/dock_prefs.py:957
+#: src/dock_prefs.in:180 src/dock_prefs.in:815 src/dock_prefs.in:844
 msgid "Circle"
 msgstr "წრე"
 
-#: src/dock_prefs.py:199 src/dock_prefs.py:930 src/dock_prefs.py:960
+#: src/dock_prefs.in:180 src/dock_prefs.in:817 src/dock_prefs.in:847
 msgid "Square"
 msgstr "კვადრატი"
 
-#: src/dock_prefs.py:199 src/dock_prefs.py:932 src/dock_prefs.py:963
+#: src/dock_prefs.in:180 src/dock_prefs.in:819 src/dock_prefs.in:850
 msgid "Triangle"
 msgstr "სამკუთხედი"
 
-#: src/dock_prefs.py:199 src/dock_prefs.py:934 src/dock_prefs.py:966
+#: src/dock_prefs.in:180 src/dock_prefs.in:821 src/dock_prefs.in:853
 msgid "Diamond"
 msgstr "ალმასი"
 
-#: src/dock_prefs.py:200 src/dock_prefs.py:972
+#: src/dock_prefs.in:181 src/dock_prefs.in:859
 msgid "None"
 msgstr "არცერთი"
 
-#: src/dock_prefs.py:204
+#: src/dock_prefs.in:185
 msgid "Preview"
 msgstr "მინიატურა"
 
-#: src/dock_prefs.py:229
+#: src/dock_prefs.in:209
 msgid "Display an indicator for each open window"
 msgstr "მაჩვენებლის ჩვენება თითოეული ღია ფანჯრისტვის"
 
-#: src/dock_prefs.py:230
+#: src/dock_prefs.in:210
 msgid "Display an indicator (max 4) for each open window"
 msgstr "მაჩვენებლის (მაქს. 4) ჩვენება თითოეული ღია ფანჯრისთვის"
 
-#: src/dock_prefs.py:254
+#: src/dock_prefs.in:226
 msgid "Icon Background"
 msgstr "ხატულას ფონი"
 
-#: src/dock_prefs.py:255 src/dock_prefs.py:991 src/dock_prefs.py:1007
+#: src/dock_prefs.in:227 src/dock_prefs.in:878 src/dock_prefs.in:894
 msgid "Gradient fill"
 msgstr "შევსება გრადიენტით"
 
-#: src/dock_prefs.py:255 src/dock_prefs.py:993 src/dock_prefs.py:1009
+#: src/dock_prefs.in:227 src/dock_prefs.in:880 src/dock_prefs.in:896
 msgid "Solid fill"
 msgstr "მყარი შევსება"
 
-#: src/dock_prefs.py:292
+#: src/dock_prefs.in:247
 msgid "Pinned application dock icons"
 msgstr "ამაგრებული აპლიკაციის დოკის ხატულები"
 
-#: src/dock_prefs.py:293
+#: src/dock_prefs.in:248
 msgid "Display on all workspaces"
 msgstr "ჩვენება ყველა სამუშაო სივრცეზე"
 
-#: src/dock_prefs.py:294
+#: src/dock_prefs.in:249
 msgid "Display only on the workspace the app was pinned"
 msgstr "ჩვენება, მხოლოდ, სამუშაო სივრცეში, სადაც აპი ამაგრებულია"
 
-#: src/dock_prefs.py:325
+#: src/dock_prefs.in:268
 msgid "Unpinned application dock icons"
 msgstr "ჩამოხსნილი აპლიკაციის დოკის ხატულები"
 
-#: src/dock_prefs.py:326
+#: src/dock_prefs.in:269
 msgid "Display unpinned apps from all workspaces"
 msgstr "ყველა სამუშაო სივრციდან ჩამოხსნილი აპების ჩვენება"
 
-#: src/dock_prefs.py:328
+#: src/dock_prefs.in:271
 msgid "Display unpinned apps only from current workspace"
 msgstr "ჩამოხსნილი აპების, მხოლოდ, მიმდინარე სამუშაო სივრციდან ჩვენება"
 
-#: src/dock_prefs.py:358
+#: src/dock_prefs.in:289
 msgid "Display indicators/window list items for current workspace only"
 msgstr ""
 "მაჩვენებლების/ფანჯრის სიის ელემენტების ჩვენება, მხოლოდ, მიმდინარე სამუშაო "
 "სივრცისთვის"
 
-#: src/dock_prefs.py:371
+#: src/dock_prefs.in:302
+#, fuzzy
 msgid ""
 "Note: when displaying pinned apps only on the workspace where they were "
-"created, it is a good idea to also select the 'Display unpinned apps' and "
-"'Display indicators/window list' items for the current workspace only "
-"options."
-msgstr ""
-"შენიშვნა: მიმაგრებული აპების ჩვენებისას, მხოლოდ, იმ სამუშაო სივრცეში, სადაც "
-"ისინი შეიქმნა, კარგი იდეაა, რომ ასევე ჩართოთ 'ჩამოხსნილი აპების ჩვენება' და "
-"' მაჩვენებლების/ფანჯრების სიის ჩვენება', მხოლოდ, მიმდინარე სამუშაო სივრცის "
-"პარამეტრებში."
+msgstr "ჩამოხსნილი აპების, მხოლოდ, მიმდინარე სამუშაო სივრციდან ჩვენება"
 
-#: src/dock_prefs.py:383
+#: src/dock_prefs.in:314
 msgid "Left clicking a running app's icon will:"
 msgstr "ქმედება გაშვებული აპლიკაციის ხატულაზე მარცხენა წკაპისას:"
 
-#: src/dock_prefs.py:384
+#: src/dock_prefs.in:315
 msgid "Display a list of the app's windows"
 msgstr "აპის ფანჯრების სიის ჩვენება"
 
-#: src/dock_prefs.py:386
+#: src/dock_prefs.in:317
 msgid "Show thumbnail previews of the app's windows"
 msgstr "აპლიკაციის ფანჯრების მინიატურის გადახედვების ჩვენება"
 
-#: src/dock_prefs.py:388
+#: src/dock_prefs.in:319
 msgid "Minimize/restore all of the app's windows"
 msgstr "აპლიკაციის ყველა ფანჯრის ჩაკეცვა/აღდგენა"
 
-#: src/dock_prefs.py:407
-msgid ""
-"Disable popup action list and show app actions\n"
-"on panel right click menu only"
+#: src/dock_prefs.in:338
+msgid "Disable popup action list "
 msgstr ""
-"მხტუნარას ქმედებების სიის გამორთვა და აპების ქმედებების,\n"
-"მხოლოდ, პანელის მარჯვენა წკაპის მენიუში ჩვენება"
 
-#: src/dock_prefs.py:411
+#: src/dock_prefs.in:342
 msgid "Unity-style behaviour (always focus app on first click)"
 msgstr "Unity-ის სტილის ქცევა (აპი ფოკუსს პირველ წკაპზე იღებს)"
 
-#: src/dock_prefs.py:421
+#: src/dock_prefs.in:344
+msgid "Enable keyboard shortcuts (Super+N) to activate apps"
+msgstr ""
+
+#: src/dock_prefs.in:345
+msgid ""
+"Enable Super+1 through Super+0 keyboard shortcuts to activate docked apps"
+msgstr ""
+
+#: src/dock_prefs.in:355
+#, fuzzy
 msgid ""
 "\n"
 "Notes:\n"
 "If an app has only a single window open, a window list will not be "
-"displayed. Instead the window will be minimized/restored.\n"
-"Window thumbnail previews require Compiz"
 msgstr ""
 "\n"
 "შენიშვნები:\n"
@@ -638,90 +524,245 @@ msgstr ""
 "ამის მაგიერ მოხდება ფანჯრის ჩაკეცვა/აღდგენა.\n"
 "ფანჯრის მინიატურის გადახედვას Compiz სჭირდება"
 
-#: src/dock_prefs.py:439
+#: src/dock_prefs.in:376
 msgid "App spacing"
 msgstr "აპების დაშორება"
 
-#: src/dock_prefs.py:457
+#: src/dock_prefs.in:392
 msgid "Panel colour"
 msgstr "პანელის ფერი"
 
-#: src/dock_prefs.py:458
+#: src/dock_prefs.in:393
 msgid "Change panel colour to match wallpaper"
 msgstr "პანელის ფერის ისე შეცვლა, რომ ფონის სურათს ემთხვეოდეს"
 
-#: src/dock_prefs.py:460
+#: src/dock_prefs.in:395
 msgid "Change colour of dock's panel only"
 msgstr "მხოლოდ, დოკის პანელის ფერის შეცვლა"
 
-#: src/dock_prefs.py:493
+#: src/dock_prefs.in:414
 msgid "Dock size"
 msgstr "დოკის ზომა"
 
-#: src/dock_prefs.py:494
+#: src/dock_prefs.in:415
 msgid "Variable - expand or contract as necessary"
 msgstr "ცვლადი - გააფართოვეთ, ან შეამცირეთ საჭიროებისამებრ"
 
-#: src/dock_prefs.py:496
+#: src/dock_prefs.in:417
 msgid "Fixed"
 msgstr "ფიქსირებული"
 
-#: src/dock_prefs.py:498
+#: src/dock_prefs.in:419
 msgid "Display up to "
 msgstr "ჩვენება მაქს "
 
-#: src/dock_prefs.py:506
+#: src/dock_prefs.in:427
 msgid " app icons"
 msgstr " აპის ხატულები"
 
-#: src/dock_prefs.py:539
+#: src/dock_prefs.in:461
 msgid "Fallback bar indicator colour"
 msgstr "ზოლის მაჩვენებლის ფერის გადართვა"
 
-#: src/dock_prefs.py:540
+#: src/dock_prefs.in:462
 msgid "Colour"
 msgstr "ფერი"
 
-#: src/dock_prefs.py:542
-msgid ""
-"Colour used for drawing bar indicators when theme colour cannot be "
-"determined or when using Gtk2"
+#: src/dock_prefs.in:464
+#, fuzzy
+msgid "Colour used for drawing bar indicators when theme colour "
 msgstr ""
 "ფერი, რომელიც გამოიყენება პანელის მაჩვენებლების დასახატად, როცა თემის ფერის "
 "დადგენა შეუძლებელია, ან გამოიყენება Gtk2"
 
-#: src/dock_prefs.py:554
+#: src/dock_prefs.in:476
 msgid "Action when apps need attention"
 msgstr "ქმედება, როცა აპს ყურადღება სჭირდება"
 
-#: src/dock_prefs.py:555
+#: src/dock_prefs.in:477
 msgid "Blink the app icon"
 msgstr "აპის ხატულას გაციმციმება"
 
-#: src/dock_prefs.py:556
+#: src/dock_prefs.in:478
 msgid "Show a badge on the app icon"
 msgstr "სამკერდე ნიშნის ჩვენება აპის ხატულაზე"
 
-#: src/dock_prefs.py:589
+#: src/dock_prefs.in:498
 msgid "Popup Delay(s)"
 msgstr "მხტუნარას დაყოვნება"
 
-#: src/dock_prefs.py:616
+#: src/dock_prefs.in:523
 msgid "Appearance"
 msgstr "გარეგნობა"
 
-#: src/dock_prefs.py:617
+#: src/dock_prefs.in:524
 msgid "Workspaces"
 msgstr "სამუშაო სივრცეები"
 
-#: src/dock_prefs.py:618
+#: src/dock_prefs.in:525
 msgid "Behaviour"
 msgstr "ქცევა"
 
-#: src/dock_prefs.py:620
+#: src/dock_prefs.in:527
 msgid "Panel Options"
 msgstr "პანელის მორგება"
 
-#: src/dock_prefs.py:621
+#: src/dock_prefs.in:528
 msgid "Misc"
 msgstr "სხვადასხვა"
+
+#~ msgid ""
+#~ "MATE Dock Applet is free software; you can redistribute it and/or modify "
+#~ "it under the terms of the GNU General Public Licence as published by the "
+#~ "Free Software Foundation; either version 3 of the Licence, or (at your "
+#~ "option) any later version. \n"
+#~ "\n"
+#~ "MATE Dock Applet is distributed in the hope that it will be useful, but "
+#~ "WITHOUT ANY WARRANTY; without even the implied warranty of "
+#~ "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General "
+#~ "Public Licence for more details.\n"
+#~ "\n"
+#~ "You should have received a copy of the GNU General Public Licence along "
+#~ "with the applet; if not, write to the Free Software Foundation, Inc., 51 "
+#~ "Franklin St, Fifth Floor, Boston, MA 02110-1301 USA\n"
+#~ msgstr ""
+#~ "MATE Dock Applet is free software; you can redistribute it and/or modify "
+#~ "it under the terms of the GNU General Public Licence as published by the "
+#~ "Free Software Foundation; either version 3 of the Licence, or (at your "
+#~ "option) any later version. \n"
+#~ "\n"
+#~ "MATE Dock Applet is distributed in the hope that it will be useful, but "
+#~ "WITHOUT ANY WARRANTY; without even the implied warranty of "
+#~ "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General "
+#~ "Public Licence for more details.\n"
+#~ "\n"
+#~ "You should have received a copy of the GNU General Public Licence along "
+#~ "with the applet; if not, write to the Free Software Foundation, Inc., 51 "
+#~ "Franklin St, Fifth Floor, Boston, MA 02110-1301 USA\n"
+
+#~ msgid ""
+#~ "To easily drag and drop data from one application to another, drag the "
+#~ "data from the first application onto the dock icon of the second "
+#~ "application. The dock will activate the second application's window, "
+#~ "allowing the data to be dragged onto it. Note: the second application "
+#~ "must already be running."
+#~ msgstr ""
+#~ "იმისათვის, რომ მონაცემები ადვილად გადაიტანოთ ერთი აპლიკაციიდან მეორეში, "
+#~ "გადაათრიეთ მონაცემები პირველი აპლიკაციიდან მეორე აპლიკაციის დოკის "
+#~ "ხატულაზე. დოკი გაააქტიურებს მეორე აპლიკაციის ფანჯარას და საშუალებას "
+#~ "მოგცემთ, მონაცემები ზედ დაყაროთ. შენიშვნა: მეორე აპლიკაცია უკვე გაშვებული "
+#~ "უნდა იყოს."
+
+#~ msgid ""
+#~ "Applications can be dragged and dropped from any menu applet (i.e. the "
+#~ "Main Menu, Menu Bar, Advanced Menu, or Brisk Menu) directly onto the dock."
+#~ msgstr ""
+#~ "აპლიკაციის გადათრევა და დაგდება ნებისმიერი მენიუდან (ანუ: მთავარი "
+#~ "მენიუდან, მენიუს ზოლიდან, დამატებითი მენიუდან, სწრაფი მენიუდან), პირდაპირ "
+#~ "დოკზე შეგიძლიათ."
+
+#~ msgid ""
+#~ "Holding down the <Super> (i.e. Windows) key and pressing a number key "
+#~ "will activate an app in the dock. For example, pressing 1 will activate "
+#~ "the first app, 2 the second etc. Pressing 0 will activate the tenth app. "
+#~ "To activate apps 11 to 20, hold down the <Alt> key as well as <Super>."
+#~ msgstr ""
+#~ "<Super> (მაგ: Windows-ის) ღილაკზე დაჭერა და ციფრის ღილაკის დაჭერა დოკში "
+#~ "არსებულ აპლიკაციას გაააქტიურებს. მაგალითად, ღილაკი 1 გაააქტიურებს პირველ "
+#~ "აპს, 2 მეორეს და ა.შ. 0 გაააქტიურებს მეათე აპს. 11-დან 20-ე აპების "
+#~ "გასახსნელად <Super>-თან ერთად გეჭიროთ ღილაკზე <Alt>."
+
+#~ msgid ""
+#~ "To quickly open a new instance of a running application either hold down "
+#~ "the <shift> key while clicking the application's dock icon, or middle "
+#~ "click on the icon.\n"
+#~ "\n"
+#~ "Note: this works for most, but not all, apps."
+#~ msgstr ""
+#~ "იმისათვის, რომ გაუშვათ უკვე გაშვებული აპლიკაციის კიდევ ერთი ასლი, ან "
+#~ "გეჭიროთ ღილაკზე <shift> დოკზე აპლიკაციის ხატულაზე დაწკაპუნებისას, ან "
+#~ "დააწკაპუნეთ აპლიკაციის ხატულაზე თაგუნას შუა ღილაკით.\n"
+#~ "\n"
+#~ "შენიშვნა: ეს აპების უმეტესობაზე მუშაობს, თუმცა არა ყველაზე."
+
+#~ msgid ""
+#~ "To quickly switch between an application's open windows, move the mouse "
+#~ "cursor over the apps's dock icon and use the mouse scroll wheel. This "
+#~ "will activate and display each window in turn, changing workspaces as "
+#~ "necessary."
+#~ msgstr ""
+#~ "იმისათვის, რომ სწრაფად გადაერთოთ აპლიკაციის ღია ფანჯრებს შორის, "
+#~ "გადაიტანეთ თაგუნას ღილაკი აპის დოკზე და გამოიყენეთ თაგუნას ბორბალი. ეს "
+#~ "გაააქტიურებს და რიგრიგობით აჩვენებს აპის ყველა ფანჯარას და შეცვლის "
+#~ "სამუშაო სივრცეს, თუ ეს საჭიროა."
+
+#~ msgid ""
+#~ "When the applet sets the panel colour for the first time, the result may "
+#~ "not look exactly as expected. This is because the default opacity of "
+#~ "custom coloured MATE panels is set extremely low, so that the panel "
+#~ "appears almost transparent.\n"
+#~ "\n"
+#~ "To remedy this, simply right click the panel, select Properties and "
+#~ "adjust the panel opacity as required."
+#~ msgstr ""
+#~ "როცა აპლეტი პირველად აყენებს პანელის ფერს, შედეგი, შეიძლება, ისეთი არ "
+#~ "იყოს, როგორსაც მოელით. ეს იმიტომ ხდება, რომ ხელით გაფერადებული MATE-ის "
+#~ "პანელების ნაგულისხმევი გაუმჭვირვალობა ძალიან მცირეა, ასე რომ, ეს პანელები "
+#~ "თითქმის გამჭვირვალედაა ნაჩვენები.\n"
+#~ "\n"
+#~ "ამის თავიდან ასაცილებლად უბრალოდ დააწკაპუნეთ პანელზე მარჯვენა ღილაკით, "
+#~ "აირჩიეთ თვისებები და გაასწორეთ პანელის გაუმჭვირვალობა სურვილის მიხედვით."
+
+#~ msgid "Dock color changer test"
+#~ msgstr "დოკის ფერის შემცვლელის შემოწმება"
+
+#~ msgid "red:"
+#~ msgstr "წითელი:"
+
+#~ msgid "green:"
+#~ msgstr "მწვანე:"
+
+#~ msgid "blue:"
+#~ msgstr "ლურჯი:"
+
+#~ msgid ""
+#~ "Custom launchers are an advanced feature meant to be used only with apps "
+#~ "that the dock does not recognise (i.e. they display the wrong name or "
+#~ "icon). \n"
+#~ "\n"
+#~ "Normally, this will only happen when the apps have been installed to a "
+#~ "non standard location within the file system, so for the vast majority of "
+#~ "apps this feature is not needed.\n"
+#~ "\n"
+#~ "Note: if an app is running when a custom launcher is created for it, the "
+#~ "app will need to be closed and restarted for the dock to recognise it."
+#~ msgstr ""
+#~ "მორგებული გამშვებები დამატებითი ფუნქციაა, რომელიც განკუთვნილია, მხოლოდ, "
+#~ "იმ აპებთან ერთად გამოსაყენებლად, რომლებსაც დოკი ვერ სცნობს (ანუ, ისინი "
+#~ "არასწორ სახელს, ან ხატულას აჩვენებენ).\n"
+#~ "\n"
+#~ "ჩვეულებრივ, ეს, მხოლოდ, მაშინ ხდება, როცა აპები არასტანდარტულ ადგილასაა "
+#~ "დაყენებული ფაილურ სისტემაში. ასე რომ, აპლიკაციის უმრავლესობისთვის ეგ "
+#~ "ფუნქცია საჭირო არაა.\n"
+#~ "\n"
+#~ "სენისვნა: თუ აპი გაშვებული იყო მაშინ, როცა მისთვის მორგებული გამშვები "
+#~ "შეიქმნა, იმისთვის რომ დოკმა ის იცნოს, აპლიკაციას დახურვა და თავიდან "
+#~ "გახსნაა საჭირო."
+
+#~ msgid ""
+#~ "Note: when displaying pinned apps only on the workspace where they were "
+#~ "created, it is a good idea to also select the 'Display unpinned apps' and "
+#~ "'Display indicators/window list' items for the current workspace only "
+#~ "options."
+#~ msgstr ""
+#~ "შენიშვნა: მიმაგრებული აპების ჩვენებისას, მხოლოდ, იმ სამუშაო სივრცეში, "
+#~ "სადაც ისინი შეიქმნა, კარგი იდეაა, რომ ასევე ჩართოთ 'ჩამოხსნილი აპების "
+#~ "ჩვენება' და ' მაჩვენებლების/ფანჯრების სიის ჩვენება', მხოლოდ, მიმდინარე "
+#~ "სამუშაო სივრცის პარამეტრებში."
+
+#~ msgid ""
+#~ "Disable popup action list and show app actions\n"
+#~ "on panel right click menu only"
+#~ msgstr ""
+#~ "მხტუნარას ქმედებების სიის გამორთვა და აპების ქმედებების,\n"
+#~ "მხოლოდ, პანელის მარჯვენა წკაპის მენიუში ჩვენება"
