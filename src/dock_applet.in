@@ -680,8 +680,6 @@ def applet_fill(applet):
     keybinder.start()
     the_dock.keybinder = keybinder
 
-    applet.set_background_widget(applet)  # hack for panel transparency
-
 
 def applet_factory(applet, iid, data):
     """Factory routine called when an applet needs to be created
@@ -712,12 +710,12 @@ class GlobalKeyBinding(GObject.GObject, threading.Thread):
     def __init__(self):
         GObject.GObject.__init__(self)
         threading.Thread.__init__(self)
-        self.setDaemon(True)
+        self.daemon = True
 
         self.display = Display()
         self.screen = self.display.screen()
         self.window = self.screen.root
-        self.keymap = Gdk.Keymap().get_default()
+        self.keymap = Gdk.Keymap.get_for_display(Gdk.Display.get_default())
         self.ignored_masks = self.get_mask_combinations(X.LockMask | X.Mod2Mask | X.Mod5Mask)
         self.map_modifiers()
         self.shortcuts = []
