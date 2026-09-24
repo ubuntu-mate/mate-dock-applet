@@ -1304,7 +1304,6 @@ class Dock(object):
 
         # if we have have no app, set all actions invisible and exit...
         panel_act_visible = self.panel_act_list and (app is not None)
-        popup_act_visible = (not self.panel_act_list) and (app is not None)
 
         # first, hide actions defined in the desktop file...
         act_no = 1
@@ -1316,8 +1315,6 @@ class Dock(object):
         # now do pin and unpin actions
         pin_action = self.dock_action_group.get_action("pin_action")
         unpin_action = self.dock_action_group.get_action("unpin_action")
-        popup_pin_action = self.popup_action_group.get_action("pin_action")
-        popup_unpin_action = self.popup_action_group.get_action("unpin_action")
 
         close_win_action = self.dock_action_group.get_action("close_win_action")
         close_win_action.set_visible(False)
@@ -1330,18 +1327,12 @@ class Dock(object):
             # with no app, nothing can be pinned or unpinned
             pin_action.set_visible(False)
             unpin_action.set_visible(False)
-            popup_pin_action.set_visible(False)
-            popup_unpin_action.set_visible(False)
             return
 
         # now setup the relevant actions panel/action list items
         act_no = 1
         while act_no <= self.max_num_actions:
-            if self.panel_act_list:
-
-                df_shortcut_action = self.dock_action_group.get_action("df_shortcut_%d_action" % act_no)
-            else:
-                df_shortcut_action = self.popup_action_group.get_action("df_shortcut_%d_action" % act_no)
+            df_shortcut_action = self.dock_action_group.get_action("df_shortcut_%d_action" % act_no)
 
             act_exists, act_name = app.get_rc_action(act_no)
             df_shortcut_action.set_visible(act_exists)
@@ -1355,18 +1346,12 @@ class Dock(object):
         if app.has_desktop_file():
             pin_action.set_visible(not app.is_pinned)
             unpin_action.set_visible(app.is_pinned)
-            popup_pin_action.set_visible(not app.is_pinned)
-            popup_unpin_action.set_visible(app.is_pinned)
         else:
             pin_action.set_visible(False)
             unpin_action.set_visible(False)
-            popup_pin_action.set_visible(False)
-            popup_unpin_action.set_visible(False)
 
         pin_action.set_label(_("Pin %s") % app.app_name)
         unpin_action.set_label(_("Unpin %s") % app.app_name)
-        popup_pin_action.set_label(_("Pin %s") % app.app_name)
-        popup_unpin_action.set_label(_("Unpin %s") % app.app_name)
 
         move_up_action = self.dock_action_group.get_action("move_up_action")
         move_down_action = self.dock_action_group.get_action("move_down_action")
@@ -1432,8 +1417,8 @@ class Dock(object):
         shortcut_action_no = 1
         while shortcut_action_no <= self.max_num_actions:
             the_action = self.dock_action_group.get_action("df_shortcut_%d_action" % shortcut_action_no)
+            the_action.connect("activate", self.df_shortcut_menu_handler, shortcut_action_no)
             shortcut_action_no += 1
-            the_action.connect("activate", self.df_shortcut_handler, shortcut_action_no)
 
         # add the rest of the actions to the dock
         self.dock_action_group.add_actions([
@@ -1488,26 +1473,41 @@ class Dock(object):
 
         # setup the action list items - pin/unpin options plus actions defined in the
         # desktop file.
-        self.popup_action_group = Gtk.ActionGroup("PopupActions")
-        self.popup_action_group.add_actions(shortcut_action_list)
-        # set the activate handler for each of the actions
+        self.popup_action_group = Gio.SimpleActionGroup()
+
         shortcut_action_no = 1
         while shortcut_action_no <= self.max_num_actions:
-            the_action = self.popup_action_group.get_action("df_shortcut_%d_action" % shortcut_action_no)
+            s_action = Gio.SimpleAction.new("df_shortcut_%d_action" % shortcut_action_no, None)
+            s_action.connect("activate", self.df_shortcut_handler, shortcut_action_no)
+            self.popup_action_group.add_action(s_action)
             shortcut_action_no += 1
-            the_action.connect("activate", self.df_shortcut_handler, shortcut_action_no)
 
-        self.popup_action_group.add_actions([
-                                            ("pin_action", Gtk.STOCK_ADD,
-                                             _("Pin app to the dock"), None, _("Pin app to the dock"),
-                                             self.pin_app),
-                                            ("unpin_action", Gtk.STOCK_REMOVE,
-                                             _("_Unpin app from the dock"), None, _("Unpin app from the dock"),
-                                             self.unpin_app)
-                                            ])
+        for popup_action_name, popup_handler in [("pin_action", self.pin_app),
+                                                 ("unpin_action", self.unpin_app)]:
+            p_action = Gio.SimpleAction.new(popup_action_name, None)
+            p_action.connect("activate", popup_handler)
+            self.popup_action_group.add_action(p_action)
 
-    def df_shortcut_handler(self, action, action_no):
+    def df_shortcut_handler(self, action, parameter, action_no):
         """ Perform one of the currently selected app's shortcut actions
+
+        This is the callback used by the popup action list
+
+        Params:
+            action    : the Gio.SimpleAction that was activated
+            parameter : the parameter for the action (unused)
+            action_no : the number of the action to perform
+        """
+
+        self.df_shortcut_menu_handler(action, action_no)
+
+    def df_shortcut_menu_handler(self, action, action_no):
+        """ Perform one of the currently selected app's shortcut actions
+
+        This is the callback used by the panel right click menu actions.
+        action_no is the 1-based position of the action in the app's
+        .desktop file, matching the label that was displayed - the docked
+        app itself subtracts 1 when indexing its action list
 
         Params:
             action    : the Gtk.Action that was activated
@@ -1524,7 +1524,7 @@ class Dock(object):
                 the_app = self.right_clicked_app
 
         if the_app is not None:
-            the_app.run_rc_action(action_no - 1)
+            the_app.run_rc_action(action_no)
 
     def update_pinned_app_config(self):
         """
@@ -3899,12 +3899,8 @@ class Dock(object):
 
         self.set_actions_for_app(self.app_with_mouse)
 
-        df_shortcut_1_action = self.popup_action_group.get_action("df_shortcut_1_action")
-        df_shortcut_2_action = self.popup_action_group.get_action("df_shortcut_2_action")
-        df_shortcut_3_action = self.popup_action_group.get_action("df_shortcut_3_action")
-        df_shortcut_4_action = self.popup_action_group.get_action("df_shortcut_4_action")
-        pin_action = self.popup_action_group.get_action("pin_action")
-        unpin_action = self.popup_action_group.get_action("unpin_action")
+        pin_action = self.popup_action_group.lookup_action("pin_action")
+        unpin_action = self.popup_action_group.lookup_action("unpin_action")
 
         # if we're scrolling we need to pass the current scroll position to the
         # action list
@@ -3931,11 +3927,15 @@ class Dock(object):
 
         shortcut_action_no = 1
         while shortcut_action_no <= self.max_num_actions:
-            df_shortcut_action = self.popup_action_group.get_action("df_shortcut_%d_action" % shortcut_action_no)
-            if df_shortcut_action.is_visible():
+            # right click actions are driven from the app's .desktop file.
+            # This adds an item for each one that exists, using the action name
+            # from the desktop file itself.
+            act_exists, act_name = highlighted_app.get_rc_action(shortcut_action_no)
+            if act_exists:
                 add_sep = True
-                self.app_act_list.add_to_list(df_shortcut_action.get_label(),
-                                              df_shortcut_action,
+                the_action = self.popup_action_group.lookup_action("df_shortcut_%d_action" % shortcut_action_no)
+                self.app_act_list.add_to_list(act_name,
+                                              the_action,
                                               True)
 
             shortcut_action_no += 1
@@ -3943,12 +3943,13 @@ class Dock(object):
         if add_sep:
             self.app_act_list.add_separator()
 
-        if pin_action.is_visible():
-            self.app_act_list.add_to_list(pin_action.get_label(),
-                                          pin_action, False)
-        if unpin_action.is_visible():
-            self.app_act_list.add_to_list(unpin_action.get_label(),
+        # the app is pinned or not so show the corresponding popup action
+        if highlighted_app.is_pinned:
+            self.app_act_list.add_to_list(_("Unpin app from the dock"),
                                           unpin_action, False)
+        else:
+            self.app_act_list.add_to_list(_("Pin app to the dock"),
+                                          pin_action, False)
 
         if self.app_act_list.get_num_rows() == 0:
             self.act_list_timer = None
