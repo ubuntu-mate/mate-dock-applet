@@ -95,7 +95,7 @@ class DockActionList(DockPopup):
 
         # the liststore needs to contain an icon, the action text, and the
         # action itself
-        self.__list_store = Gtk.ListStore(str, Gtk.Action, GdkPixbuf.Pixbuf)
+        self.__list_store = Gtk.ListStore(str, Gio.Action, GdkPixbuf.Pixbuf)
 
         self.__icon_renderer = Gtk.CellRendererPixbuf()
         self.__title_renderer = Gtk.CellRendererText()
@@ -205,7 +205,7 @@ class DockActionList(DockPopup):
         title = self.__list_store.get_value(sel_iter, 0)
         if action is not None:
             self.hide()
-            action.activate()
+            action.activate(None)
 
         return True
 
