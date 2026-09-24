@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential autoconf automake autopoint gettext \
+            pkg-config libglib2.0-dev \
+            python3-gi gir1.2-gtk-3.0 gir1.2-wnck-3.0 \
+            gir1.2-matepanelapplet-4.0 gir1.2-bamf-3 gir1.2-notify-0.7 \
+            python3-dbus python3-cairo python3-pil python3-xlib python3-xdg python3-distro
+
+      - name: autoreconf
+        run: autoreconf -fi
+
+      - name: configure
+        run: ./configure --prefix=/usr
+
+      - name: make
+        run: make -j"$(nproc)"
+
+      - name: make distcheck
+        run: make distcheck
+
+      - name: py_compile all generated modules
+        run: python3 -m py_compile src/*.py
+
+      - name: import smoke test
+        run: |
+          cd src
+          python3 -c '
+          mods = ["dock", "docked_app", "dock_prefs", "dock_about",
+                  "dock_custom_launcher", "dock_win_list", "dock_action_list",
+                  "dock_xml", "dock_color_changer", "dom_color", "dock_info",
+                  "dock_popup", "docked_app_helpers", "window_control"]
+          for m in mods:
+              __import__(m)
+          print("%d modules imported ok" % len(mods))
+          '
