@@ -4097,7 +4097,7 @@ class Dock(object):
         if self.app_act_list is not None:
             self.app_act_list.hide()
 
-    def minimize_or_restore_windows(self, app, restore_topmost_only=False):
+    def minimize_or_restore_windows(self, app, restore_topmost_only=False, event_time=None):
         """ Minimize or restore an app's windows
 
         the action to perform (minimizing, moving workspace, activating)
@@ -4118,8 +4118,12 @@ class Dock(object):
         Args:
             app: the docked app whose windows are to be minimized or restored
             restore_topmost_only: only the topmost window should be restored
+            event_time: the time of the event which triggered this call - if
+                        None, the time of the current GTK event is used
 
         """
+        if event_time is None:
+            event_time = Gtk.get_current_event_time()
 
         self.stop_act_list_timer()
         self.hide_win_list()
@@ -4149,7 +4153,7 @@ class Dock(object):
                     win_type = win.get_window_type()
                     if (win_type in [Bamf.WindowType.NORMAL, Bamf.WindowType.DIALOG] or
                         win.is_user_visible()) and (win != last_active_win):
-                        window_control.activate_win(win)
+                        window_control.activate_win(win, event_time)
 
             app.last_active_win = last_active_win
 
@@ -4167,17 +4171,14 @@ class Dock(object):
                     # https://bugs.launchpad.net/ubuntu-mate/+bug/1555336 (regarding software updater))
                     if wnck_aws is not None and wnck_ws is not None and \
                        (wnck_aws != wnck_ws):
-                        wnck_ws.activate(0)
+                        wnck_ws.activate(event_time)
 
             # rarely, the last active win does not end up as the active window
             # if we activate here, so instead a workaround which seems to do
             # the trick is use a timer as below
-            
-            # fix for #176, don't send the current event time to the activation
-            # timer
             if last_active_win is not None:
                 GObject.timeout_add(20, win_activation_timer,
-                                    [last_active_win, 0])
+                                    [last_active_win, event_time])
 
         else:
             # minimize all windows and do the last active window last of all
@@ -4194,11 +4195,14 @@ class Dock(object):
             if last_active_win is not None:
                 window_control.minimise_win(last_active_win)
 
-    def activate_window(self, win):
+    def activate_window(self, win, event_time=None):
         """ Activate a Bamf window, switching workspace as necessary
 
             Args:
                 win : the Bamf.Window
+                event_time : the time of the event which triggered this
+                             call - if None the time of the current GTK
+                             event is used
         """
         if win is not None:
             # if the window to be activated is not on the current workspace,
@@ -4214,9 +4218,9 @@ class Dock(object):
                 # https://bugs.launchpad.net/ubuntu-mate/+bug/1555336 (regarding software updater))
                 if (wnck_aws is not None) and (wnck_ws is not None) and \
                    (wnck_aws != wnck_ws):
-                    wnck_ws.activate(0)
+                    wnck_ws.activate(event_time if event_time else 0)
 
-            window_control.activate_win(win)
+            window_control.activate_win(win, event_time)
 
     def activate_first_window(self, app):
         """ Active the specified apps's first window, changing workspace as
@@ -4316,7 +4320,7 @@ class Dock(object):
                 wnck_ws.activate(0)
 
         # activate the new window
-        window_control.activate_win(windows[new_index])
+        window_control.activate_win(windows[new_index], event_time)
 
     def get_dragee(self):
         """"
